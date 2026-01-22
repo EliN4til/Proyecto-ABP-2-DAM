@@ -26,7 +26,8 @@ def VistaConexion(page: ft.Page):
             content_padding=15,
             height=45,
             color="black",
-            cursor_color="black"
+            cursor_color="black",
+            text_align=ft.TextAlign.LEFT
         )
 
     txt_uri = crear_input()
@@ -55,27 +56,27 @@ def VistaConexion(page: ft.Page):
         ),
         content=ft.Column(
             spacing=0,
+            tight=True,
             controls=[
-                #Cabecera
                 ft.Container(
-                    width=320,
                     height=60,
+                    width=320,
                     bgcolor=COLOR_HEADER_BG,
                     border_radius=ft.border_radius.only(top_left=20, top_right=20),
                     alignment=ft.Alignment(0, 0),
                     content=ft.Text(
                         "CONEXIÓN BD",
-                        size=20,
+                        size=18,
                         weight=ft.FontWeight.BOLD,
                         color="white"
                     )
                 ),
                 
-                #Formulario
                 ft.Container(
                     padding=ft.padding.only(left=30, right=30, top=25, bottom=40),
                     content=ft.Column(
                         spacing=5,
+                        tight=True,
                         controls=[
                             ft.Text("URI", weight=ft.FontWeight.BOLD, color="black", size=14),
                             ft.Container(content=txt_uri, margin=ft.margin.only(bottom=15)),
@@ -86,7 +87,7 @@ def VistaConexion(page: ft.Page):
                             ft.Text("Contraseña", weight=ft.FontWeight.BOLD, color="black", size=14),
                             ft.Container(content=txt_pass, margin=ft.margin.only(bottom=25)),
 
-                            ft.Container(content=btn_conectar, alignment=ft.Alignment(0, 0)) # CAMBIO: Centro
+                            ft.Container(content=btn_conectar, alignment=ft.Alignment(0, 0))
                         ]
                     )
                 )
@@ -94,7 +95,6 @@ def VistaConexion(page: ft.Page):
         )
     )
 
-    #Layout Principal
     return ft.Container(
         expand=True,
         gradient=ft.LinearGradient(
@@ -102,6 +102,6 @@ def VistaConexion(page: ft.Page):
             end=ft.Alignment(1, 1),
             colors=[COLOR_FONDO_TOP, COLOR_FONDO_BOT],
         ),
-        alignment=ft.Alignment(0, 0),
+        alignment=ft.Alignment(0, 0), 
         content=tarjeta_blanca
     )
