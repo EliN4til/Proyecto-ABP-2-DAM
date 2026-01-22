@@ -1,5 +1,5 @@
 import flet as ft
-from vistas.vista_conexion import VistaConexion
+from vistas.vista_login import VistaLogin
 
 def main(page: ft.Page):
     page.title = "App Tareas - Conexión"
@@ -8,7 +8,7 @@ def main(page: ft.Page):
     page.window_height = 800
     page.padding = 0 
     
-    vista = VistaConexion(page)
+    vista = VistaLogin(page)
     page.add(vista)
 
 if __name__ == "__main__":
