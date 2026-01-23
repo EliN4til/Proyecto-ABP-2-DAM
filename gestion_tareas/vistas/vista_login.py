@@ -4,8 +4,8 @@ def VistaLogin(page: ft.Page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
-    COLOR_HEADER_BG = "#1F2855"      # Azul muy oscuro (Cabecera)
-    COLOR_BTN_BG = "#5B88C4"         # Azul acero (Botón Iniciar Sesión)
+    COLOR_HEADER_BG = "#1F2855"
+    COLOR_BTN_BG = "#5B88C4"
     COLOR_INPUT_BG = "#EEEEEE"       
     COLOR_SOMBRA = "#66000000"       
 
@@ -13,6 +13,9 @@ def VistaLogin(page: ft.Page):
         page.snack_bar = ft.SnackBar(ft.Text("Iniciando sesión..."))
         page.snack_bar.open = True
         page.update()
+
+    def btn_back_click(e):
+        page.go("/")
 
     def crear_input(es_password=False):
         return ft.TextField(
@@ -58,8 +61,13 @@ def VistaLogin(page: ft.Page):
             controls=[
                 ft.Container(
                     padding=ft.padding.only(left=20, top=15, bottom=10),
-                    content=ft.Icon(name="arrow_back", color="black", size=20),
-                    alignment=ft.Alignment(-1, 0)
+                    content=ft.IconButton(
+                        icon="arrow_back",
+                        icon_color="black",
+                        icon_size=20,
+                        on_click=btn_back_click
+                    ),
+                    alignment=ft.Alignment(-1, 0),
                 ),
 
                 ft.Container(
@@ -75,7 +83,6 @@ def VistaLogin(page: ft.Page):
                     )
                 ),
                 
-                # 3. Formulario
                 ft.Container(
                     padding=ft.padding.only(left=30, right=30, top=30, bottom=40),
                     content=ft.Column(
