@@ -4,8 +4,10 @@ from vistas.vista_conexion import VistaConexion
 def main(page: ft.Page):
     page.title = "App Tareas - Conexión"
     
-    page.window_width = 400 
-    page.window_height = 800
+    page.window.width = 1200
+    page.window.height = 800
+    page.window.min_width = 360
+    page.window.min_height = 480
     page.padding = 0 
     
     vista = VistaConexion(page)
