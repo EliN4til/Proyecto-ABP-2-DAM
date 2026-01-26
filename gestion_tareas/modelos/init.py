@@ -44,7 +44,7 @@ class TareaModel(BaseModel):
     inicio: Optional[date] = None
     cierre: Optional[date] = None
 
-client = MongoClient("mongodb+srv://[usuario]:[contraseña]@gestiontareas1.mgzio0n.mongodb.net/?appName=GestionTareas1")
+client = MongoClient("mongodb+srv://[USUARIO]:[CONTRASEÑA]@gestiontareas1.mgzio0n.mongodb.net/?appName=GestionTareas1")
 db = client["tareas_db"]
 
 def crear_demo():
@@ -58,7 +58,7 @@ def crear_demo():
     dept_id = res_dept.inserted_id
 
     emp_data = {
-        "identificador": "EMP-99",
+        "identificador": "44665571P",
         "email": "ana@techcorp.com",
         "contrasenya": "secure_pass",
         "id_departamento": str(dept_id),
