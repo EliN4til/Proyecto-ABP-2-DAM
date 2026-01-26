@@ -1,7 +1,6 @@
 import flet as ft
 
 def VistaLogin(page: ft.Page):
-    
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
     COLOR_HEADER_BG = "#1F2855"
@@ -50,24 +49,21 @@ def VistaLogin(page: ft.Page):
         width=320,
         bgcolor="white",
         border_radius=25,
-        shadow=ft.BoxShadow(
-            spread_radius=1,
-            blur_radius=20,
-            color=COLOR_SOMBRA, 
-        ),
+        shadow=ft.BoxShadow(spread_radius=1, blur_radius=20, color=COLOR_SOMBRA),
         content=ft.Column(
             spacing=0,
             tight=True,
             controls=[
                 ft.Container(
                     padding=ft.padding.only(left=20, top=15, bottom=10),
-                    content=ft.IconButton(
-                        icon="arrow_back",
-                        icon_color="black",
-                        icon_size=20,
-                        on_click=btn_back_click
-                    ),
                     alignment=ft.Alignment(-1, 0),
+                    content=ft.Container(
+                        content=ft.Text("←", size=30, color="black", weight="bold"),
+                        on_click=btn_back_click,
+                        ink=True,
+                        border_radius=50,
+                        padding=5,
+                    ),
                 ),
 
                 ft.Container(
@@ -75,12 +71,7 @@ def VistaLogin(page: ft.Page):
                     width=320,
                     bgcolor=COLOR_HEADER_BG,
                     alignment=ft.Alignment(0, 0),
-                    content=ft.Text(
-                        "INICIO DE SESIÓN",
-                        size=18,
-                        weight=ft.FontWeight.BOLD,
-                        color="white"
-                    )
+                    content=ft.Text("INICIO DE SESIÓN", size=18, weight=ft.FontWeight.BOLD, color="white")
                 ),
                 
                 ft.Container(
