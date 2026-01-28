@@ -6,13 +6,12 @@ def VistaDetalleTarea(page: ft.Page):
     COLOR_FONDO_BOT = "#4FC3F7"      
     COLOR_HEADER_BG = "#1F2855"      
     COLOR_SOMBRA = "#66000000"
+    COLOR_SOMBRA_TARJETAS = "#40000000"
     COLOR_BTN_EDITAR = "#4682B4"
     COLOR_BTN_COMPLETAR = "#5A7A8A"
     COLOR_LABEL = "#5B9BD5"
 
-    # ============================================
-    # DATOS DE LA TAREA (reemplazar con datos reales)
-    # ============================================
+    #datos de tarea de ejemplo, ya se sustituirá por datos reales cuando haya backend
     tarea = {
         "titulo": "Arreglar bug linea 287 fichero UpdateDate.py",
         "tag": "Desarrollo",
@@ -44,11 +43,17 @@ def VistaDetalleTarea(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    # Sección superior: icono + título + tag + fecha
+    #sección superior: icono + título + tag + fecha
     seccion_superior = ft.Container(
         bgcolor="#F5F5F5",
         border_radius=10,
         padding=15,
+        shadow=ft.BoxShadow(
+            spread_radius=1,
+            blur_radius=12,
+            color=COLOR_SOMBRA_TARJETAS,
+            offset=ft.Offset(0, 4),
+        ),
         content=ft.Column(
             spacing=8,
             controls=[
@@ -89,7 +94,6 @@ def VistaDetalleTarea(page: ft.Page):
         )
     )
 
-    # Lista de requisitos con scroll
     def crear_requisito(texto: str):
         return ft.Text(
             f"- {texto}",
@@ -102,33 +106,39 @@ def VistaDetalleTarea(page: ft.Page):
         border_radius=10,
         padding=15,
         height=220,
+        shadow=ft.BoxShadow(
+            spread_radius=1,
+            blur_radius=12,
+            color=COLOR_SOMBRA_TARJETAS,
+            offset=ft.Offset(0, 4),
+        ),
         content=ft.ListView(
             spacing=10,
             controls=[crear_requisito(req) for req in tarea["requisitos"]]
         )
     )
 
-    # Botones
-    btn_editar = ft.ElevatedButton(
-        content=ft.Text("Editar Tarea", color="white", weight=ft.FontWeight.BOLD, size=13),
-        bgcolor=COLOR_BTN_EDITAR,
+    btn_editar = ft.Container(
         width=140,
         height=40,
-        style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=20),
-        ),
-        on_click=btn_editar_click
+        bgcolor=COLOR_BTN_EDITAR,
+        border_radius=20,
+        alignment=ft.Alignment(0, 0),
+        ink=True,
+        on_click=btn_editar_click,
+        content=ft.Text("Editar Tarea", color="white", weight=ft.FontWeight.BOLD, size=13),
     )
 
-    btn_completar = ft.ElevatedButton(
-        content=ft.Text("Completar Tarea", color="white", weight=ft.FontWeight.BOLD, size=13),
-        bgcolor=COLOR_BTN_COMPLETAR,
+    btn_completar = ft.Container(
         width=140,
         height=40,
-        style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=20),
-        ),
-        on_click=btn_completar_click
+        bgcolor=COLOR_BTN_COMPLETAR,
+        border=ft.border.all(2, COLOR_BTN_COMPLETAR),
+        border_radius=20,
+        alignment=ft.Alignment(0, 0),
+        ink=True,
+        on_click=btn_completar_click,
+        content=ft.Text("Completar Tarea", color="white", weight=ft.FontWeight.BOLD, size=13),
     )
 
     fila_botones = ft.Row(
@@ -137,7 +147,6 @@ def VistaDetalleTarea(page: ft.Page):
         controls=[btn_editar, btn_completar]
     )
 
-    # Tarjeta blanca con todo dentro
     tarjeta_blanca = ft.Container(
         width=340,
         bgcolor="white",
@@ -147,20 +156,18 @@ def VistaDetalleTarea(page: ft.Page):
             spacing=0,
             tight=True,
             controls=[
-                # Flecha de retroceso
                 ft.Container(
-                    padding=ft.padding.only(left=20, top=15, bottom=10),
+                    padding=ft.padding.only(left=15, top=10, bottom=5),
                     alignment=ft.Alignment(-1, 0),
                     content=ft.Container(
-                        content=ft.Text("←", size=30, color="black", weight="bold"),
+                        content=ft.Text("←", size=26, color="black", weight="bold"),
                         on_click=btn_volver_click,
                         ink=True,
                         border_radius=50,
-                        padding=5,
+                        padding=3,
                     ),
                 ),
 
-                # Header azul
                 ft.Container(
                     height=55,
                     width=340,
@@ -169,7 +176,6 @@ def VistaDetalleTarea(page: ft.Page):
                     content=ft.Text("DETALLE TAREA", size=18, weight=ft.FontWeight.BOLD, color="white")
                 ),
                 
-                # Contenido
                 ft.Container(
                     padding=ft.padding.only(left=20, right=20, top=20, bottom=25),
                     content=ft.Column(
