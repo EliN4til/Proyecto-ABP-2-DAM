@@ -1,6 +1,6 @@
 import flet as ft
 
-def VistaTareasAtrasadas(page: ft.Page):
+def VistaTareasRealizadas(page: ft.Page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -9,32 +9,29 @@ def VistaTareasAtrasadas(page: ft.Page):
     COLOR_SOMBRA_TARJETAS = "#40000000"
     COLOR_LABEL = "#5B9BD5"
     COLOR_BORDE = "#E0E0E0"
-    COLOR_ATRASADO = "#E53935"
+    COLOR_COMPLETADO = "#4CAF50"
 
-    # Opciones de filtro
+    #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
     FILTROS_ORDEN = [
-        "Más atrasado primero", 
-        "Menos atrasado primero", 
+        "Más reciente primero", 
+        "Más antiguo primero", 
         "Fecha ascendente (antigua → reciente)",
         "Fecha descendente (reciente → antigua)",
         "Alfabético A-Z", 
         "Alfabético Z-A",
-        "Por prioridad alta",
-        "Por prioridad baja",
     ]
 
     filtro_tag_actual = ["Todos"]
-    filtro_orden_actual = ["Más atrasado primero"]
+    filtro_orden_actual = ["Más reciente primero"]
 
-    # Datos demo de tareas atrasadas (todas tienen atrasado=True)
-    TAREAS_ATRASADAS = [
+    #datos demo de tareas realizadas (con requerimientos)
+    TAREAS_REALIZADAS = [
         {
             "titulo": "Arreglar bug linea 287 fichero UpdateDate.py",
             "tag": "Desarrollo",
             "emoji": "👨‍💻",
-            "fecha": "25/12/25",
-            "dias_atrasado": 5,
+            "fecha_completado": "25/12/25",
             "requerimientos": [
                 "Identificar el error en la línea 287 del fichero UpdateDate.py",
                 "El bucle debe iterar correctamente sobre la lista de fechas",
@@ -44,11 +41,23 @@ def VistaTareasAtrasadas(page: ft.Page):
             ]
         },
         {
+            "titulo": "Implementar autenticación OAuth2",
+            "tag": "Backend",
+            "emoji": "🔧",
+            "fecha_completado": "22/12/25",
+            "requerimientos": [
+                "Configurar cliente OAuth2 con Google y GitHub",
+                "Implementar flujo de autorización",
+                "Guardar tokens de acceso de forma segura",
+                "Manejar refresh de tokens automático",
+                "Añadir tests de integración",
+            ]
+        },
+        {
             "titulo": "Diseñar mockups para dashboard",
             "tag": "Diseño",
             "emoji": "🎨",
-            "fecha": "20/12/25",
-            "dias_atrasado": 10,
+            "fecha_completado": "20/12/25",
             "requerimientos": [
                 "Crear diseño responsive para desktop y móvil",
                 "Incluir gráficos de rendimiento y métricas KPI",
@@ -58,75 +67,60 @@ def VistaTareasAtrasadas(page: ft.Page):
             ]
         },
         {
-            "titulo": "Corregir validación formulario registro",
-            "tag": "Bug Fix",
-            "emoji": "🐛",
-            "fecha": "22/12/25",
-            "dias_atrasado": 8,
+            "titulo": "Escribir tests unitarios módulo Auth",
+            "tag": "Testing",
+            "emoji": "🧪",
+            "fecha_completado": "18/12/25",
             "requerimientos": [
-                "El campo email no valida correctamente dominios .co",
-                "El password debe aceptar caracteres especiales",
-                "Mostrar mensajes de error específicos por campo",
-                "Validar que las contraseñas coincidan",
-                "Añadir validación de teléfono internacional",
+                "Cobertura mínima del 80% en el módulo de autenticación",
+                "Testear login, logout y refresh de tokens",
+                "Incluir tests para casos de error y edge cases",
+                "Mockear las llamadas a servicios externos",
+                "Documentar los tests con descripciones claras",
             ]
         },
         {
-            "titulo": "Implementar endpoint de notificaciones",
-            "tag": "API",
-            "emoji": "🔌",
-            "fecha": "18/12/25",
-            "dias_atrasado": 12,
-            "requerimientos": [
-                "Crear endpoint POST /api/notifications",
-                "Soportar notificaciones push y email",
-                "Implementar cola de mensajes para envíos masivos",
-                "Añadir rate limiting para evitar spam",
-                "Documentar en Swagger con ejemplos",
-            ]
-        },
-        {
-            "titulo": "Migrar base de datos a PostgreSQL 15",
-            "tag": "Base de Datos",
-            "emoji": "🗄️",
-            "fecha": "15/12/25",
-            "dias_atrasado": 15,
-            "requerimientos": [
-                "Realizar backup completo antes de migración",
-                "Actualizar queries incompatibles con PG15",
-                "Migrar procedimientos almacenados",
-                "Verificar índices y performance",
-                "Ejecutar tests de integración post-migración",
-            ]
-        },
-        {
-            "titulo": "Actualizar dependencias de seguridad",
+            "titulo": "Configurar pipeline CI/CD",
             "tag": "DevOps",
             "emoji": "⚙️",
-            "fecha": "23/12/25",
-            "dias_atrasado": 7,
+            "fecha_completado": "15/12/25",
             "requerimientos": [
-                "Actualizar todas las dependencias con vulnerabilidades críticas",
-                "Ejecutar npm audit y pip audit",
-                "Verificar compatibilidad con versiones actuales",
-                "Actualizar lockfiles",
-                "Ejecutar suite de tests completa",
+                "Configurar GitHub Actions para build automático",
+                "Añadir etapa de tests automatizados",
+                "Configurar deploy automático a staging",
+                "Implementar notificaciones en Slack",
+                "Documentar el proceso de deployment",
+            ]
+        },
+        {
+            "titulo": "Documentar API endpoints v2",
+            "tag": "Documentación",
+            "emoji": "📝",
+            "fecha_completado": "12/12/25",
+            "requerimientos": [
+                "Documentar todos los endpoints del API v2 en Swagger",
+                "Incluir ejemplos de request y response",
+                "Describir códigos de error y sus significados",
+                "Añadir sección de autenticación y autorización",
+                "Revisar y actualizar la documentación existente",
             ]
         },
     ]
 
     def btn_volver_click(e):
+        """Acción al hacer clic en el botón volver atrás"""
         page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
         page.snack_bar.open = True
         page.update()
 
     def btn_buscar_click(e):
+        """Acción al hacer clic en el botón buscar"""
         texto_busqueda = input_busqueda.value
         page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {texto_busqueda}"))
         page.snack_bar.open = True
         page.update()
 
-    # ============ DIALOG DETALLE TAREA ============
+    #dialog detalle tarea
     def mostrar_detalle_tarea(tarea):
         requerimientos_list = ft.Column(
             spacing=8,
@@ -153,7 +147,7 @@ def VistaTareasAtrasadas(page: ft.Page):
                     spacing=15,
                     tight=True,
                     controls=[
-                        # Info de la tarea
+                        #info de la tarea
                         ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             controls=[
@@ -168,30 +162,23 @@ def VistaTareasAtrasadas(page: ft.Page):
                                     spacing=3,
                                     controls=[
                                         ft.Text(
-                                            "Atrasado:",
+                                            "Completado:",
                                             size=11,
-                                            color=COLOR_ATRASADO,
+                                            color=COLOR_COMPLETADO,
                                             weight=ft.FontWeight.W_500,
                                         ),
                                         ft.Text(
-                                            f"{tarea['dias_atrasado']} días",
+                                            tarea["fecha_completado"],
                                             size=11,
-                                            color=COLOR_ATRASADO,
+                                            color=COLOR_COMPLETADO,
                                             weight=ft.FontWeight.W_500,
                                         ),
                                     ]
                                 ),
                             ]
                         ),
-                        ft.Row(
-                            controls=[
-                                ft.Text("Fecha límite:", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                ft.Text(tarea["fecha"], size=11, color="black", weight=ft.FontWeight.W_500),
-                            ],
-                            spacing=5,
-                        ),
                         ft.Divider(height=1, color=COLOR_BORDE),
-                        # Requerimientos
+                        #requerimientos
                         ft.Text("Requerimientos:", size=13, color="black", weight=ft.FontWeight.BOLD),
                         ft.Container(
                             height=180,
@@ -217,10 +204,10 @@ def VistaTareasAtrasadas(page: ft.Page):
         dialog_detalle.open = True
         page.update()
 
-    # ============ DIALOG FILTROS ============
+    #dialog filtros
     def mostrar_dialog_filtros(e):
-        # Radio buttons para orden por fecha
-        radio_fecha = ft.RadioGroup(
+        #radio buttons para orden por fecha
+        radio_orden = ft.RadioGroup(
             value=filtro_orden_actual[0],
             content=ft.Column(
                 controls=[
@@ -232,7 +219,8 @@ def VistaTareasAtrasadas(page: ft.Page):
         )
 
         def aplicar_filtros(e):
-            filtro_orden_actual[0] = radio_fecha.value
+            """Aplicar filtros seleccionados"""
+            filtro_orden_actual[0] = radio_orden.value
             dialog_filtros.open = False
             page.snack_bar = ft.SnackBar(
                 ft.Text(f"Filtro aplicado: {filtro_orden_actual[0]}")
@@ -241,10 +229,12 @@ def VistaTareasAtrasadas(page: ft.Page):
             page.update()
 
         def limpiar_filtros(e):
-            radio_fecha.value = "Más atrasado primero"
+            """Limpiar filtros a valores por defecto"""
+            radio_orden.value = "Más reciente primero"
             page.update()
 
         def abrir_filtro_tags(e):
+            """Abrir diálogo de filtro por tags"""
             dialog_filtros.open = False
             page.update()
             mostrar_dialog_tags()
@@ -255,17 +245,17 @@ def VistaTareasAtrasadas(page: ft.Page):
             bgcolor="white",
             content=ft.Container(
                 width=300,
-                height=350,
+                height=320,
                 bgcolor="white",
                 content=ft.Column(
                     spacing=10,
                     scroll=ft.ScrollMode.AUTO,
                     controls=[
-                        # Ordenar por fecha
-                        ft.Text("Ordenar por fecha:", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                        radio_fecha,
+                        #ordenar por fecha
+                        ft.Text("Ordenar por:", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                        radio_orden,
                         ft.Divider(height=10, color=COLOR_BORDE),
-                        # Botón para abrir filtro de tags
+                        #botón para abrir filtro de tags
                         ft.Container(
                             content=ft.Row(
                                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -294,8 +284,9 @@ def VistaTareasAtrasadas(page: ft.Page):
         dialog_filtros.open = True
         page.update()
 
-    # ============ DIALOG TAGS ============
+    #dialog tags
     def mostrar_dialog_tags():
+        """Diálogo para seleccionar filtro por tag"""
         radio_tags = ft.RadioGroup(
             value=filtro_tag_actual[0],
             content=ft.Column(
@@ -308,6 +299,7 @@ def VistaTareasAtrasadas(page: ft.Page):
         )
 
         def aplicar_tag(e):
+            """Aplicar filtro por tag"""
             filtro_tag_actual[0] = radio_tags.value
             dialog_tags.open = False
             page.snack_bar = ft.SnackBar(
@@ -317,6 +309,7 @@ def VistaTareasAtrasadas(page: ft.Page):
             page.update()
 
         def volver_filtros(e):
+            """Volver al diálogo de filtros"""
             dialog_tags.open = False
             page.update()
             mostrar_dialog_filtros(None)
@@ -357,7 +350,7 @@ def VistaTareasAtrasadas(page: ft.Page):
         page.update()
 
     def crear_tarjeta_tarea(tarea):
-        """Crea una tarjeta para cada tarea atrasada"""
+        """Crea una tarjeta para cada tarea realizada"""
         return ft.Container(
             bgcolor="white",
             border_radius=12,
@@ -372,7 +365,7 @@ def VistaTareasAtrasadas(page: ft.Page):
             content=ft.Column(
                 spacing=4,
                 controls=[
-                    # Fila 1: Emoji + Título
+                    #fila 1: Emoji + Título
                     ft.Row(
                         spacing=8,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -389,7 +382,7 @@ def VistaTareasAtrasadas(page: ft.Page):
                             ),
                         ]
                     ),
-                    # Fila 2: Tag + Fecha atrasado
+                    #fila 2: Tag + Fecha completado
                     ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                         controls=[
@@ -404,15 +397,15 @@ def VistaTareasAtrasadas(page: ft.Page):
                                 spacing=3,
                                 controls=[
                                     ft.Text(
-                                        "Atrasado desde:",
+                                        "Completado el:",
                                         size=10,
-                                        color=COLOR_ATRASADO,
+                                        color=COLOR_LABEL,
                                         weight=ft.FontWeight.W_500,
                                     ),
                                     ft.Text(
-                                        tarea["fecha"],
+                                        tarea["fecha_completado"],
                                         size=10,
-                                        color=COLOR_ATRASADO,
+                                        color="black",
                                         weight=ft.FontWeight.W_500,
                                     ),
                                 ]
@@ -425,7 +418,7 @@ def VistaTareasAtrasadas(page: ft.Page):
             ink=True,
         )
 
-    # Campo de búsqueda
+    #campo de búsqueda
     input_busqueda = ft.TextField(
         hint_text="Buscar por palabras clave...",
         hint_style=ft.TextStyle(size=11, color="#999999"),
@@ -437,7 +430,7 @@ def VistaTareasAtrasadas(page: ft.Page):
         content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
     )
 
-    # Botón filtrar
+    #botón filtrar
     btn_filtrar = ft.Container(
         content=ft.Text("Filtrar por", size=11, color="black"),
         bgcolor="white",
@@ -448,7 +441,7 @@ def VistaTareasAtrasadas(page: ft.Page):
         ink=True,
     )
 
-    # Botón buscar (icono lupa)
+    #botón buscar (icono lupa)
     btn_buscar = ft.Container(
         content=ft.Icon(ft.Icons.SEARCH, size=20, color="white"),
         bgcolor=COLOR_LABEL,
@@ -458,7 +451,7 @@ def VistaTareasAtrasadas(page: ft.Page):
         ink=True,
     )
 
-    # Fila de búsqueda y filtros
+    #fila de búsqueda y filtros
     fila_busqueda = ft.Row(
         spacing=8,
         controls=[
@@ -468,14 +461,14 @@ def VistaTareasAtrasadas(page: ft.Page):
         ]
     )
 
-    # Lista de tareas
+    #lista de tareas
     lista_tareas = ft.ListView(
         spacing=0,
-        controls=[crear_tarjeta_tarea(tarea) for tarea in TAREAS_ATRASADAS],
+        controls=[crear_tarjeta_tarea(tarea) for tarea in TAREAS_REALIZADAS],
         expand=True,
     )
 
-    # Tarjeta blanca principal
+    #tarjeta blanca principal
     tarjeta_blanca = ft.Container(
         width=400,
         height=720,
@@ -485,7 +478,7 @@ def VistaTareasAtrasadas(page: ft.Page):
         content=ft.Column(
             spacing=0,
             controls=[
-                # Flecha de retroceso - bloque compacto
+                #flecha de retroceso - bloque compacto
                 ft.Container(
                     padding=ft.padding.only(left=15, top=10, bottom=5),
                     alignment=ft.Alignment(-1, 0),
@@ -498,16 +491,16 @@ def VistaTareasAtrasadas(page: ft.Page):
                     ),
                 ),
 
-                # Header azul
+                #header azul
                 ft.Container(
                     height=55,
                     width=400,
                     bgcolor=COLOR_HEADER_BG,
                     alignment=ft.Alignment(0, 0),
-                    content=ft.Text("TAREAS ATRASADAS", size=18, weight=ft.FontWeight.BOLD, color="white")
+                    content=ft.Text("TAREAS REALIZADAS", size=18, weight=ft.FontWeight.BOLD, color="white")
                 ),
                 
-                # Contenido
+                #contenido
                 ft.Container(
                     padding=ft.padding.only(left=18, right=18, top=15, bottom=15),
                     expand=True,
@@ -534,3 +527,19 @@ def VistaTareasAtrasadas(page: ft.Page):
         alignment=ft.Alignment(0, 0), 
         content=tarjeta_blanca
     )
+
+
+def main(page: ft.Page):
+    page.title = "App Tareas - Mis Datos"
+    
+    page.window.width = 1200
+    page.window.height = 800
+    page.window.min_width = 380
+    page.window.min_height = 780
+    page.padding = 0 
+    
+    vista = VistaTareasRealizadas(page)
+    page.add(vista)
+
+if __name__ == "__main__":
+    ft.app(target=main)
