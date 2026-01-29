@@ -1,4 +1,5 @@
 import flet as ft
+from ...servicios.db_manager import realizar_conexion
 
 def VistaConexion(page: ft.Page):
     
@@ -10,7 +11,24 @@ def VistaConexion(page: ft.Page):
     COLOR_SOMBRA = "#66000000"       
 
     def btn_conectar_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text(f"Conectando a {txt_uri.value}..."))
+        page.snack_bar = ft.SnackBar(ft.Text("Verificando credenciales..."))
+        page.snack_bar.open = True
+        page.update()
+
+        exito = realizar_conexion(txt_uri.value, txt_usuario.value, txt_pass.value)
+
+        if exito:
+            page.snack_bar = ft.SnackBar(
+                ft.Text("¡Conexión exitosa!", color="white"), 
+                bgcolor="green"
+            )
+            
+        else:
+            page.snack_bar = ft.SnackBar(
+                ft.Text("Error: Usuario, contraseña o URI incorrectos"), 
+                bgcolor="red"
+            )
+        
         page.snack_bar.open = True
         page.update()
 
