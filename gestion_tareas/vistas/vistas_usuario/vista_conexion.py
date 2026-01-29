@@ -19,7 +19,7 @@ def VistaConexion(page: ft.Page):
 
         if exito:
             page.snack_bar = ft.SnackBar(
-                ft.Text("¡Conexión exitosa!", color="white"), 
+                ft.Text("Conexión exitosa", color="white"), 
                 bgcolor="green"
             )
             
