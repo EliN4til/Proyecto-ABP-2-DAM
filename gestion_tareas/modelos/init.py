@@ -1,88 +1,102 @@
 from pymongo import MongoClient
 from pydantic import BaseModel, Field, EmailStr, BeforeValidator
-from typing import Optional, List, Annotated
-from datetime import date
+from typing import List, Optional, Annotated
+from datetime import datetime
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
-class DepartamentoModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    nombre_departamento: str
-    empresa: Optional[str] = None
-    ubicacion: Optional[str] = None
-
-class EmpleadoModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    foto: Optional[str] = None
-    identificador: str
-    nombre: Optional[str] = None
-    apellidos: Optional[str] = None
-    cargo: Optional[str] = None
-    id_departamento: PyObjectId
-    email: EmailStr
-    contrasenya: str
-    telefono: Optional[str] = None
-    incorporacion: Optional[date] = None
-    estado: bool = True
-    admin: bool = False
-
-class EquipoModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    nombre_equipo: Optional[str] = None
-    empresa: Optional[str] = None
-    integrantes: List[PyObjectId] = []
-
-class TareaModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    icono: Optional[str] = None
-    titulo: str
-    descripcion: str
-    categoria: Optional[str] = None
-    terminada: bool = False
-    retrasada: bool = False
-    acceso: List[PyObjectId] = []
-    inicio: Optional[date] = None
-    cierre: Optional[date] = None
-
-client = MongoClient("mongodb+srv://[USUARIO]:[CONTRASEÑA]@gestiontareas1.mgzio0n.mongodb.net/?appName=GestionTareas1")
+client = MongoClient("mongodb+srv://ayoze:9978@gestiontareas1.mgzio0n.mongodb.net/?appName=GestionTareas1")
 db = client["tareas_db"]
 
-def crear_demo():
-    dept_data = {
-        "nombre_departamento": "Tecnología",
-        "empresa": "TechCorp",
-        "ubicacion": "Planta 2"
-    }
-    dept_model = DepartamentoModel(**dept_data)
-    res_dept = db.departamentos.insert_one(dept_model.model_dump(by_alias=True, exclude=["id"]))
-    dept_id = res_dept.inserted_id
+# Submodelos que vamos a incrustar en las colecciones
+class InfoDepartamento(BaseModel):
+    nombre: str
+    ubicacion: str
 
-    emp_data = {
-        "identificador": "44665571P",
-        "email": "ana@techcorp.com",
-        "contrasenya": "secure_pass",
-        "id_departamento": str(dept_id),
-        "nombre": "Ana",
-        "cargo": "DevOps"
-    }
-    emp_model = EmpleadoModel(**emp_data)
-    res_emp = db.empleados.insert_one(emp_model.model_dump(by_alias=True, exclude=["id"]))
-    emp_id = res_emp.inserted_id
+class UsuarioResumen(BaseModel):
+    """
+    Guardamos una copia pequeña de los datos del usuario
+    en la colección de tareas para cargar las tareas más rapidamente.
+    (Basicamente patrón Subset)
+    """
+    id_usuario: PyObjectId
+    nombre: str
+    foto: Optional[str] = None
 
-    equipo_data = {
-        "nombre_equipo": "Infraestructura",
-        "integrantes": [str(emp_id)]
-    }
-    equipo_model = EquipoModel(**equipo_data)
-    db.equipos.insert_one(equipo_model.model_dump(by_alias=True, exclude=["id"]))
 
-    tarea_data = {
-        "titulo": "Migrar Servidores",
-        "descripcion": "Mover todo a AWS",
-        "acceso": [str(emp_id)]
-    }
-    tarea_model = TareaModel(**tarea_data)
-    db.tareas.insert_one(tarea_model.model_dump(by_alias=True, exclude=["id"]))
+# EMPLEADOS
+class EmpleadoModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    identificador: str
+    nombre: str
+    email: EmailStr
+    contrasenya: str
+    foto: Optional[str] = None
+    
+    # incrustamos los datos a los que accederemos regularmente
+    departamento: InfoDepartamento 
+    cargo: str
+    es_admin: bool = False
+
+# PROYECTOS
+class ProyectoModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    nombre_proyecto: str
+    cliente: str
+    presupuesto: float
+    fecha_inicio: datetime
+    fecha_fin: datetime
+    activo: bool = True
+
+# 3. TAREAS
+class TareaModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    titulo: str
+    descripcion: str
+    estado: str = "pendiente"
+    
+    # Referencia al id del al que pertenece proyecto
+    id_proyecto: PyObjectId
+    
+    asignados: List[UsuarioResumen] = []
+    fecha_limite: Optional[datetime] = None
+
+def cargar_datos_prueba():
+    empleado = EmpleadoModel(
+        identificador="26603992F",
+        nombre="Laura",
+        email="laura@test.com",
+        contrasenya="1234",
+        departamento=InfoDepartamento(nombre="IT", ubicacion="Planta 1"),
+        cargo="Desarrollador Backend"
+    )
+    resumen_empleado = db.empleados.insert_one(empleado.model_dump(by_alias=True, exclude=["id"]))
+
+    proy = ProyectoModel(
+        nombre_proyecto="App Gestión Empleados",
+        cliente="Mercadona",
+        presupuesto=1500.00,
+        fecha_inicio=datetime.today(),
+        fecha_fin=datetime(2026, 6, 30)
+    )
+    resumen_proyecto = db.proyectos.insert_one(proy.model_dump(by_alias=True, exclude=["id"]))
+    
+
+    resumen_laura = UsuarioResumen(
+        id_usuario=str(resumen_empleado.inserted_id),
+        nombre="Laura",
+        foto="img_laura.png"
+    )
+    
+    tarea = TareaModel(
+        titulo="Diseñar Base de Datos",
+        descripcion="Hay que diseñar el modelo de la BBDD que usará la aplicación",
+        id_proyecto=str(resumen_proyecto.inserted_id),
+        asignados=[resumen_laura]
+    )
+    db.tareas.insert_one(tarea.model_dump(by_alias=True, exclude=["id"]))
+    
+    print("Se han insertado los datos de prueba correctamente")
 
 if __name__ == "__main__":
-    crear_demo()
+    cargar_datos_prueba()
