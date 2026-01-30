@@ -10,29 +10,41 @@ def VistaTareasAtrasadas(page: ft.Page):
     COLOR_LABEL = "#5B9BD5"
     COLOR_BORDE = "#E0E0E0"
     COLOR_ATRASADO = "#E53935"
+    COLOR_PRIORIDAD_ALTA = "#E53935"
+    COLOR_PRIORIDAD_MEDIA = "#FF9800"
+    COLOR_PRIORIDAD_BAJA = "#4CAF50"
 
-    # Opciones de filtro
+    #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
+    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
+    FILTROS_PRIORIDAD = ["Todas", "Alta", "Media", "Baja"]
     FILTROS_ORDEN = [
         "Más atrasado primero", 
         "Menos atrasado primero", 
-        "Fecha ascendente (antigua → reciente)",
-        "Fecha descendente (reciente → antigua)",
+        "Fecha ascendente",
+        "Fecha descendente",
         "Alfabético A-Z", 
         "Alfabético Z-A",
         "Por prioridad alta",
         "Por prioridad baja",
+        "Por proyecto",
     ]
 
     filtro_tag_actual = ["Todos"]
+    filtro_proyecto_actual = ["Todos"]
+    filtro_prioridad_actual = ["Todas"]
     filtro_orden_actual = ["Más atrasado primero"]
 
-    # Datos demo de tareas atrasadas (todas tienen atrasado=True)
+    #datos demo de tareas atrasadas
     TAREAS_ATRASADAS = [
         {
             "titulo": "Arreglar bug linea 287 fichero UpdateDate.py",
             "tag": "Desarrollo",
             "emoji": "👨‍💻",
+            "proyecto": "App Móvil v2.0",
+            "departamento": "Desarrollo",
+            "prioridad": "Alta",
+            "asignados": ["Ana García", "Laura Sánchez"],
             "fecha": "25/12/25",
             "dias_atrasado": 5,
             "requerimientos": [
@@ -47,6 +59,10 @@ def VistaTareasAtrasadas(page: ft.Page):
             "titulo": "Diseñar mockups para dashboard",
             "tag": "Diseño",
             "emoji": "🎨",
+            "proyecto": "Dashboard Analytics",
+            "departamento": "Diseño",
+            "prioridad": "Media",
+            "asignados": ["Carlos López", "Sofia Ruiz"],
             "fecha": "20/12/25",
             "dias_atrasado": 10,
             "requerimientos": [
@@ -61,6 +77,10 @@ def VistaTareasAtrasadas(page: ft.Page):
             "titulo": "Corregir validación formulario registro",
             "tag": "Bug Fix",
             "emoji": "🐛",
+            "proyecto": "Portal Web Cliente",
+            "departamento": "Desarrollo",
+            "prioridad": "Alta",
+            "asignados": ["Diego Torres"],
             "fecha": "22/12/25",
             "dias_atrasado": 8,
             "requerimientos": [
@@ -75,6 +95,10 @@ def VistaTareasAtrasadas(page: ft.Page):
             "titulo": "Implementar endpoint de notificaciones",
             "tag": "API",
             "emoji": "🔌",
+            "proyecto": "API REST Services",
+            "departamento": "Desarrollo",
+            "prioridad": "Alta",
+            "asignados": ["María Rodríguez"],
             "fecha": "18/12/25",
             "dias_atrasado": 12,
             "requerimientos": [
@@ -89,6 +113,10 @@ def VistaTareasAtrasadas(page: ft.Page):
             "titulo": "Migrar base de datos a PostgreSQL 15",
             "tag": "Base de Datos",
             "emoji": "🗄️",
+            "proyecto": "Migración Cloud",
+            "departamento": "DevOps",
+            "prioridad": "Alta",
+            "asignados": ["Pedro Martínez"],
             "fecha": "15/12/25",
             "dias_atrasado": 15,
             "requerimientos": [
@@ -103,6 +131,10 @@ def VistaTareasAtrasadas(page: ft.Page):
             "titulo": "Actualizar dependencias de seguridad",
             "tag": "DevOps",
             "emoji": "⚙️",
+            "proyecto": "Migración Cloud",
+            "departamento": "DevOps",
+            "prioridad": "Media",
+            "asignados": ["Pedro Martínez"],
             "fecha": "23/12/25",
             "dias_atrasado": 7,
             "requerimientos": [
@@ -114,6 +146,14 @@ def VistaTareasAtrasadas(page: ft.Page):
             ]
         },
     ]
+
+    def get_color_prioridad(prioridad):
+        if prioridad == "Alta":
+            return COLOR_PRIORIDAD_ALTA
+        elif prioridad == "Media":
+            return COLOR_PRIORIDAD_MEDIA
+        else:
+            return COLOR_PRIORIDAD_BAJA
 
     def btn_volver_click(e):
         page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
@@ -129,72 +169,93 @@ def VistaTareasAtrasadas(page: ft.Page):
     #dialog tarea detalle
     def mostrar_detalle_tarea(tarea):
         requerimientos_list = ft.Column(
-            spacing=8,
+            spacing=6,
             controls=[
-                ft.Text(f"• {req}", size=12, color="black")
+                ft.Text(f"• {req}", size=11, color="black")
                 for req in tarea["requerimientos"]
             ]
         )
+
+        asignados_text = ", ".join(tarea["asignados"]) if tarea["asignados"] else "Sin asignar"
 
         dialog_detalle = ft.AlertDialog(
             modal=True,
             title=ft.Row(
                 controls=[
-                    ft.Text(tarea["emoji"], size=28),
-                    ft.Text(tarea["titulo"], size=14, weight=ft.FontWeight.BOLD, color="black", expand=True),
+                    ft.Text(tarea["emoji"], size=26),
+                    ft.Container(
+                        expand=True,
+                        content=ft.Text(tarea["titulo"], size=13, weight=ft.FontWeight.BOLD, color="black"),
+                    ),
                 ],
-                spacing=10,
+                spacing=8,
             ),
             bgcolor="white",
             content=ft.Container(
                 width=320,
                 bgcolor="white",
                 content=ft.Column(
-                    spacing=15,
+                    spacing=10,
                     tight=True,
+                    scroll=ft.ScrollMode.AUTO,
                     controls=[
-                        # Info de la tarea
+                        #info básica
                         ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             controls=[
-                                ft.Row(
-                                    spacing=3,
-                                    controls=[
-                                        ft.Text("TAG:", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                        ft.Text(tarea["tag"], size=11, color="black", weight=ft.FontWeight.W_500),
-                                    ]
+                                ft.Container(
+                                    bgcolor=get_color_prioridad(tarea["prioridad"]),
+                                    border_radius=10,
+                                    padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                                    content=ft.Text(tarea["prioridad"], size=10, color="white", weight=ft.FontWeight.BOLD),
                                 ),
                                 ft.Row(
                                     spacing=3,
                                     controls=[
-                                        ft.Text(
-                                            "Atrasado:",
-                                            size=11,
-                                            color=COLOR_ATRASADO,
-                                            weight=ft.FontWeight.W_500,
-                                        ),
-                                        ft.Text(
-                                            f"{tarea['dias_atrasado']} días",
-                                            size=11,
-                                            color=COLOR_ATRASADO,
-                                            weight=ft.FontWeight.W_500,
-                                        ),
+                                        ft.Text("TAG:", size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                        ft.Text(tarea["tag"], size=10, color="black", weight=ft.FontWeight.W_500),
                                     ]
                                 ),
                             ]
                         ),
-                        ft.Row(
-                            controls=[
-                                ft.Text("Fecha límite:", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                ft.Text(tarea["fecha"], size=11, color="black", weight=ft.FontWeight.W_500),
-                            ],
-                            spacing=5,
+                        #atrasado
+                        ft.Container(
+                            bgcolor="#FFF3F3",
+                            border_radius=8,
+                            padding=ft.padding.all(8),
+                            content=ft.Row(
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                controls=[
+                                    ft.Text("⚠️ Atrasado:", size=11, color=COLOR_ATRASADO, weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{tarea['dias_atrasado']} días (desde {tarea['fecha']})", size=11, color=COLOR_ATRASADO),
+                                ]
+                            ),
                         ),
                         ft.Divider(height=1, color=COLOR_BORDE),
-                        # Requerimientos
-                        ft.Text("Requerimientos:", size=13, color="black", weight=ft.FontWeight.BOLD),
+                        #proyecto y departamento
+                        ft.Row(
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            controls=[
+                                ft.Column(spacing=2, controls=[
+                                    ft.Text("Proyecto", size=10, color=COLOR_LABEL),
+                                    ft.Text(tarea["proyecto"], size=11, color="black", weight=ft.FontWeight.W_500),
+                                ]),
+                                ft.Column(spacing=2, horizontal_alignment=ft.CrossAxisAlignment.END, controls=[
+                                    ft.Text("Departamento", size=10, color=COLOR_LABEL),
+                                    ft.Text(tarea["departamento"], size=11, color="black", weight=ft.FontWeight.W_500),
+                                ]),
+                            ]
+                        ),
+                        #asignados
+                        ft.Column(spacing=2, controls=[
+                            ft.Text("Asignados", size=10, color=COLOR_LABEL),
+                            ft.Text(asignados_text, size=11, color="black"),
+                        ]),
+                        ft.Divider(height=1, color=COLOR_BORDE),
+                        #requerimientos
+                        ft.Text("Requerimientos:", size=12, color="black", weight=ft.FontWeight.BOLD),
                         ft.Container(
-                            height=180,
+                            height=120,
                             content=ft.ListView(
                                 controls=[requerimientos_list],
                                 spacing=5,
@@ -219,29 +280,39 @@ def VistaTareasAtrasadas(page: ft.Page):
 
     #dialog filtros
     def mostrar_dialog_filtros(e):
-        #radio buttons orden fecha
-        radio_fecha = ft.RadioGroup(
+        radio_orden = ft.RadioGroup(
             value=filtro_orden_actual[0],
             content=ft.Column(
                 controls=[
-                    ft.Radio(value=orden, label=orden, label_style=ft.TextStyle(color="black", size=12)) 
+                    ft.Radio(value=orden, label=orden, label_style=ft.TextStyle(size=11, color="black")) 
                     for orden in FILTROS_ORDEN
                 ],
                 spacing=2,
             ),
         )
 
+        radio_prioridad = ft.RadioGroup(
+            value=filtro_prioridad_actual[0],
+            content=ft.Column(
+                controls=[
+                    ft.Radio(value=prio, label=prio, label_style=ft.TextStyle(size=11, color="black")) 
+                    for prio in FILTROS_PRIORIDAD
+                ],
+                spacing=2,
+            ),
+        )
+
         def aplicar_filtros(e):
-            filtro_orden_actual[0] = radio_fecha.value
+            filtro_orden_actual[0] = radio_orden.value
+            filtro_prioridad_actual[0] = radio_prioridad.value
             dialog_filtros.open = False
-            page.snack_bar = ft.SnackBar(
-                ft.Text(f"Filtro aplicado: {filtro_orden_actual[0]}")
-            )
+            page.snack_bar = ft.SnackBar(ft.Text("Filtros aplicados"))
             page.snack_bar.open = True
             page.update()
 
         def limpiar_filtros(e):
-            radio_fecha.value = "Más atrasado primero"
+            radio_orden.value = "Más atrasado primero"
+            radio_prioridad.value = "Todas"
             page.update()
 
         def abrir_filtro_tags(e):
@@ -249,32 +320,54 @@ def VistaTareasAtrasadas(page: ft.Page):
             page.update()
             mostrar_dialog_tags()
 
+        def abrir_filtro_proyecto(e):
+            dialog_filtros.open = False
+            page.update()
+            mostrar_dialog_proyecto()
+
         dialog_filtros = ft.AlertDialog(
             modal=True,
             title=ft.Text("Filtrar tareas", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
                 width=300,
-                height=350,
+                height=420,
                 bgcolor="white",
                 content=ft.Column(
-                    spacing=10,
+                    spacing=8,
                     scroll=ft.ScrollMode.AUTO,
                     controls=[
-                        ft.Text("Ordenar por fecha:", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                        radio_fecha,
-                        ft.Divider(height=10, color=COLOR_BORDE),
+                        ft.Text("Por Prioridad:", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                        radio_prioridad,
+                        ft.Divider(height=8, color=COLOR_BORDE),
+                        ft.Text("Ordenar por:", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                        radio_orden,
+                        ft.Divider(height=8, color=COLOR_BORDE),
                         ft.Container(
                             content=ft.Row(
                                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                 controls=[
-                                    ft.Text("Filtrar por Tags", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=16, color=COLOR_LABEL),
+                                    ft.Text("Filtrar por Tag", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, color=COLOR_LABEL),
                                 ]
                             ),
                             on_click=abrir_filtro_tags,
                             ink=True,
-                            padding=ft.padding.all(10),
+                            padding=ft.padding.all(8),
+                            border_radius=5,
+                            bgcolor="#F5F5F5",
+                        ),
+                        ft.Container(
+                            content=ft.Row(
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                controls=[
+                                    ft.Text("Filtrar por Proyecto", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, color=COLOR_LABEL),
+                                ]
+                            ),
+                            on_click=abrir_filtro_proyecto,
+                            ink=True,
+                            padding=ft.padding.all(8),
                             border_radius=5,
                             bgcolor="#F5F5F5",
                         ),
@@ -292,13 +385,13 @@ def VistaTareasAtrasadas(page: ft.Page):
         dialog_filtros.open = True
         page.update()
 
-    #dialog tags
+    #dialog filtro por tags
     def mostrar_dialog_tags():
         radio_tags = ft.RadioGroup(
             value=filtro_tag_actual[0],
             content=ft.Column(
                 controls=[
-                    ft.Radio(value=tag, label=tag, label_style=ft.TextStyle(color="black", size=12)) 
+                    ft.Radio(value=tag, label=tag, label_style=ft.TextStyle(size=11, color="black")) 
                     for tag in FILTROS_TAGS
                 ],
                 spacing=2,
@@ -308,9 +401,7 @@ def VistaTareasAtrasadas(page: ft.Page):
         def aplicar_tag(e):
             filtro_tag_actual[0] = radio_tags.value
             dialog_tags.open = False
-            page.snack_bar = ft.SnackBar(
-                ft.Text(f"Tag seleccionado: {filtro_tag_actual[0]}")
-            )
+            page.snack_bar = ft.SnackBar(ft.Text(f"Tag: {filtro_tag_actual[0]}"))
             page.snack_bar.open = True
             page.update()
 
@@ -324,13 +415,13 @@ def VistaTareasAtrasadas(page: ft.Page):
             title=ft.Row(
                 controls=[
                     ft.Container(
-                        content=ft.Text("←", size=20, color="black", weight="bold"),
+                        content=ft.Text("←", size=18, color="black", weight="bold"),
                         on_click=volver_filtros,
                         ink=True,
                         border_radius=50,
                         padding=5,
                     ),
-                    ft.Text("Seleccionar Tag", size=16, weight=ft.FontWeight.BOLD, color="black"),
+                    ft.Text("Seleccionar Tag", size=14, weight=ft.FontWeight.BOLD, color="black"),
                 ],
                 spacing=10,
             ),
@@ -354,28 +445,89 @@ def VistaTareasAtrasadas(page: ft.Page):
         dialog_tags.open = True
         page.update()
 
+    #dialog filtro por proyecto
+    def mostrar_dialog_proyecto():
+        radio_proyecto = ft.RadioGroup(
+            value=filtro_proyecto_actual[0],
+            content=ft.Column(
+                controls=[
+                    ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(size=11, color="black")) 
+                    for proy in FILTROS_PROYECTO
+                ],
+                spacing=2,
+            ),
+        )
+
+        def aplicar_proyecto(e):
+            filtro_proyecto_actual[0] = radio_proyecto.value
+            dialog_proyecto.open = False
+            page.snack_bar = ft.SnackBar(ft.Text(f"Proyecto: {filtro_proyecto_actual[0]}"))
+            page.snack_bar.open = True
+            page.update()
+
+        def volver_filtros(e):
+            dialog_proyecto.open = False
+            page.update()
+            mostrar_dialog_filtros(None)
+
+        dialog_proyecto = ft.AlertDialog(
+            modal=True,
+            title=ft.Row(
+                controls=[
+                    ft.Container(
+                        content=ft.Text("←", size=18, color="black", weight="bold"),
+                        on_click=volver_filtros,
+                        ink=True,
+                        border_radius=50,
+                        padding=5,
+                    ),
+                    ft.Text("Seleccionar Proyecto", size=14, weight=ft.FontWeight.BOLD, color="black"),
+                ],
+                spacing=10,
+            ),
+            bgcolor="white",
+            content=ft.Container(
+                width=300,
+                height=300,
+                bgcolor="white",
+                content=ft.ListView(
+                    controls=[radio_proyecto],
+                    spacing=5,
+                ),
+            ),
+            actions=[
+                ft.TextButton("Aplicar", on_click=aplicar_proyecto),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        page.overlay.append(dialog_proyecto)
+        dialog_proyecto.open = True
+        page.update()
+
     def crear_tarjeta_tarea(tarea):
         """Crea una tarjeta para cada tarea atrasada"""
         return ft.Container(
             bgcolor="white",
-            border_radius=12,
+            border_radius=10,
             padding=ft.padding.all(10),
             margin=ft.margin.only(bottom=8),
+            border=ft.border.all(1, "#FFCDD2"),
             shadow=ft.BoxShadow(
                 spread_radius=0,
-                blur_radius=6,
+                blur_radius=5,
                 color=COLOR_SOMBRA_TARJETAS,
                 offset=ft.Offset(0, 2),
             ),
             content=ft.Column(
                 spacing=4,
                 controls=[
-                    #fila 1: Emoji + Título
+                    #fila 1: Emoji + Título + Prioridad
                     ft.Row(
                         spacing=8,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
-                            ft.Text(tarea["emoji"], size=24),
+                            ft.Text(tarea["emoji"], size=22),
                             ft.Text(
                                 tarea["titulo"],
                                 size=12,
@@ -385,35 +537,42 @@ def VistaTareasAtrasadas(page: ft.Page):
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
+                            ft.Container(
+                                bgcolor=get_color_prioridad(tarea["prioridad"]),
+                                border_radius=8,
+                                padding=ft.padding.only(left=6, right=6, top=1, bottom=1),
+                                content=ft.Text(tarea["prioridad"], size=9, color="white", weight=ft.FontWeight.BOLD),
+                            ),
                         ]
                     ),
-                    #fila 2: Tag + Fecha atrasado
+                    #fila 2: Proyecto + Tag
                     ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                         controls=[
+                            ft.Text(tarea["proyecto"], size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
                             ft.Row(
                                 spacing=3,
                                 controls=[
-                                    ft.Text("TAG:", size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                    ft.Text(tarea["tag"], size=10, color="black", weight=ft.FontWeight.W_500),
+                                    ft.Text("TAG:", size=9, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                    ft.Text(tarea["tag"], size=9, color="black", weight=ft.FontWeight.W_500),
                                 ]
                             ),
-                            ft.Row(
-                                spacing=3,
-                                controls=[
-                                    ft.Text(
-                                        "Atrasado desde:",
-                                        size=10,
-                                        color=COLOR_ATRASADO,
-                                        weight=ft.FontWeight.W_500,
-                                    ),
-                                    ft.Text(
-                                        tarea["fecha"],
-                                        size=10,
-                                        color=COLOR_ATRASADO,
-                                        weight=ft.FontWeight.W_500,
-                                    ),
-                                ]
+                        ]
+                    ),
+                    #fila 3: Días atrasado + Fecha
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        controls=[
+                            ft.Text(
+                                f"⚠️ {tarea['dias_atrasado']} días atrasado",
+                                size=10,
+                                color=COLOR_ATRASADO,
+                                weight=ft.FontWeight.BOLD,
+                            ),
+                            ft.Text(
+                                f"Desde: {tarea['fecha']}",
+                                size=9,
+                                color="#666666",
                             ),
                         ]
                     ),
@@ -437,7 +596,7 @@ def VistaTareasAtrasadas(page: ft.Page):
 
     #botón filtrar
     btn_filtrar = ft.Container(
-        content=ft.Text("Filtrar por", size=11, color="black"),
+        content=ft.Text("Filtrar", size=11, color="black"),
         bgcolor="white",
         border=ft.border.all(1, COLOR_BORDE),
         border_radius=5,

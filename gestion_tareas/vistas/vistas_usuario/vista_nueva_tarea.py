@@ -25,20 +25,46 @@ def VistaNuevaTarea(page: ft.Page):
         "Backend": "🔧",
     }
 
+    PROYECTOS_DEMO = [
+        "App Móvil v2.0",
+        "Portal Web Cliente",
+        "API REST Services",
+        "Dashboard Analytics",
+        "Sistema de Pagos",
+        "CRM Interno",
+        "Migración Cloud",
+    ]
+
+    DEPARTAMENTOS_DEMO = [
+        "Desarrollo",
+        "Diseño",
+        "QA",
+        "DevOps",
+        "Recursos Humanos",
+        "Finanzas",
+        "Innovación",
+        "Marketing",
+    ]
+
+    PRIORIDADES = ["Alta", "Media", "Baja"]
+
     PERSONAS_DEMO = [
-        "Ana García (EMP001 - Desarrollo)",
-        "Carlos López (EMP002 - Diseño)",
-        "María Rodríguez (EMP003 - QA)",
-        "Pedro Martínez (EMP004 - DevOps)",
-        "Laura Sánchez (EMP005 - Backend)",
-        "Juan Fernández (EMP006 - Frontend)",
-        "Sofia Ruiz (EMP007 - Documentación)",
-        "Diego Torres (EMP008 - Base de Datos)",
+        {"nombre": "Ana García", "id": "EMP001", "departamento": "Desarrollo", "proyecto": "App Móvil v2.0"},
+        {"nombre": "Carlos López", "id": "EMP002", "departamento": "Diseño", "proyecto": "Portal Web Cliente"},
+        {"nombre": "María Rodríguez", "id": "EMP003", "departamento": "QA", "proyecto": "API REST Services"},
+        {"nombre": "Pedro Martínez", "id": "EMP004", "departamento": "DevOps", "proyecto": "Migración Cloud"},
+        {"nombre": "Laura Sánchez", "id": "EMP005", "departamento": "Desarrollo", "proyecto": "Sistema de Pagos"},
+        {"nombre": "Juan Fernández", "id": "EMP006", "departamento": "Desarrollo", "proyecto": "Dashboard Analytics"},
+        {"nombre": "Sofia Ruiz", "id": "EMP007", "departamento": "Innovación", "proyecto": "Dashboard Analytics"},
+        {"nombre": "Diego Torres", "id": "EMP008", "departamento": "Marketing", "proyecto": "Portal Web Cliente"},
     ]
 
     tags_seleccionados = []
     personas_seleccionadas = []
-    emoji_index_actual = [0] 
+    emoji_index_actual = [0]
+    proyecto_seleccionado = [None]
+    departamento_seleccionado = [None]
+    prioridad_seleccionada = ["Media"]
 
     fecha_inicio_texto = ft.Text("DD/MM/AA", size=12, color="black", weight=ft.FontWeight.W_500)
     fecha_fin_texto = ft.Text("DD/MM/AA", size=12, color="black", weight=ft.FontWeight.W_500)
@@ -55,6 +81,22 @@ def VistaNuevaTarea(page: ft.Page):
     
     texto_tags_seleccionados = ft.Text(
         "Selecciona...", 
+        size=11, 
+        color="#999999",
+        overflow=ft.TextOverflow.ELLIPSIS,
+        max_lines=1,
+    )
+
+    texto_proyecto_seleccionado = ft.Text(
+        "Selecciona proyecto...", 
+        size=11, 
+        color="#999999",
+        overflow=ft.TextOverflow.ELLIPSIS,
+        max_lines=1,
+    )
+
+    texto_departamento_seleccionado = ft.Text(
+        "Selecciona departamento...", 
         size=11, 
         color="#999999",
         overflow=ft.TextOverflow.ELLIPSIS,
@@ -92,7 +134,17 @@ def VistaNuevaTarea(page: ft.Page):
         page.update()
 
     def btn_crear_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Crear tarea"))
+        if not input_titulo.value:
+            page.snack_bar = ft.SnackBar(ft.Text("El título es obligatorio"))
+            page.snack_bar.open = True
+            page.update()
+            return
+        if not proyecto_seleccionado[0]:
+            page.snack_bar = ft.SnackBar(ft.Text("Selecciona un proyecto"))
+            page.snack_bar.open = True
+            page.update()
+            return
+        page.snack_bar = ft.SnackBar(ft.Text(f"Tarea '{input_titulo.value}' creada en {proyecto_seleccionado[0]}"))
         page.snack_bar.open = True
         page.update()
 
@@ -129,7 +181,108 @@ def VistaNuevaTarea(page: ft.Page):
             emoji_index_actual[0] = 0
             emoji_text.value = TAGS_EMOJIS[tags_seleccionados[0]]
 
+    # Dialog seleccionar proyecto
+    def crear_dialog_proyecto():
+        radio_proyecto = ft.RadioGroup(
+            value=proyecto_seleccionado[0],
+            content=ft.Column(
+                controls=[
+                    ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(size=12, color="black")) 
+                    for proy in PROYECTOS_DEMO
+                ],
+                spacing=2,
+            ),
+        )
+        
+        def cerrar_dialog(e):
+            proyecto_seleccionado[0] = radio_proyecto.value
+            dialog_proyecto.open = False
+            if proyecto_seleccionado[0]:
+                texto_proyecto_seleccionado.value = proyecto_seleccionado[0]
+                texto_proyecto_seleccionado.color = "black"
+            page.update()
+        
+        dialog_proyecto = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Seleccionar Proyecto", size=16, weight=ft.FontWeight.BOLD, color="black"),
+            bgcolor="white",
+            content=ft.Container(
+                width=300,
+                height=280,
+                bgcolor="white",
+                content=ft.ListView(
+                    controls=[radio_proyecto],
+                    spacing=5,
+                ),
+            ),
+            actions=[
+                ft.TextButton("Aceptar", on_click=cerrar_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        return dialog_proyecto
+
+    def abrir_dialog_proyecto(e):
+        dialog = crear_dialog_proyecto()
+        page.overlay.append(dialog)
+        dialog.open = True
+        page.update()
+
+    # Dialog seleccionar departamento
+    def crear_dialog_departamento():
+        radio_departamento = ft.RadioGroup(
+            value=departamento_seleccionado[0],
+            content=ft.Column(
+                controls=[
+                    ft.Radio(value=dep, label=dep, label_style=ft.TextStyle(size=12, color="black")) 
+                    for dep in DEPARTAMENTOS_DEMO
+                ],
+                spacing=2,
+            ),
+        )
+        
+        def cerrar_dialog(e):
+            departamento_seleccionado[0] = radio_departamento.value
+            dialog_departamento.open = False
+            if departamento_seleccionado[0]:
+                texto_departamento_seleccionado.value = departamento_seleccionado[0]
+                texto_departamento_seleccionado.color = "black"
+            page.update()
+        
+        dialog_departamento = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Seleccionar Departamento", size=16, weight=ft.FontWeight.BOLD, color="black"),
+            bgcolor="white",
+            content=ft.Container(
+                width=300,
+                height=300,
+                bgcolor="white",
+                content=ft.ListView(
+                    controls=[radio_departamento],
+                    spacing=5,
+                ),
+            ),
+            actions=[
+                ft.TextButton("Aceptar", on_click=cerrar_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        return dialog_departamento
+
+    def abrir_dialog_departamento(e):
+        dialog = crear_dialog_departamento()
+        page.overlay.append(dialog)
+        dialog.open = True
+        page.update()
+
+    # Dialog seleccionar personas (filtrado por proyecto)
     def crear_dialog_personas():
+        # Filtrar personas por proyecto seleccionado
+        if proyecto_seleccionado[0]:
+            personas_filtradas = [p for p in PERSONAS_DEMO if p["proyecto"] == proyecto_seleccionado[0]]
+        else:
+            personas_filtradas = PERSONAS_DEMO
+        
         checkboxes_personas = []
         
         def on_checkbox_change(e):
@@ -141,13 +294,14 @@ def VistaNuevaTarea(page: ft.Page):
                 if persona in personas_seleccionadas:
                     personas_seleccionadas.remove(persona)
         
-        for persona in PERSONAS_DEMO:
+        for persona in personas_filtradas:
+            label_text = f"{persona['nombre']} ({persona['id']} - {persona['departamento']})"
             cb = ft.Checkbox(
-                label=persona,
+                label=label_text,
                 value=persona in personas_seleccionadas,
                 data=persona,
                 on_change=on_checkbox_change,
-                label_style=ft.TextStyle(size=12, color="black"),
+                label_style=ft.TextStyle(size=11, color="black"),
             )
             checkboxes_personas.append(cb)
         
@@ -157,23 +311,25 @@ def VistaNuevaTarea(page: ft.Page):
                 texto_personas_seleccionadas.value = "Selecciona personas..."
                 texto_personas_seleccionadas.color = "#999999"
             elif len(personas_seleccionadas) == 1:
-                texto_personas_seleccionadas.value = personas_seleccionadas[0]
+                texto_personas_seleccionadas.value = personas_seleccionadas[0]["nombre"]
                 texto_personas_seleccionadas.color = "black"
             else:
                 texto_personas_seleccionadas.value = f"{len(personas_seleccionadas)} personas seleccionadas"
                 texto_personas_seleccionadas.color = "black"
             page.update()
         
+        titulo_dialog = "Asignar a" if proyecto_seleccionado[0] else "Asignar a (selecciona proyecto primero)"
+        
         dialog_personas = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Compartir con", size=16, weight=ft.FontWeight.BOLD, color="black"),
+            title=ft.Text(titulo_dialog, size=14, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
-                width=300,
+                width=320,
                 height=300,
                 bgcolor="white",
                 content=ft.ListView(
-                    controls=checkboxes_personas,
+                    controls=checkboxes_personas if checkboxes_personas else [ft.Text("No hay personas en este proyecto", size=12, color="#999999")],
                     spacing=5,
                 ),
             ),
@@ -190,6 +346,7 @@ def VistaNuevaTarea(page: ft.Page):
         dialog.open = True
         page.update()
 
+    # Dialog seleccionar tags
     def crear_dialog_tags():
         checkboxes_tags = []
         
@@ -231,7 +388,7 @@ def VistaNuevaTarea(page: ft.Page):
             title=ft.Text("Seleccionar Tags", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
-                width=280,
+                width=300,
                 height=350,
                 bgcolor="white",
                 content=ft.ListView(
@@ -252,37 +409,96 @@ def VistaNuevaTarea(page: ft.Page):
         dialog.open = True
         page.update()
 
-    selector_personas = ft.Container(
+    # Selector de proyecto
+    selector_proyecto = ft.Container(
         content=ft.Row(
+            spacing=5,
             controls=[
-                texto_personas_seleccionadas,
-                ft.Icon(ft.Icons.ARROW_DROP_DOWN, size=20, color="#666666"),
+                ft.Icon(ft.Icons.FOLDER_OUTLINED, size=16, color=COLOR_LABEL),
+                texto_proyecto_seleccionado,
+                ft.Icon(ft.Icons.ARROW_DROP_DOWN, size=16, color=COLOR_LABEL),
             ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         ),
         bgcolor="white",
         border=ft.border.all(1, COLOR_BORDE),
         border_radius=5,
         padding=ft.padding.only(left=10, right=5, top=8, bottom=8),
+        on_click=abrir_dialog_proyecto,
+        ink=True,
+    )
+
+    # Selector de departamento
+    selector_departamento = ft.Container(
+        content=ft.Row(
+            spacing=5,
+            controls=[
+                ft.Icon(ft.Icons.BUSINESS_OUTLINED, size=16, color=COLOR_LABEL),
+                texto_departamento_seleccionado,
+                ft.Icon(ft.Icons.ARROW_DROP_DOWN, size=16, color=COLOR_LABEL),
+            ],
+        ),
+        bgcolor="white",
+        border=ft.border.all(1, COLOR_BORDE),
+        border_radius=5,
+        padding=ft.padding.only(left=10, right=5, top=8, bottom=8),
+        on_click=abrir_dialog_departamento,
+        ink=True,
+    )
+
+    # Selector de personas
+    selector_personas = ft.Container(
+        content=ft.Row(
+            spacing=5,
+            controls=[
+                ft.Icon(ft.Icons.PEOPLE_OUTLINE, size=16, color=COLOR_LABEL),
+                texto_personas_seleccionadas,
+                ft.Icon(ft.Icons.ARROW_DROP_DOWN, size=16, color=COLOR_LABEL),
+            ],
+        ),
+        bgcolor="white",
+        border=ft.border.all(1, COLOR_BORDE),
+        border_radius=5,
+        padding=ft.padding.only(left=10, right=5, top=8, bottom=8),
+        expand=True,
         on_click=abrir_dialog_personas,
         ink=True,
     )
 
+    # Selector de tags
     selector_tags = ft.Container(
         content=ft.Row(
+            spacing=5,
             controls=[
                 texto_tags_seleccionados,
-                ft.Icon(ft.Icons.ARROW_DROP_DOWN, size=20, color="#666666"),
+                ft.Icon(ft.Icons.ARROW_DROP_DOWN, size=16, color=COLOR_LABEL),
             ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         ),
         bgcolor="white",
         border=ft.border.all(1, COLOR_BORDE),
         border_radius=5,
         padding=ft.padding.only(left=10, right=5, top=8, bottom=8),
-        width=130,
+        width=120,
         on_click=abrir_dialog_tags,
         ink=True,
+    )
+
+    # Dropdown prioridad
+    dropdown_prioridad = ft.DropdownM2(
+        value="Media",
+        text_style=ft.TextStyle(size=11, color="black"),
+        bgcolor="white",
+        fill_color="white",
+        border_color=COLOR_BORDE,
+        border_radius=5,
+        height=38,
+        width=100,
+        content_padding=ft.padding.only(left=10, right=5),
+        options=[
+            ft.dropdownm2.Option("Alta"),
+            ft.dropdownm2.Option("Media"),
+            ft.dropdownm2.Option("Baja"),
+        ],
+        on_change=lambda e: prioridad_seleccionada.__setitem__(0, e.control.value),
     )
 
     input_titulo = ft.TextField(
@@ -298,19 +514,20 @@ def VistaNuevaTarea(page: ft.Page):
     seccion_superior = ft.Container(
         bgcolor="white",
         border_radius=10,
-        padding=ft.padding.all(15),
+        padding=ft.padding.all(12),
         border=ft.border.all(1, COLOR_BORDE),
         shadow=ft.BoxShadow(
-            spread_radius=1,
-            blur_radius=12,
+            spread_radius=0,
+            blur_radius=8,
             color=COLOR_SOMBRA_TARJETAS,
-            offset=ft.Offset(0, 4),
+            offset=ft.Offset(0, 3),
         ),
         content=ft.Column(
             spacing=10,
             controls=[
+                # Fila 1: Emoji + Título
                 ft.Row(
-                    spacing=12,
+                    spacing=10,
                     vertical_alignment=ft.CrossAxisAlignment.START,
                     controls=[
                         emoji_container,
@@ -318,39 +535,70 @@ def VistaNuevaTarea(page: ft.Page):
                             spacing=3,
                             expand=True,
                             controls=[
-                                ft.Text("Título", size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                ft.Text("Título *", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
                                 input_titulo,
                             ]
                         ),
                     ]
                 ),
+                # Fila 2: Proyecto + Departamento
+                ft.Row(
+                    spacing=8,
+                    controls=[
+                        ft.Column(
+                            spacing=3,
+                            expand=True,
+                            controls=[
+                                ft.Text("Proyecto *", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                selector_proyecto,
+                            ]
+                        ),
+                        ft.Column(
+                            spacing=3,
+                            expand=True,
+                            controls=[
+                                ft.Text("Departamento", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                selector_departamento,
+                            ]
+                        ),
+                    ]
+                ),
+                # Fila 3: Asignar a
                 ft.Column(
                     spacing=3,
                     controls=[
-                        ft.Text("Compartir con", size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                        ft.Text("Asignar a", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
                         selector_personas,
                     ]
                 ),
+                # Fila 4: Tags + Prioridad + Fechas
                 ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                    vertical_alignment=ft.CrossAxisAlignment.START,
+                    vertical_alignment=ft.CrossAxisAlignment.END,
                     controls=[
                         ft.Column(
                             spacing=3,
                             controls=[
-                                ft.Text("Tag(s)", size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                ft.Text("Tag(s)", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
                                 selector_tags,
                             ]
                         ),
                         ft.Column(
-                            spacing=5,
+                            spacing=3,
+                            controls=[
+                                ft.Text("Prioridad", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                dropdown_prioridad,
+                            ]
+                        ),
+                        ft.Column(
+                            spacing=4,
                             horizontal_alignment=ft.CrossAxisAlignment.END,
                             controls=[
                                 ft.Container(
                                     content=ft.Row(
                                         spacing=5,
                                         controls=[
-                                            ft.Text("Fecha Inicio:", size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                            ft.Text("Inicio:", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
                                             fecha_inicio_texto,
                                         ]
                                     ),
@@ -363,7 +611,7 @@ def VistaNuevaTarea(page: ft.Page):
                                     content=ft.Row(
                                         spacing=5,
                                         controls=[
-                                            ft.Text("Fecha Fin:", size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                            ft.Text("Fin:", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
                                             fecha_fin_texto,
                                         ]
                                     ),
@@ -387,8 +635,8 @@ def VistaNuevaTarea(page: ft.Page):
         border_color=COLOR_BORDE,
         border_radius=5,
         multiline=True,
-        min_lines=8,
-        max_lines=8,
+        min_lines=6,
+        max_lines=6,
         expand=True,
         content_padding=ft.padding.all(12),
     )
@@ -396,20 +644,20 @@ def VistaNuevaTarea(page: ft.Page):
     seccion_requerimientos = ft.Container(
         bgcolor="white",
         border_radius=10,
-        padding=ft.padding.all(15),
+        padding=ft.padding.all(12),
         border=ft.border.all(1, COLOR_BORDE),
         shadow=ft.BoxShadow(
-            spread_radius=1,
-            blur_radius=12,
+            spread_radius=0,
+            blur_radius=8,
             color=COLOR_SOMBRA_TARJETAS,
-            offset=ft.Offset(0, 4),
+            offset=ft.Offset(0, 3),
         ),
         content=ft.Column(
-            spacing=10,
+            spacing=8,
             controls=[
                 ft.Text(
-                    "Escribe los requerimientos de la tarea",
-                    size=13,
+                    "Requerimientos de la tarea",
+                    size=12,
                     color="black",
                     weight=ft.FontWeight.BOLD,
                 ),
@@ -466,9 +714,9 @@ def VistaNuevaTarea(page: ft.Page):
                 ),
                 
                 ft.Container(
-                    padding=ft.padding.only(left=18, right=18, top=18, bottom=22),
+                    padding=ft.padding.only(left=18, right=18, top=15, bottom=20),
                     content=ft.Column(
-                        spacing=15,
+                        spacing=12,
                         tight=True,
                         controls=[
                             seccion_superior,
