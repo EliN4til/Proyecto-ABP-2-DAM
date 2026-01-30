@@ -10,34 +10,43 @@ def VistaCompartidoConmigo(page: ft.Page):
     COLOR_LABEL = "#5B9BD5"
     COLOR_BORDE = "#E0E0E0"
     COLOR_ATRASADO = "#E53935"
+    COLOR_PRIORIDAD_ALTA = "#E53935"
+    COLOR_PRIORIDAD_MEDIA = "#FF9800"
+    COLOR_PRIORIDAD_BAJA = "#4CAF50"
 
     #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
+    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
+    FILTROS_PRIORIDAD = ["Todas", "Alta", "Media", "Baja"]
     FILTROS_ORDEN = [
         "Más reciente primero", 
         "Más antiguo primero", 
-        "Fecha ascendente (antigua → reciente)",
-        "Fecha descendente (reciente → antigua)",
+        "Fecha ascendente",
+        "Fecha descendente",
         "Alfabético A-Z", 
         "Alfabético Z-A",
         "Por prioridad alta",
         "Por prioridad baja",
+        "Por proyecto",
     ]
-    FILTROS_ESTADO = ["Todos", "Atrasados", "A tiempo"]
 
     filtro_tag_actual = ["Todos"]
+    filtro_proyecto_actual = ["Todos"]
+    filtro_prioridad_actual = ["Todas"]
     filtro_orden_actual = ["Más reciente primero"]
-    filtro_estado_actual = ["Todos"]
 
-    #datos demo de tareas compartidas conmigo (con requerimientos)
+    #datos demo de tareas compartidas conmigo
     TAREAS_COMPARTIDAS = [
         {
             "titulo": "Arreglar bug linea 287 fichero UpdateDate.py",
             "tag": "Desarrollo",
             "emoji": "👨‍💻",
+            "proyecto": "App Móvil v2.0",
+            "departamento": "Desarrollo",
+            "prioridad": "Alta",
+            "compartido_por": "Ana García",
             "fecha": "25/12/25",
             "atrasado": True,
-            "compartido_por": "Ana García",
             "requerimientos": [
                 "Identificar el error en la línea 287 del fichero UpdateDate.py",
                 "El bucle debe iterar correctamente sobre la lista de fechas",
@@ -50,9 +59,12 @@ def VistaCompartidoConmigo(page: ft.Page):
             "titulo": "Diseñar mockups para dashboard",
             "tag": "Diseño",
             "emoji": "🎨",
+            "proyecto": "Dashboard Analytics",
+            "departamento": "Diseño",
+            "prioridad": "Media",
+            "compartido_por": "Carlos López",
             "fecha": "28/12/25",
             "atrasado": True,
-            "compartido_por": "Carlos López",
             "requerimientos": [
                 "Crear diseño responsive para desktop y móvil",
                 "Incluir gráficos de rendimiento y métricas KPI",
@@ -65,9 +77,12 @@ def VistaCompartidoConmigo(page: ft.Page):
             "titulo": "Escribir tests unitarios módulo Auth",
             "tag": "Testing",
             "emoji": "🧪",
+            "proyecto": "API REST Services",
+            "departamento": "QA",
+            "prioridad": "Media",
+            "compartido_por": "María Rodríguez",
             "fecha": "30/12/25",
             "atrasado": False,
-            "compartido_por": "María Rodríguez",
             "requerimientos": [
                 "Cobertura mínima del 80% en el módulo de autenticación",
                 "Testear login, logout y refresh de tokens",
@@ -80,9 +95,12 @@ def VistaCompartidoConmigo(page: ft.Page):
             "titulo": "Documentar API endpoints v2",
             "tag": "Documentación",
             "emoji": "📝",
+            "proyecto": "API REST Services",
+            "departamento": "Desarrollo",
+            "prioridad": "Baja",
+            "compartido_por": "Sofia Ruiz",
             "fecha": "02/01/26",
             "atrasado": False,
-            "compartido_por": "Sofia Ruiz",
             "requerimientos": [
                 "Documentar todos los endpoints del API v2 en Swagger",
                 "Incluir ejemplos de request y response",
@@ -95,9 +113,12 @@ def VistaCompartidoConmigo(page: ft.Page):
             "titulo": "Configurar pipeline CI/CD",
             "tag": "DevOps",
             "emoji": "⚙️",
+            "proyecto": "Migración Cloud",
+            "departamento": "DevOps",
+            "prioridad": "Alta",
+            "compartido_por": "Pedro Martínez",
             "fecha": "05/01/26",
             "atrasado": False,
-            "compartido_por": "Pedro Martínez",
             "requerimientos": [
                 "Configurar GitHub Actions para build automático",
                 "Añadir etapa de tests automatizados",
@@ -110,9 +131,12 @@ def VistaCompartidoConmigo(page: ft.Page):
             "titulo": "Optimizar consultas SQL reportes",
             "tag": "Base de Datos",
             "emoji": "🗄️",
+            "proyecto": "Sistema de Pagos",
+            "departamento": "Desarrollo",
+            "prioridad": "Alta",
+            "compartido_por": "Diego Torres",
             "fecha": "08/01/26",
             "atrasado": False,
-            "compartido_por": "Diego Torres",
             "requerimientos": [
                 "Analizar consultas lentas con EXPLAIN",
                 "Crear índices necesarios para mejorar rendimiento",
@@ -122,6 +146,14 @@ def VistaCompartidoConmigo(page: ft.Page):
             ]
         },
     ]
+
+    def get_color_prioridad(prioridad):
+        if prioridad == "Alta":
+            return COLOR_PRIORIDAD_ALTA
+        elif prioridad == "Media":
+            return COLOR_PRIORIDAD_MEDIA
+        else:
+            return COLOR_PRIORIDAD_BAJA
 
     def btn_volver_click(e):
         page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
@@ -137,9 +169,9 @@ def VistaCompartidoConmigo(page: ft.Page):
     #dialog detalle tarea
     def mostrar_detalle_tarea(tarea):
         requerimientos_list = ft.Column(
-            spacing=8,
+            spacing=6,
             controls=[
-                ft.Text(f"• {req}", size=12, color="black")
+                ft.Text(f"• {req}", size=11, color="black")
                 for req in tarea["requerimientos"]
             ]
         )
@@ -148,61 +180,96 @@ def VistaCompartidoConmigo(page: ft.Page):
             modal=True,
             title=ft.Row(
                 controls=[
-                    ft.Text(tarea["emoji"], size=28),
-                    ft.Text(tarea["titulo"], size=14, weight=ft.FontWeight.BOLD, color="black", expand=True),
+                    ft.Text(tarea["emoji"], size=26),
+                    ft.Container(
+                        expand=True,
+                        content=ft.Text(tarea["titulo"], size=13, weight=ft.FontWeight.BOLD, color="black"),
+                    ),
                 ],
-                spacing=10,
+                spacing=8,
             ),
             bgcolor="white",
             content=ft.Container(
                 width=320,
                 bgcolor="white",
                 content=ft.Column(
-                    spacing=15,
+                    spacing=10,
                     tight=True,
+                    scroll=ft.ScrollMode.AUTO,
                     controls=[
-                        #info de la tarea
+                        #info básica
                         ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             controls=[
-                                ft.Row(
-                                    spacing=3,
-                                    controls=[
-                                        ft.Text("TAG:", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                        ft.Text(tarea["tag"], size=11, color="black", weight=ft.FontWeight.W_500),
-                                    ]
+                                ft.Container(
+                                    bgcolor=get_color_prioridad(tarea["prioridad"]),
+                                    border_radius=10,
+                                    padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                                    content=ft.Text(tarea["prioridad"], size=10, color="white", weight=ft.FontWeight.BOLD),
                                 ),
                                 ft.Row(
                                     spacing=3,
                                     controls=[
-                                        ft.Text(
-                                            "Atrasado:" if tarea["atrasado"] else "Fecha fin:",
-                                            size=11,
-                                            color=COLOR_ATRASADO if tarea["atrasado"] else COLOR_LABEL,
-                                            weight=ft.FontWeight.W_500,
-                                        ),
-                                        ft.Text(
-                                            tarea["fecha"],
-                                            size=11,
-                                            color=COLOR_ATRASADO if tarea["atrasado"] else "black",
-                                            weight=ft.FontWeight.W_500,
-                                        ),
+                                        ft.Text("TAG:", size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                        ft.Text(tarea["tag"], size=10, color="black", weight=ft.FontWeight.W_500),
                                     ]
                                 ),
                             ]
                         ),
+                        #aviso atrasado (si aplica)
+                        ft.Container(
+                            visible=tarea["atrasado"],
+                            bgcolor="#FFF3F3",
+                            border_radius=8,
+                            padding=ft.padding.all(8),
+                            content=ft.Row(
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                controls=[
+                                    ft.Text("⚠️ Atrasado", size=11, color=COLOR_ATRASADO, weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"Vencía: {tarea['fecha']}", size=11, color=COLOR_ATRASADO),
+                                ]
+                            ),
+                        ),
+                        ft.Divider(height=1, color=COLOR_BORDE),
+                        #proyecto y departamento
                         ft.Row(
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             controls=[
-                                ft.Text("Compartido por:", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                ft.Text(tarea["compartido_por"], size=11, color="black", weight=ft.FontWeight.W_500),
-                            ],
-                            spacing=5,
+                                ft.Column(spacing=2, controls=[
+                                    ft.Text("Proyecto", size=10, color=COLOR_LABEL),
+                                    ft.Text(tarea["proyecto"], size=11, color="black", weight=ft.FontWeight.W_500),
+                                ]),
+                                ft.Column(spacing=2, horizontal_alignment=ft.CrossAxisAlignment.END, controls=[
+                                    ft.Text("Departamento", size=10, color=COLOR_LABEL),
+                                    ft.Text(tarea["departamento"], size=11, color="black", weight=ft.FontWeight.W_500),
+                                ]),
+                            ]
+                        ),
+                        #compartido por
+                        ft.Column(spacing=2, controls=[
+                            ft.Text("Compartido por", size=10, color=COLOR_LABEL),
+                            ft.Row(
+                                spacing=5,
+                                controls=[
+                                    ft.Icon(ft.Icons.PERSON, size=14, color=COLOR_LABEL),
+                                    ft.Text(tarea["compartido_por"], size=11, color="black", weight=ft.FontWeight.BOLD),
+                                ]
+                            ),
+                        ]),
+                        #fechas (si no esta atrasado)
+                        ft.Row(
+                            visible=not tarea["atrasado"],
+                            spacing=3,
+                            controls=[
+                                ft.Text("Fecha límite:", size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                ft.Text(tarea["fecha"], size=10, color="black", weight=ft.FontWeight.W_500),
+                            ]
                         ),
                         ft.Divider(height=1, color=COLOR_BORDE),
                         #requerimientos
-                        ft.Text("Requerimientos:", size=13, color="black", weight=ft.FontWeight.BOLD),
+                        ft.Text("Requerimientos:", size=12, color="black", weight=ft.FontWeight.BOLD),
                         ft.Container(
-                            height=180,
+                            height=120,
                             content=ft.ListView(
                                 controls=[requerimientos_list],
                                 spacing=5,
@@ -225,54 +292,52 @@ def VistaCompartidoConmigo(page: ft.Page):
         dialog_detalle.open = True
         page.update()
 
-    #dialog de filtros
+    #dialog filtros
     def mostrar_dialog_filtros(e):
-        #radio buttons para orden por fecha
         radio_orden = ft.RadioGroup(
             value=filtro_orden_actual[0],
             content=ft.Column(
                 controls=[
-                    ft.Radio(value=orden, label=orden, label_style=ft.TextStyle(color="black", size=12)) 
+                    ft.Radio(value=orden, label=orden, label_style=ft.TextStyle(size=11, color="black")) 
                     for orden in FILTROS_ORDEN
                 ],
                 spacing=2,
             ),
         )
 
-        #radio buttons para estado
-        radio_estado = ft.RadioGroup(
-            value=filtro_estado_actual[0],
+        radio_prioridad = ft.RadioGroup(
+            value=filtro_prioridad_actual[0],
             content=ft.Column(
                 controls=[
-                    ft.Radio(value=estado, label=estado, label_style=ft.TextStyle(color="black", size=12)) 
-                    for estado in FILTROS_ESTADO
+                    ft.Radio(value=prio, label=prio, label_style=ft.TextStyle(size=11, color="black")) 
+                    for prio in FILTROS_PRIORIDAD
                 ],
                 spacing=2,
             ),
         )
 
         def aplicar_filtros(e):
-            """Aplica los filtros seleccionados"""
             filtro_orden_actual[0] = radio_orden.value
-            filtro_estado_actual[0] = radio_estado.value
+            filtro_prioridad_actual[0] = radio_prioridad.value
             dialog_filtros.open = False
-            page.snack_bar = ft.SnackBar(
-                ft.Text(f"Filtros aplicados: {filtro_orden_actual[0]}, {filtro_estado_actual[0]}")
-            )
+            page.snack_bar = ft.SnackBar(ft.Text("Filtros aplicados"))
             page.snack_bar.open = True
             page.update()
 
         def limpiar_filtros(e):
-            """Limpia los filtros y los resetea a valores por defecto"""
             radio_orden.value = "Más reciente primero"
-            radio_estado.value = "Todos"
+            radio_prioridad.value = "Todas"
             page.update()
 
         def abrir_filtro_tags(e):
-            """Abre el dialog de selección de tags"""
             dialog_filtros.open = False
             page.update()
             mostrar_dialog_tags()
+
+        def abrir_filtro_proyecto(e):
+            dialog_filtros.open = False
+            page.update()
+            mostrar_dialog_proyecto()
 
         dialog_filtros = ft.AlertDialog(
             modal=True,
@@ -280,32 +345,43 @@ def VistaCompartidoConmigo(page: ft.Page):
             bgcolor="white",
             content=ft.Container(
                 width=300,
-                height=400,
+                height=420,
                 bgcolor="white",
                 content=ft.Column(
-                    spacing=10,
+                    spacing=8,
                     scroll=ft.ScrollMode.AUTO,
                     controls=[
-                        #ordenar por fecha
-                        ft.Text("Ordenar por:", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                        ft.Text("Por Prioridad:", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                        radio_prioridad,
+                        ft.Divider(height=8, color=COLOR_BORDE),
+                        ft.Text("Ordenar por:", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
                         radio_orden,
-                        ft.Divider(height=10, color=COLOR_BORDE),
-                        #por estado
-                        ft.Text("Por Estado:", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                        radio_estado,
-                        ft.Divider(height=10, color=COLOR_BORDE),
-                        #botón para abrir filtro de tags
+                        ft.Divider(height=8, color=COLOR_BORDE),
                         ft.Container(
                             content=ft.Row(
                                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                 controls=[
-                                    ft.Text("Filtrar por Tags", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=16, color=COLOR_LABEL),
+                                    ft.Text("Filtrar por Tag", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, color=COLOR_LABEL),
                                 ]
                             ),
                             on_click=abrir_filtro_tags,
                             ink=True,
-                            padding=ft.padding.all(10),
+                            padding=ft.padding.all(8),
+                            border_radius=5,
+                            bgcolor="#F5F5F5",
+                        ),
+                        ft.Container(
+                            content=ft.Row(
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                controls=[
+                                    ft.Text("Filtrar por Proyecto", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, color=COLOR_LABEL),
+                                ]
+                            ),
+                            on_click=abrir_filtro_proyecto,
+                            ink=True,
+                            padding=ft.padding.all(8),
                             border_radius=5,
                             bgcolor="#F5F5F5",
                         ),
@@ -323,13 +399,13 @@ def VistaCompartidoConmigo(page: ft.Page):
         dialog_filtros.open = True
         page.update()
 
-    #dialog de los tags
+    #dialog filtro por tags
     def mostrar_dialog_tags():
         radio_tags = ft.RadioGroup(
             value=filtro_tag_actual[0],
             content=ft.Column(
                 controls=[
-                    ft.Radio(value=tag, label=tag, label_style=ft.TextStyle(color="black", size=12)) 
+                    ft.Radio(value=tag, label=tag, label_style=ft.TextStyle(size=11, color="black")) 
                     for tag in FILTROS_TAGS
                 ],
                 spacing=2,
@@ -339,9 +415,7 @@ def VistaCompartidoConmigo(page: ft.Page):
         def aplicar_tag(e):
             filtro_tag_actual[0] = radio_tags.value
             dialog_tags.open = False
-            page.snack_bar = ft.SnackBar(
-                ft.Text(f"Tag seleccionado: {filtro_tag_actual[0]}")
-            )
+            page.snack_bar = ft.SnackBar(ft.Text(f"Tag: {filtro_tag_actual[0]}"))
             page.snack_bar.open = True
             page.update()
 
@@ -355,13 +429,13 @@ def VistaCompartidoConmigo(page: ft.Page):
             title=ft.Row(
                 controls=[
                     ft.Container(
-                        content=ft.Text("←", size=20, color="black", weight="bold"),
+                        content=ft.Text("←", size=18, color="black", weight="bold"),
                         on_click=volver_filtros,
                         ink=True,
                         border_radius=50,
                         padding=5,
                     ),
-                    ft.Text("Seleccionar Tag", size=16, weight=ft.FontWeight.BOLD, color="black"),
+                    ft.Text("Seleccionar Tag", size=14, weight=ft.FontWeight.BOLD, color="black"),
                 ],
                 spacing=10,
             ),
@@ -385,28 +459,89 @@ def VistaCompartidoConmigo(page: ft.Page):
         dialog_tags.open = True
         page.update()
 
+    #dialog filtro por proyecto
+    def mostrar_dialog_proyecto():
+        radio_proyecto = ft.RadioGroup(
+            value=filtro_proyecto_actual[0],
+            content=ft.Column(
+                controls=[
+                    ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(size=11, color="black")) 
+                    for proy in FILTROS_PROYECTO
+                ],
+                spacing=2,
+            ),
+        )
+
+        def aplicar_proyecto(e):
+            filtro_proyecto_actual[0] = radio_proyecto.value
+            dialog_proyecto.open = False
+            page.snack_bar = ft.SnackBar(ft.Text(f"Proyecto: {filtro_proyecto_actual[0]}"))
+            page.snack_bar.open = True
+            page.update()
+
+        def volver_filtros(e):
+            dialog_proyecto.open = False
+            page.update()
+            mostrar_dialog_filtros(None)
+
+        dialog_proyecto = ft.AlertDialog(
+            modal=True,
+            title=ft.Row(
+                controls=[
+                    ft.Container(
+                        content=ft.Text("←", size=18, color="black", weight="bold"),
+                        on_click=volver_filtros,
+                        ink=True,
+                        border_radius=50,
+                        padding=5,
+                    ),
+                    ft.Text("Seleccionar Proyecto", size=14, weight=ft.FontWeight.BOLD, color="black"),
+                ],
+                spacing=10,
+            ),
+            bgcolor="white",
+            content=ft.Container(
+                width=300,
+                height=300,
+                bgcolor="white",
+                content=ft.ListView(
+                    controls=[radio_proyecto],
+                    spacing=5,
+                ),
+            ),
+            actions=[
+                ft.TextButton("Aplicar", on_click=aplicar_proyecto),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        page.overlay.append(dialog_proyecto)
+        dialog_proyecto.open = True
+        page.update()
+
     def crear_tarjeta_tarea(tarea):
         """Crea una tarjeta para cada tarea compartida"""
         return ft.Container(
             bgcolor="white",
-            border_radius=12,
+            border_radius=10,
             padding=ft.padding.all(10),
             margin=ft.margin.only(bottom=8),
+            border=ft.border.all(1, "#FFCDD2") if tarea["atrasado"] else None,
             shadow=ft.BoxShadow(
                 spread_radius=0,
-                blur_radius=6,
+                blur_radius=5,
                 color=COLOR_SOMBRA_TARJETAS,
                 offset=ft.Offset(0, 2),
             ),
             content=ft.Column(
                 spacing=4,
                 controls=[
-                    #fila 1: Emoji + Título
+                    #fila 1: Emoji + Título + Prioridad
                     ft.Row(
                         spacing=8,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
-                            ft.Text(tarea["emoji"], size=24),
+                            ft.Text(tarea["emoji"], size=22),
                             ft.Text(
                                 tarea["titulo"],
                                 size=12,
@@ -416,35 +551,44 @@ def VistaCompartidoConmigo(page: ft.Page):
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
+                            ft.Container(
+                                bgcolor=get_color_prioridad(tarea["prioridad"]),
+                                border_radius=8,
+                                padding=ft.padding.only(left=6, right=6, top=1, bottom=1),
+                                content=ft.Text(tarea["prioridad"], size=9, color="white", weight=ft.FontWeight.BOLD),
+                            ),
                         ]
                     ),
-                    #fila 2: Tag + Fecha
+                    #fila 2: Proyecto + Tag
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        controls=[
+                            ft.Text(tarea["proyecto"], size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                            ft.Row(
+                                spacing=3,
+                                controls=[
+                                    ft.Text("TAG:", size=9, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                    ft.Text(tarea["tag"], size=9, color="black", weight=ft.FontWeight.W_500),
+                                ]
+                            ),
+                        ]
+                    ),
+                    #fila 3: Compartido por + Fecha/Estado
                     ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                         controls=[
                             ft.Row(
-                                spacing=3,
+                                spacing=4,
                                 controls=[
-                                    ft.Text("TAG:", size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                    ft.Text(tarea["tag"], size=10, color="black", weight=ft.FontWeight.W_500),
+                                    ft.Icon(ft.Icons.PERSON, size=12, color=COLOR_LABEL),
+                                    ft.Text(f"{tarea['compartido_por']}", size=9, color="#666666", weight=ft.FontWeight.BOLD),
                                 ]
                             ),
-                            ft.Row(
-                                spacing=3,
-                                controls=[
-                                    ft.Text(
-                                        "Atrasado desde:" if tarea["atrasado"] else "Fecha fin:",
-                                        size=10,
-                                        color=COLOR_ATRASADO if tarea["atrasado"] else COLOR_LABEL,
-                                        weight=ft.FontWeight.W_500,
-                                    ),
-                                    ft.Text(
-                                        tarea["fecha"],
-                                        size=10,
-                                        color=COLOR_ATRASADO if tarea["atrasado"] else "black",
-                                        weight=ft.FontWeight.W_500,
-                                    ),
-                                ]
+                            ft.Text(
+                                f"⚠️ {tarea['fecha']}" if tarea["atrasado"] else f"{tarea['fecha']}",
+                                size=9,
+                                color=COLOR_ATRASADO if tarea["atrasado"] else "#666666",
+                                weight=ft.FontWeight.BOLD if tarea["atrasado"] else ft.FontWeight.NORMAL,
                             ),
                         ]
                     ),
@@ -468,7 +612,7 @@ def VistaCompartidoConmigo(page: ft.Page):
 
     #botón filtrar
     btn_filtrar = ft.Container(
-        content=ft.Text("Filtrar por", size=11, color="black"),
+        content=ft.Text("Filtrar", size=11, color="black"),
         bgcolor="white",
         border=ft.border.all(1, COLOR_BORDE),
         border_radius=5,
@@ -514,7 +658,7 @@ def VistaCompartidoConmigo(page: ft.Page):
         content=ft.Column(
             spacing=0,
             controls=[
-                #flecha de retroceso - bloque compacto
+                #flecha de retroceso
                 ft.Container(
                     padding=ft.padding.only(left=15, top=10, bottom=5),
                     alignment=ft.Alignment(-1, 0),
@@ -568,7 +712,7 @@ def main(page: ft.Page):
     page.title = "App Tareas - Compartido Conmigo"
     
     page.window.width = 1200
-    page.window.height = 820
+    page.window.height = 800
     page.window.min_width = 380
     page.window.min_height = 780
     page.padding = 0 
