@@ -9,6 +9,7 @@ def VistaAreaPersonal(page: ft.Page):
     COLOR_BOTON_BG = "#EEF2FF"
     COLOR_BOTON_BORDE = "#D0D8E8"
 
+    #helper para crear botones del menu
     def crear_boton_menu(emoji: str, texto: str, on_click=None):
         return ft.Container(
             width=95,
@@ -37,6 +38,7 @@ def VistaAreaPersonal(page: ft.Page):
             )
         )
 
+    #eventos click botones
     def click_mis_datos(e):
         page.snack_bar = ft.SnackBar(ft.Text("Mis datos"))
         page.snack_bar.open = True
@@ -62,11 +64,17 @@ def VistaAreaPersonal(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    def click_tareas_retrasadas(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Tareas Retrasadas"))
+    def click_tareas_atrasadas(e):
+        page.snack_bar = ft.SnackBar(ft.Text("Tareas Atrasadas"))
         page.snack_bar.open = True
         page.update()
 
+    def click_mis_proyectos(e):
+        page.snack_bar = ft.SnackBar(ft.Text("Mis Proyectos Asignados"))
+        page.snack_bar.open = True
+        page.update()
+
+    #tarjeta blanca contenedora de botones
     tarjeta_blanca = ft.Container(
         width=340,
         bgcolor="white",
@@ -83,7 +91,7 @@ def VistaAreaPersonal(page: ft.Page):
                 tight=True,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-
+                    #fila 1
                     ft.Row(
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=12,
@@ -93,14 +101,27 @@ def VistaAreaPersonal(page: ft.Page):
                             crear_boton_menu("✅", "Tareas Realizadas", click_tareas_realizadas),
                         ]
                     ),
-
+                    #fila 2
                     ft.Row(
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=12,
                         controls=[
                             crear_boton_menu("✏️", "Crear Nueva Tarea", click_crear_tarea),
                             crear_boton_menu("👥", "Tareas Compartidas\nConmigo", click_tareas_compartidas),
-                            crear_boton_menu("👎", "Tareas Retrasadas", click_tareas_retrasadas),
+                            crear_boton_menu("⚠️", "Tareas Atrasadas", click_tareas_atrasadas),
+                        ]
+                    ),
+                    #fila 3 (Botón centrado usando huecos a los lados)
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=12,
+                        controls=[
+                            #hueco izquierda para mantener grid
+                            ft.Container(width=95, height=95), 
+                            #boton centrado
+                            crear_boton_menu("🚀", "Mis Proyectos", click_mis_proyectos),
+                            #hueco derecha para mantener grid
+                            ft.Container(width=95, height=95),
                         ]
                     ),
                 ]
@@ -108,7 +129,7 @@ def VistaAreaPersonal(page: ft.Page):
         )
     )
 
-
+    #header flotante (titulo)
     header_flotante = ft.Container(
         width=220,
         height=50,
@@ -123,9 +144,10 @@ def VistaAreaPersonal(page: ft.Page):
         )
     )
 
+    #stack para efecto superpuesto
     contenido_superpuesto = ft.Container(
         width=340,
-        height=295,
+        height=420,
         content=ft.Stack(
             controls=[
                 ft.Container(
@@ -159,7 +181,7 @@ def main(page: ft.Page):
     page.window.width = 1200
     page.window.height = 800
     page.window.min_width = 360
-    page.window.min_height = 480
+    page.window.min_height = 600
     page.padding = 0 
     
     vista = VistaAreaPersonal(page)
