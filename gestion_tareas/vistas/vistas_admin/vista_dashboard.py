@@ -69,11 +69,6 @@ def VistaAreaAdmin(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    def click_gestionar_roles(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Gestionar Roles"))
-        page.snack_bar.open = True
-        page.update()
-
     def click_auditoria(e):
         page.snack_bar = ft.SnackBar(ft.Text("Registro de Auditoría"))
         page.snack_bar.open = True
@@ -122,7 +117,6 @@ def VistaAreaAdmin(page: ft.Page):
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=12,
                         controls=[
-                            crear_boton_menu("🔐", "Gestionar\nRoles", click_gestionar_roles),
                             crear_boton_menu("📋", "Registro de\nAuditoría", click_auditoria),
                         ]
                     ),

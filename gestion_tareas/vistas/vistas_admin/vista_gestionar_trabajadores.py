@@ -1,6 +1,6 @@
 import flet as ft
 
-def VistaGestionarUsuarios(page: ft.Page):
+def VistaGestionarTrabajadores(page: ft.Page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -14,29 +14,30 @@ def VistaGestionarUsuarios(page: ft.Page):
     COLOR_PENDIENTE = "#FF9800"
     COLOR_EDITAR = "#2196F3"
     COLOR_ELIMINAR = "#E53935"
+    COLOR_BTN_CREAR = "#4682B4"
 
     #opciones de filtro
     FILTROS_ESTADO = ["Todos", "Activos", "Inactivos", "Pendientes"]
-    FILTROS_DEPARTAMENTO = ["Todos", "Desarrollo", "Diseño", "QA", "DevOps", "Backend", "Frontend", "Documentación", "Base de Datos", "Recursos Humanos", "Finanzas"]
+    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
     FILTROS_ORDEN = [
         "Nombre A-Z",
         "Nombre Z-A",
         "Más reciente",
         "Más antiguo",
-        "Por departamento",
+        "Por proyecto",
     ]
 
     filtro_estado_actual = ["Todos"]
-    filtro_departamento_actual = ["Todos"]
+    filtro_proyecto_actual = ["Todos"]
     filtro_orden_actual = ["Nombre A-Z"]
 
-    #datos demo de usuarios
-    USUARIOS = [
+    #datos demo de trabajadores
+    TRABAJADORES = [
         {
             "nombre": "Ana García",
             "id": "EMP001",
             "email": "ana.garcia@techsolutions.com",
-            "departamento": "Desarrollo",
+            "proyecto": "App Móvil v2.0",
             "cargo": "Senior Developer",
             "estado": "ACTIVO",
             "fecha_alta": "15/03/2021",
@@ -45,7 +46,7 @@ def VistaGestionarUsuarios(page: ft.Page):
             "nombre": "Carlos López",
             "id": "EMP002",
             "email": "carlos.lopez@techsolutions.com",
-            "departamento": "Diseño",
+            "proyecto": "Portal Web Cliente",
             "cargo": "UX Designer",
             "estado": "ACTIVO",
             "fecha_alta": "22/06/2021",
@@ -54,7 +55,7 @@ def VistaGestionarUsuarios(page: ft.Page):
             "nombre": "María Rodríguez",
             "id": "EMP003",
             "email": "maria.rodriguez@techsolutions.com",
-            "departamento": "QA",
+            "proyecto": "API REST Services",
             "cargo": "QA Lead",
             "estado": "ACTIVO",
             "fecha_alta": "10/01/2022",
@@ -63,7 +64,7 @@ def VistaGestionarUsuarios(page: ft.Page):
             "nombre": "Pedro Martínez",
             "id": "EMP004",
             "email": "pedro.martinez@techsolutions.com",
-            "departamento": "DevOps",
+            "proyecto": "Migración Cloud",
             "cargo": "DevOps Engineer",
             "estado": "INACTIVO",
             "fecha_alta": "05/09/2020",
@@ -72,7 +73,7 @@ def VistaGestionarUsuarios(page: ft.Page):
             "nombre": "Laura Sánchez",
             "id": "EMP005",
             "email": "laura.sanchez@techsolutions.com",
-            "departamento": "Backend",
+            "proyecto": "Dashboard Analytics",
             "cargo": "Backend Lead",
             "estado": "ACTIVO",
             "fecha_alta": "18/04/2022",
@@ -81,7 +82,7 @@ def VistaGestionarUsuarios(page: ft.Page):
             "nombre": "Juan Fernández",
             "id": "EMP006",
             "email": "juan.fernandez@techsolutions.com",
-            "departamento": "Frontend",
+            "proyecto": "Portal Web Cliente",
             "cargo": "Frontend Developer",
             "estado": "PENDIENTE",
             "fecha_alta": "01/12/2024",
@@ -90,7 +91,7 @@ def VistaGestionarUsuarios(page: ft.Page):
             "nombre": "Sofia Ruiz",
             "id": "EMP007",
             "email": "sofia.ruiz@techsolutions.com",
-            "departamento": "Documentación",
+            "proyecto": "CRM Interno",
             "cargo": "Technical Writer",
             "estado": "ACTIVO",
             "fecha_alta": "20/07/2023",
@@ -99,7 +100,7 @@ def VistaGestionarUsuarios(page: ft.Page):
             "nombre": "Diego Torres",
             "id": "EMP008",
             "email": "diego.torres@techsolutions.com",
-            "departamento": "Base de Datos",
+            "proyecto": "Sistema de Pagos",
             "cargo": "DBA",
             "estado": "INACTIVO",
             "fecha_alta": "12/02/2021",
@@ -119,14 +120,26 @@ def VistaGestionarUsuarios(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    #dialog detalle usuario
-    def mostrar_detalle_usuario(usuario):
-        """Muestra el diálogo con el detalle del usuario"""
-        estado_color = COLOR_ACTIVO if usuario["estado"] == "ACTIVO" else (COLOR_INACTIVO if usuario["estado"] == "INACTIVO" else COLOR_PENDIENTE)
+    def btn_crear_trabajador_click(e):
+        """Acción al hacer clic en el botón crear trabajador"""
+        page.snack_bar = ft.SnackBar(ft.Text("Crear nuevo trabajador"))
+        page.snack_bar.open = True
+        page.update()
+
+    def btn_gestionar_roles_click(e):
+        """Acción al hacer clic en el botón gestionar roles"""
+        page.snack_bar = ft.SnackBar(ft.Text("Gestionar roles"))
+        page.snack_bar.open = True
+        page.update()
+
+    #dialog detalle trabajador
+    def mostrar_detalle_trabajador(trabajador):
+        """Muestra el diálogo con el detalle del trabajador"""
+        estado_color = COLOR_ACTIVO if trabajador["estado"] == "ACTIVO" else (COLOR_INACTIVO if trabajador["estado"] == "INACTIVO" else COLOR_PENDIENTE)
         
         dialog_detalle = ft.AlertDialog(
             modal=True,
-            title=ft.Text(usuario["nombre"], size=16, weight=ft.FontWeight.BOLD, color="black"),
+            title=ft.Text(trabajador["nombre"], size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
                 width=300,
@@ -138,31 +151,31 @@ def VistaGestionarUsuarios(page: ft.Page):
                         ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             controls=[
-                                ft.Text(f"ID: {usuario['id']}", size=12, color=COLOR_LABEL),
+                                ft.Text(f"ID: {trabajador['id']}", size=12, color=COLOR_LABEL),
                                 ft.Container(
                                     bgcolor=estado_color,
                                     border_radius=10,
                                     padding=ft.padding.only(left=10, right=10, top=3, bottom=3),
-                                    content=ft.Text(usuario["estado"], size=10, color="white", weight=ft.FontWeight.BOLD),
+                                    content=ft.Text(trabajador["estado"], size=10, color="white", weight=ft.FontWeight.BOLD),
                                 ),
                             ]
                         ),
                         ft.Divider(height=1, color=COLOR_BORDE),
                         ft.Column(spacing=2, controls=[
                             ft.Text("Email", size=11, color=COLOR_LABEL),
-                            ft.Text(usuario["email"], size=12, color="black"),
+                            ft.Text(trabajador["email"], size=12, color="black"),
                         ]),
                         ft.Column(spacing=2, controls=[
-                            ft.Text("Departamento", size=11, color=COLOR_LABEL),
-                            ft.Text(usuario["departamento"], size=12, color="black"),
+                            ft.Text("Proyecto", size=11, color=COLOR_LABEL),
+                            ft.Text(trabajador["proyecto"], size=12, color="black"),
                         ]),
                         ft.Column(spacing=2, controls=[
                             ft.Text("Cargo", size=11, color=COLOR_LABEL),
-                            ft.Text(usuario["cargo"], size=12, color="black"),
+                            ft.Text(trabajador["cargo"], size=12, color="black"),
                         ]),
                         ft.Column(spacing=2, controls=[
                             ft.Text("Fecha de alta", size=11, color=COLOR_LABEL),
-                            ft.Text(usuario["fecha_alta"], size=12, color="black"),
+                            ft.Text(trabajador["fecha_alta"], size=12, color="black"),
                         ]),
                     ]
                 ),
@@ -181,12 +194,12 @@ def VistaGestionarUsuarios(page: ft.Page):
         dialog_detalle.open = True
         page.update()
 
-    #dialog editar usuario
-    def mostrar_editar_usuario(usuario):
-        """Muestra el diálogo para editar usuario"""
+    #dialog editar trabajador
+    def mostrar_editar_trabajador(trabajador):
+        """Muestra el diálogo para editar trabajador"""
         def guardar_cambios(e):
             dialog_editar.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Usuario {usuario['nombre']} actualizado"))
+            page.snack_bar = ft.SnackBar(ft.Text(f"Trabajador {trabajador['nombre']} actualizado"))
             page.snack_bar.open = True
             page.update()
 
@@ -196,7 +209,7 @@ def VistaGestionarUsuarios(page: ft.Page):
 
         dialog_editar = ft.AlertDialog(
             modal=True,
-            title=ft.Text(f"Editar: {usuario['nombre']}", size=16, weight=ft.FontWeight.BOLD, color="black"),
+            title=ft.Text(f"Editar: {trabajador['nombre']}", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
                 width=300,
@@ -207,7 +220,7 @@ def VistaGestionarUsuarios(page: ft.Page):
                     controls=[
                         ft.TextField(
                             label="Nombre",
-                            value=usuario["nombre"],
+                            value=trabajador["nombre"],
                             text_style=ft.TextStyle(size=12, color="black"),
                             label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
                             border_color=COLOR_BORDE,
@@ -215,7 +228,7 @@ def VistaGestionarUsuarios(page: ft.Page):
                         ),
                         ft.TextField(
                             label="Email",
-                            value=usuario["email"],
+                            value=trabajador["email"],
                             text_style=ft.TextStyle(size=12, color="black"),
                             label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
                             border_color=COLOR_BORDE,
@@ -223,7 +236,7 @@ def VistaGestionarUsuarios(page: ft.Page):
                         ),
                         ft.TextField(
                             label="Cargo",
-                            value=usuario["cargo"],
+                            value=trabajador["cargo"],
                             text_style=ft.TextStyle(size=12, color="black"),
                             label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
                             border_color=COLOR_BORDE,
@@ -231,7 +244,7 @@ def VistaGestionarUsuarios(page: ft.Page):
                         ),
                         ft.DropdownM2(
                             label="Estado",
-                            value=usuario["estado"],
+                            value=trabajador["estado"],
                             text_style=ft.TextStyle(size=12, color="black"),
                             label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
                             bgcolor="white",
@@ -259,11 +272,11 @@ def VistaGestionarUsuarios(page: ft.Page):
         page.update()
 
     #dialog confirmar eliminación
-    def mostrar_confirmar_eliminar(usuario):
-        """Muestra el diálogo de confirmación para eliminar usuario"""
+    def mostrar_confirmar_eliminar(trabajador):
+        """Muestra el diálogo de confirmación para eliminar trabajador"""
         def confirmar_eliminar(e):
             dialog_confirmar.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Usuario {usuario['nombre']} eliminado"))
+            page.snack_bar = ft.SnackBar(ft.Text(f"Trabajador {trabajador['nombre']} eliminado"))
             page.snack_bar.open = True
             page.update()
 
@@ -273,7 +286,7 @@ def VistaGestionarUsuarios(page: ft.Page):
 
         dialog_confirmar = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Eliminar usuario", size=16, weight=ft.FontWeight.BOLD, color="black"),
+            title=ft.Text("Eliminar trabajador", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
                 width=280,
@@ -282,7 +295,7 @@ def VistaGestionarUsuarios(page: ft.Page):
                     spacing=10,
                     tight=True,
                     controls=[
-                        ft.Text("¿Estás seguro de que deseas eliminar este usuario?", size=13, color="black"),
+                        ft.Text("¿Estás seguro de que deseas eliminar este trabajador?", size=12, color="black"),
                         ft.Container(
                             bgcolor="#FFF3F3",
                             border_radius=8,
@@ -290,8 +303,8 @@ def VistaGestionarUsuarios(page: ft.Page):
                             content=ft.Column(
                                 spacing=3,
                                 controls=[
-                                    ft.Text(usuario["nombre"], size=13, color="black", weight=ft.FontWeight.BOLD),
-                                    ft.Text(f"{usuario['id']} - {usuario['email']}", size=11, color="#666666"),
+                                    ft.Text(trabajador["nombre"], size=13, color="black", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{trabajador['id']} - {trabajador['email']}", size=11, color="#666666"),
                                 ],
                             ),
                         ),
@@ -348,14 +361,14 @@ def VistaGestionarUsuarios(page: ft.Page):
             radio_orden.value = "Nombre A-Z"
             page.update()
 
-        def abrir_filtro_departamento(e):
+        def abrir_filtro_proyecto(e):
             dialog_filtros.open = False
             page.update()
-            mostrar_dialog_departamento()
+            mostrar_dialog_proyecto()
 
         dialog_filtros = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Filtrar usuarios", size=16, weight=ft.FontWeight.BOLD, color="black"),
+            title=ft.Text("Filtrar trabajadores", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
                 width=300,
@@ -375,11 +388,11 @@ def VistaGestionarUsuarios(page: ft.Page):
                             content=ft.Row(
                                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                 controls=[
-                                    ft.Text("Filtrar por Departamento", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                                    ft.Text("Filtrar por Proyecto", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
                                     ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=16, color=COLOR_LABEL),
                                 ]
                             ),
-                            on_click=abrir_filtro_departamento,
+                            on_click=abrir_filtro_proyecto,
                             ink=True,
                             padding=ft.padding.all(10),
                             border_radius=5,
@@ -399,33 +412,33 @@ def VistaGestionarUsuarios(page: ft.Page):
         dialog_filtros.open = True
         page.update()
 
-    #dialog departamento
-    def mostrar_dialog_departamento():
-        """Diálogo para seleccionar filtro por departamento"""
-        radio_departamento = ft.RadioGroup(
-            value=filtro_departamento_actual[0],
+    #dialog proyecto
+    def mostrar_dialog_proyecto():
+        """Diálogo para seleccionar filtro por proyecto"""
+        radio_proyecto = ft.RadioGroup(
+            value=filtro_proyecto_actual[0],
             content=ft.Column(
                 controls=[
-                    ft.Radio(value=dep, label=dep, label_style=ft.TextStyle(color="black", size=12)) 
-                    for dep in FILTROS_DEPARTAMENTO
+                    ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(color="black", size=12)) 
+                    for proy in FILTROS_PROYECTO
                 ],
                 spacing=2,
             ),
         )
 
-        def aplicar_departamento(e):
-            filtro_departamento_actual[0] = radio_departamento.value
-            dialog_departamento.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Departamento: {filtro_departamento_actual[0]}"))
+        def aplicar_proyecto(e):
+            filtro_proyecto_actual[0] = radio_proyecto.value
+            dialog_proyecto.open = False
+            page.snack_bar = ft.SnackBar(ft.Text(f"Proyecto: {filtro_proyecto_actual[0]}"))
             page.snack_bar.open = True
             page.update()
 
         def volver_filtros(e):
-            dialog_departamento.open = False
+            dialog_proyecto.open = False
             page.update()
             mostrar_dialog_filtros(None)
 
-        dialog_departamento = ft.AlertDialog(
+        dialog_proyecto = ft.AlertDialog(
             modal=True,
             title=ft.Row(
                 controls=[
@@ -436,33 +449,33 @@ def VistaGestionarUsuarios(page: ft.Page):
                         border_radius=50,
                         padding=5,
                     ),
-                    ft.Text("Seleccionar Departamento", size=14, weight=ft.FontWeight.BOLD, color="black"),
+                    ft.Text("Seleccionar Proyecto", size=14, weight=ft.FontWeight.BOLD, color="black"),
                 ],
                 spacing=10,
             ),
             bgcolor="white",
             content=ft.Container(
                 width=300,
-                height=350,
+                height=300,
                 bgcolor="white",
                 content=ft.ListView(
-                    controls=[radio_departamento],
+                    controls=[radio_proyecto],
                     spacing=5,
                 ),
             ),
             actions=[
-                ft.TextButton("Aplicar", on_click=aplicar_departamento),
+                ft.TextButton("Aplicar", on_click=aplicar_proyecto),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
 
-        page.overlay.append(dialog_departamento)
-        dialog_departamento.open = True
+        page.overlay.append(dialog_proyecto)
+        dialog_proyecto.open = True
         page.update()
 
-    def crear_tarjeta_usuario(usuario):
-        """Crea una tarjeta para cada usuario"""
-        estado_color = COLOR_ACTIVO if usuario["estado"] == "ACTIVO" else (COLOR_INACTIVO if usuario["estado"] == "INACTIVO" else COLOR_PENDIENTE)
+    def crear_tarjeta_trabajador(trabajador):
+        """Crea una tarjeta para cada trabajador"""
+        estado_color = COLOR_ACTIVO if trabajador["estado"] == "ACTIVO" else (COLOR_INACTIVO if trabajador["estado"] == "INACTIVO" else COLOR_PENDIENTE)
         
         return ft.Container(
             bgcolor="white",
@@ -490,7 +503,7 @@ def VistaGestionarUsuarios(page: ft.Page):
                                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                     controls=[
                                         ft.Text(
-                                            usuario["nombre"],
+                                            trabajador["nombre"],
                                             size=12,
                                             color="black",
                                             weight=ft.FontWeight.BOLD,
@@ -503,30 +516,30 @@ def VistaGestionarUsuarios(page: ft.Page):
                                         ),
                                     ]
                                 ),
-                                #fila 2: ID + Departamento
+                                #fila 2: ID + Proyecto
                                 ft.Row(
                                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                     controls=[
-                                        ft.Text(usuario["id"], size=10, color=COLOR_LABEL),
-                                        ft.Text(usuario["departamento"], size=10, color="#666666"),
+                                        ft.Text(trabajador["id"], size=10, color=COLOR_LABEL),
+                                        ft.Text(trabajador["proyecto"], size=10, color="#666666"),
                                     ]
                                 ),
                             ]
                         ),
-                        on_click=lambda e, u=usuario: mostrar_detalle_usuario(u),
+                        on_click=lambda e, t=trabajador: mostrar_detalle_trabajador(t),
                         ink=True,
                     ),
                     #botones de acción
                     ft.Container(
                         content=ft.Icon(ft.Icons.EDIT, size=18, color=COLOR_EDITAR),
-                        on_click=lambda e, u=usuario: mostrar_editar_usuario(u),
+                        on_click=lambda e, t=trabajador: mostrar_editar_trabajador(t),
                         ink=True,
                         padding=ft.padding.all(5),
                         border_radius=5,
                     ),
                     ft.Container(
                         content=ft.Icon(ft.Icons.DELETE, size=18, color=COLOR_ELIMINAR),
-                        on_click=lambda e, u=usuario: mostrar_confirmar_eliminar(u),
+                        on_click=lambda e, t=trabajador: mostrar_confirmar_eliminar(t),
                         ink=True,
                         padding=ft.padding.all(5),
                         border_radius=5,
@@ -545,7 +558,7 @@ def VistaGestionarUsuarios(page: ft.Page):
 
     #campo de búsqueda
     input_busqueda = ft.TextField(
-        hint_text="Buscar por nombre, ID...",
+        hint_text="Buscar por nombre...",
         hint_style=ft.TextStyle(size=11, color="#999999"),
         text_style=ft.TextStyle(size=12, color="black"),
         border_color=COLOR_BORDE,
@@ -586,14 +599,38 @@ def VistaGestionarUsuarios(page: ft.Page):
         ]
     )
 
-    #contador de usuarios
-    contador_usuarios = ft.Text(f"{len(USUARIOS)} usuarios", size=11, color=COLOR_LABEL)
+    #contador de trabajadores
+    contador_trabajadores = ft.Text(f"{len(TRABAJADORES)} trabajadores", size=11, color=COLOR_LABEL)
 
-    #lista de usuarios
-    lista_usuarios = ft.ListView(
+    #lista de trabajadores
+    lista_trabajadores = ft.ListView(
         spacing=0,
-        controls=[crear_tarjeta_usuario(usuario) for usuario in USUARIOS],
+        controls=[crear_tarjeta_trabajador(trabajador) for trabajador in TRABAJADORES],
         expand=True,
+    )
+
+    #botón crear trabajador
+    btn_crear = ft.Container(
+        width=160,
+        height=40,
+        bgcolor=COLOR_BTN_CREAR,
+        border_radius=20,
+        alignment=ft.Alignment(0, 0),
+        ink=True,
+        on_click=btn_crear_trabajador_click,
+        content=ft.Text("Crear Trabajador", color="white", weight=ft.FontWeight.BOLD, size=12),
+    )
+
+    #botón gestionar roles
+    btn_roles = ft.Container(
+        width=140,
+        height=40,
+        bgcolor="#6A5ACD",
+        border_radius=20,
+        alignment=ft.Alignment(0, 0),
+        ink=True,
+        on_click=btn_gestionar_roles_click,
+        content=ft.Text("Gestionar Roles", color="white", weight=ft.FontWeight.BOLD, size=12),
     )
 
     #tarjeta blanca principal
@@ -613,10 +650,15 @@ def VistaGestionarUsuarios(page: ft.Page):
                 spacing=10,
                 controls=[
                     fila_busqueda,
-                    contador_usuarios,
+                    contador_trabajadores,
                     ft.Container(
-                        height=420,
-                        content=lista_usuarios,
+                        height=380,
+                        content=lista_trabajadores,
+                    ),
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=10,
+                        controls=[btn_crear, btn_roles],
                     ),
                 ]
             )
@@ -625,13 +667,13 @@ def VistaGestionarUsuarios(page: ft.Page):
 
     #header flotante
     header_flotante = ft.Container(
-        width=260,
+        width=300,
         height=50,
         bgcolor=COLOR_HEADER_BG,
         border_radius=25,
         alignment=ft.Alignment(0, 0),
         content=ft.Text(
-            "GESTIONAR USUARIOS",
+            "GESTIONAR TRABAJADORES",
             size=18,
             weight=ft.FontWeight.BOLD,
             color="white"
@@ -651,7 +693,7 @@ def VistaGestionarUsuarios(page: ft.Page):
                 ft.Container(
                     content=header_flotante,
                     top=0,
-                    left=60,
+                    left=40,
                 )
             ]
         )
@@ -684,7 +726,7 @@ def VistaGestionarUsuarios(page: ft.Page):
 
 #para probar directamente
 def main(page: ft.Page):
-    page.title = "App Tareas - Gestionar Usuarios"
+    page.title = "App Tareas - Gestionar Trabajadores"
     
     page.window.width = 1200
     page.window.height = 800
@@ -692,7 +734,7 @@ def main(page: ft.Page):
     page.window.min_height = 700
     page.padding = 0 
     
-    vista = VistaGestionarUsuarios(page)
+    vista = VistaGestionarTrabajadores(page)
     page.add(vista)
 
 if __name__ == "__main__":
