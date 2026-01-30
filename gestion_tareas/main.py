@@ -10,6 +10,8 @@ from vistas.vistas_admin.vista_gestionar_roles import VistaGestionarRoles
 from vistas.vistas_admin.vista_crear_trabajador import VistaCrearTrabajador
 from vistas.vistas_admin.vista_crear_departamento import VistaCrearDepartamento
 from vistas.vistas_admin.vista_crear_equipo import VistaCrearEquipo
+from vistas.vistas_admin.vista_crear_proyectos import VistaCrearProyecto
+from vistas.vistas_admin.vista_gestionar_proyectos import VistaGestionarProyectos
 
 #nota: el archivo tiene guiones en vez de guiones bajos, asi que hay que importarlo asi
 #from vistas.vistas_admin.vista_gestionar_departamentos import VistaGestionarDepartamentos
@@ -25,6 +27,7 @@ from vistas.vistas_usuario.vista_tareas_atrasadas import VistaTareasAtrasadas
 from vistas.vistas_usuario.vista_nueva_tarea import VistaNuevaTarea
 from vistas.vistas_usuario.vista_compartido_conmigo import VistaCompartidoConmigo
 from vistas.vistas_usuario.vista_detalle_tarea import VistaDetalleTarea
+from vistas.vistas_usuario.vista_mis_proyectos import VistaMisProyectos
 from vistas.vistas_usuario.vista_error_404 import VistaError404
 
 
@@ -55,6 +58,7 @@ def main(page: ft.Page):
         "/nueva_tarea": lambda: VistaNuevaTarea(page),
         "/compartido_conmigo": lambda: VistaCompartidoConmigo(page),
         "/detalle_tarea": lambda: VistaDetalleTarea(page),
+        "/mis_proyectos": lambda: VistaMisProyectos(page),
         
         #vistas de admin
         "/area_admin": lambda: VistaAreaAdmin(page),
@@ -66,7 +70,9 @@ def main(page: ft.Page):
         "/crear_trabajador": lambda: VistaCrearTrabajador(page),
         "/crear_departamento": lambda: VistaCrearDepartamento(page),
         "/crear_equipo": lambda: VistaCrearEquipo(page),
-        #"/gestionar_departamentos": lambda: VistaGestionarDepartamentos(page),  #archivo con guiones
+        "/crear_proyecto": lambda: VistaCrearProyecto(page),
+        "/gestionar_proyectos": lambda: VistaGestionarProyectos(page),
+        "/gestionar_departamentos": lambda: VistaGestionarDepartamentos(page),  #archivo con guiones
     }
     
     def cambiar_ruta(e):
