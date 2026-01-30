@@ -44,23 +44,18 @@ def VistaAreaAdmin(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    def click_crear_trabajador(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Crear Trabajador"))
+    def click_gestionar_trabajadores(e):
+        page.snack_bar = ft.SnackBar(ft.Text("Gestionar Trabajadores"))
         page.snack_bar.open = True
         page.update()
 
-    def click_crear_departamento(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Crear Departamento"))
+    def click_gestionar_departamentos(e):
+        page.snack_bar = ft.SnackBar(ft.Text("Gestionar Departamentos"))
         page.snack_bar.open = True
         page.update()
 
-    def click_crear_equipo(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Crear Equipo"))
-        page.snack_bar.open = True
-        page.update()
-
-    def click_gestionar_usuarios(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Gestionar Usuarios"))
+    def click_gestionar_proyectos(e):
+        page.snack_bar = ft.SnackBar(ft.Text("Gestionar Proyectos"))
         page.snack_bar.open = True
         page.update()
 
@@ -79,8 +74,8 @@ def VistaAreaAdmin(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    def click_auditoría(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Auditoría"))
+    def click_auditoria(e):
+        page.snack_bar = ft.SnackBar(ft.Text("Registro de Auditoría"))
         page.snack_bar.open = True
         page.update()
 
@@ -88,11 +83,12 @@ def VistaAreaAdmin(page: ft.Page):
     tarjeta_blanca = ft.Container(
         width=340,
         bgcolor="white",
-        border_radius=20,
+        border_radius=25,
         shadow=ft.BoxShadow(
-            spread_radius=1,
-            blur_radius=20,
-            color=COLOR_SOMBRA, 
+            spread_radius=0,
+            blur_radius=15,
+            color="#40000000",
+            offset=ft.Offset(0, 5),
         ),
         content=ft.Container(
             padding=ft.padding.only(left=20, right=20, top=45, bottom=25),
@@ -107,8 +103,8 @@ def VistaAreaAdmin(page: ft.Page):
                         spacing=12,
                         controls=[
                             crear_boton_menu("🪪", "Mis datos", click_mis_datos),
-                            crear_boton_menu("👤", "Crear\nTrabajador", click_crear_trabajador),
-                            crear_boton_menu("🏢", "Crear\nDepartamento", click_crear_departamento),
+                            crear_boton_menu("👥", "Gestionar\nTrabajadores", click_gestionar_trabajadores),
+                            crear_boton_menu("🏢", "Gestionar\nDepartamentos", click_gestionar_departamentos),
                         ]
                     ),
                     #fila 2
@@ -116,9 +112,9 @@ def VistaAreaAdmin(page: ft.Page):
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=12,
                         controls=[
-                            crear_boton_menu("👥", "Crear\nEquipo", click_crear_equipo),
-                            crear_boton_menu("📊", "Gestionar\nUsuarios", click_gestionar_usuarios),
+                            crear_boton_menu("📁", "Gestionar\nProyectos", click_gestionar_proyectos),
                             crear_boton_menu("📈", "Ver\nEstadísticas", click_ver_estadisticas),
+                            crear_boton_menu("⚙️", "Configuración", click_configuracion),
                         ]
                     ),
                     #fila 3
@@ -126,9 +122,8 @@ def VistaAreaAdmin(page: ft.Page):
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=12,
                         controls=[
-                            crear_boton_menu("⚙️", "Configuración", click_configuracion),
                             crear_boton_menu("🔐", "Gestionar\nRoles", click_gestionar_roles),
-                            crear_boton_menu("📋", "Auditoría", click_auditoría),
+                            crear_boton_menu("📋", "Registro de\nAuditoría", click_auditoria),
                         ]
                     ),
                 ]
@@ -182,6 +177,7 @@ def VistaAreaAdmin(page: ft.Page):
     )
 
 
+#para probar directamente
 def main(page: ft.Page):
     page.title = "App Tareas - Área Admin"
     
