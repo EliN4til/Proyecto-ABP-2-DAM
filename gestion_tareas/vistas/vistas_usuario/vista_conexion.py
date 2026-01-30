@@ -1,5 +1,5 @@
 import flet as ft
-from ...servicios.db_manager import realizar_conexion
+from servicios.db_manager import realizar_conexion
 
 def VistaConexion(page: ft.Page):
     
@@ -22,6 +22,10 @@ def VistaConexion(page: ft.Page):
                 ft.Text("Conexión exitosa", color="white"), 
                 bgcolor="green"
             )
+            page.snack_bar.open = True
+            page.update()
+            #navegamos a la vista del login
+            page.go("/login")
             
         else:
             page.snack_bar = ft.SnackBar(
