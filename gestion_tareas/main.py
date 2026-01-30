@@ -12,9 +12,7 @@ from vistas.vistas_admin.vista_crear_departamento import VistaCrearDepartamento
 from vistas.vistas_admin.vista_crear_equipo import VistaCrearEquipo
 from vistas.vistas_admin.vista_crear_proyectos import VistaCrearProyecto
 from vistas.vistas_admin.vista_gestionar_proyectos import VistaGestionarProyectos
-
-#nota: el archivo tiene guiones en vez de guiones bajos, asi que hay que importarlo asi
-#from vistas.vistas_admin.vista_gestionar_departamentos import VistaGestionarDepartamentos
+from vistas.vistas_admin.vista_gestionar_departamentos import VistaGestionarDepartamentos
 
 #importamos todas las vistas de usuario
 from vistas.vistas_usuario.vista_login import VistaLogin
