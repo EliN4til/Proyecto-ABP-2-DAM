@@ -129,9 +129,7 @@ def VistaNuevaTarea(page: ft.Page):
     page.overlay.append(date_picker_fin)
 
     def btn_volver_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/area_personal")
 
     def btn_crear_click(e):
         if not input_titulo.value:

@@ -1,4 +1,6 @@
 import flet as ft
+from modelos.crud import validar_login
+from servicios.sesion_service import guardar_usuario
 
 def VistaLogin(page: ft.Page):
     COLOR_FONDO_TOP = "#152060"      
@@ -6,12 +8,34 @@ def VistaLogin(page: ft.Page):
     COLOR_HEADER_BG = "#1F2855"
     COLOR_BTN_BG = "#5B88C4"
     COLOR_INPUT_BG = "#EEEEEE"       
-    COLOR_SOMBRA = "#66000000"       
+    COLOR_SOMBRA = "#66000000"
+    
+    #texto para mostrar mensajes de error (empieza invisible)
+    txt_error = ft.Text(
+        "",
+        color="#D32F2F",
+        size=12,
+        weight=ft.FontWeight.BOLD,
+        text_align=ft.TextAlign.CENTER
+    )
 
     def btn_login_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Iniciando sesión..."))
-        page.snack_bar.open = True
+        #limpiamos el mensaje de error anterior
+        txt_error.value = ""
         page.update()
+        
+        #validamos las credenciales
+        exito, resultado = validar_login(txt_email.value, txt_pass.value)
+        
+        if exito:
+            #guardamos el usuario en el servicio de la sesión
+            guardar_usuario(resultado)
+            #navegamos al área personal
+            page.go("/area_personal")
+        else:
+            #mostramos el mensaje de error en el texto rojo
+            txt_error.value = "❌ " + resultado
+            page.update()
 
     def btn_back_click(e):
         page.go("/")
@@ -84,7 +108,10 @@ def VistaLogin(page: ft.Page):
                             ft.Container(content=txt_email, margin=ft.margin.only(bottom=15)),
                             
                             ft.Text("Contraseña", weight=ft.FontWeight.BOLD, color="black", size=14),
-                            ft.Container(content=txt_pass, margin=ft.margin.only(bottom=25)),
+                            ft.Container(content=txt_pass, margin=ft.margin.only(bottom=15)),
+                            
+                            #mensaje de error (se muestra cuando hay error)
+                            ft.Container(content=txt_error, margin=ft.margin.only(bottom=10)),
 
                             ft.Container(content=btn_iniciar, alignment=ft.Alignment(0, 0))
                         ]

@@ -38,41 +38,27 @@ def VistaAreaPersonal(page: ft.Page):
             )
         )
 
-    #eventos click botones
+    #eventos click botones - navegan a las vistas correspondientes
     def click_mis_datos(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Mis datos"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/mis_datos")
 
     def click_tareas_pendientes(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Tareas Pendientes"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/tareas_pendientes")
 
     def click_tareas_realizadas(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Tareas Realizadas"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/tareas_realizadas")
 
     def click_crear_tarea(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Crear Nueva Tarea"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/nueva_tarea")
 
     def click_tareas_compartidas(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Tareas Compartidas Conmigo"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/compartido_conmigo")
 
     def click_tareas_atrasadas(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Tareas Atrasadas"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/tareas_atrasadas")
 
     def click_mis_proyectos(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Mis Proyectos Asignados"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/mis_proyectos")
 
     #tarjeta blanca contenedora de botones
     tarjeta_blanca = ft.Container(

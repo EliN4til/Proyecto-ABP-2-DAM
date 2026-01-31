@@ -1,29 +1,65 @@
 import flet as ft
+from servicios.sesion_service import obtener_usuario
 
 def VistaMisDatos(page: ft.Page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
     COLOR_HEADER_BG = "#1F2855"      
-    COLOR_SOMBRA = "#66000000"
     COLOR_LABEL = "#5B9BD5"
 
-    #datos de usuario de ejemplo, ya se sustituirá por datos reales cuando haya backend
-    usuario = {
-        "nombre": "Rubén",
-        "apellidos": "Doblas Gundersen",
-        "estado": "ACTIVO",
-        "identificador": "12345678A",
-        "empresa": "TechSolutions S.L",
-        "equipo": "Cloud Infrastructure & DevOps",
-        "cargo": "Senior Software Engineer",
-        "id_empleado": "XXXXXX",
-        "correo": "j.perez@techsolutions.com",
-        "telefono": "+34 912 345 678 (Ext. 402)",
-        "ubicacion": "Oficina Central - Madrid (Torre A)",
-        "fecha_incorporacion": "15/03/2021",
-        "foto_url": None  #reemplazar con URL real o ruta de imagen
-    }
+    #obtenemos los datos del usuario de la sesión
+    usuario_sesion = obtener_usuario()
+    
+    #si hay sesión activa, cogemos los datos del usuario
+    if usuario_sesion:
+        nombre = usuario_sesion.get("nombre", "Usuario")
+        apellidos = usuario_sesion.get("apellidos", "")
+        estado = usuario_sesion.get("estado", "ACTIVO")
+        identificador = usuario_sesion.get("identificador", "N/A")
+        empresa = usuario_sesion.get("empresa", "N/A")
+        equipo = usuario_sesion.get("equipo", "N/A")
+        cargo = usuario_sesion.get("cargo", "N/A")
+        id_empleado = usuario_sesion.get("id_empleado", "N/A")
+        correo = usuario_sesion.get("email", "N/A")
+        telefono = usuario_sesion.get("telefono", "N/A")
+        ubicacion = usuario_sesion.get("ubicacion", "N/A")
+        
+        #el departamento es un objeto con nombre y ubicacion
+        departamento = usuario_sesion.get("departamento", {})
+        if departamento:
+            nombre_depto = departamento.get("nombre", "N/A")
+        else:
+            nombre_depto = "N/A"
+        
+        #la fecha de incorporacion viene como objeto, la convertimos a string
+        fecha_incorporacion_raw = usuario_sesion.get("fecha_incorporacion", None)
+        if fecha_incorporacion_raw:
+            #si es un string lo dejamos tal cual, si es fecha la formateamos
+            if isinstance(fecha_incorporacion_raw, str):
+                fecha_incorporacion = fecha_incorporacion_raw
+            else:
+                fecha_incorporacion = str(fecha_incorporacion_raw)[:10]
+        else:
+            fecha_incorporacion = "N/A"
+        
+        foto_url = usuario_sesion.get("foto", None)
+    else:
+        #si no hay una sesión, ponemos valores por defecto (esto es por si ejecutamos la vista directamente sin iniciar sesión, para probarla)
+        nombre = "Usuario"
+        apellidos = ""
+        estado = "ACTIVO"
+        identificador = "N/A"
+        empresa = "N/A"
+        equipo = "N/A"
+        cargo = "N/A"
+        id_empleado = "N/A"
+        correo = "N/A"
+        telefono = "N/A"
+        ubicacion = "N/A"
+        nombre_depto = "N/A"
+        fecha_incorporacion = "N/A"
+        foto_url = None
 
     def crear_campo(label: str, valor: str):
         return ft.Column(
@@ -35,10 +71,8 @@ def VistaMisDatos(page: ft.Page):
         )
 
     def btn_volver_click(e):
-        #hay que implementar la navegación real
-        page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
-        page.snack_bar.open = True
-        page.update()
+        #volvemos al área personal
+        page.go("/area_personal")
 
     btn_volver = ft.Container(
         content=ft.Text("←", size=24, color="white", weight=ft.FontWeight.BOLD),
@@ -47,32 +81,42 @@ def VistaMisDatos(page: ft.Page):
         padding=10,
     )
 
-    #foto, tambien cambiar cuando haya backend
+    #foto del perfil
+    if foto_url:
+        contenido_foto = ft.Image(
+            src=foto_url,
+            width=100,
+            height=100,
+            fit=ft.ImageFit.COVER,
+            border_radius=10,
+        )
+    else:
+        contenido_foto = ft.Icon("person", size=50, color="#999999")
+    
     foto_perfil = ft.Container(
         width=100,
         height=100,
         border_radius=10,
         bgcolor="#E0E0E0",
-        content=ft.Image(
-            src=usuario["foto_url"] if usuario["foto_url"] else "https://via.placeholder.com/100",
-            width=100,
-            height=100,
-            fit=ft.ImageFit.COVER,
-            border_radius=10,
-        ) if usuario["foto_url"] else ft.Icon("person", size=50, color="#999999")
+        content=contenido_foto
     )
 
     #estado con punto verde o rojo
-    estado_activo = usuario["estado"] == "ACTIVO"
+    estado_activo = estado == "ACTIVO"
+    if estado_activo:
+        color_estado = "#4CAF50"  #verde
+    else:
+        color_estado = "#F44336"  #rojo
+    
     estado_widget = ft.Row(
         spacing=5,
         controls=[
-            ft.Text(usuario["estado"], size=14, color="black", weight=ft.FontWeight.BOLD),
+            ft.Text(estado, size=14, color="black", weight=ft.FontWeight.BOLD),
             ft.Container(
                 width=12,
                 height=12,
                 border_radius=6,
-                bgcolor="#4CAF50" if estado_activo else "#F44336",
+                bgcolor=color_estado,
             )
         ]
     )
@@ -90,14 +134,14 @@ def VistaMisDatos(page: ft.Page):
                         spacing=2,
                         controls=[
                             ft.Text("Nombre", size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                            ft.Text(usuario["nombre"], size=14, color="black", weight=ft.FontWeight.BOLD),
+                            ft.Text(nombre, size=14, color="black", weight=ft.FontWeight.BOLD),
                         ]
                     ),
                     ft.Column(
                         spacing=2,
                         controls=[
                             ft.Text("Apellidos", size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                            ft.Text(usuario["apellidos"], size=14, color="black", weight=ft.FontWeight.BOLD),
+                            ft.Text(apellidos, size=14, color="black", weight=ft.FontWeight.BOLD),
                         ]
                     ),
                     ft.Column(
@@ -128,15 +172,16 @@ def VistaMisDatos(page: ft.Page):
                 controls=[
                     seccion_superior,
                     ft.Divider(height=1, color="#E0E0E0"),
-                    crear_campo("Identificador", usuario["identificador"]),
-                    crear_campo("Empresa", usuario["empresa"]),
-                    crear_campo("Equipo", usuario["equipo"]),
-                    crear_campo("Cargo", usuario["cargo"]),
-                    crear_campo("ID Empleado", usuario["id_empleado"]),
-                    crear_campo("Correo corporativo", usuario["correo"]),
-                    crear_campo("Teléfono", usuario["telefono"]),
-                    crear_campo("Ubicación", usuario["ubicacion"]),
-                    crear_campo("Fecha de Incorporación", usuario["fecha_incorporacion"]),
+                    crear_campo("Identificador", identificador),
+                    crear_campo("Empresa", empresa),
+                    crear_campo("Departamento", nombre_depto),
+                    crear_campo("Equipo", equipo),
+                    crear_campo("Cargo", cargo),
+                    crear_campo("ID Empleado", id_empleado),
+                    crear_campo("Correo corporativo", correo),
+                    crear_campo("Teléfono", telefono),
+                    crear_campo("Ubicación", ubicacion),
+                    crear_campo("Fecha de Incorporación", fecha_incorporacion),
                 ]
             )
         )

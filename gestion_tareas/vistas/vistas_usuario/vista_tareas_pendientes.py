@@ -157,9 +157,7 @@ def VistaTareasPendientes(page: ft.Page):
             return COLOR_PRIORIDAD_BAJA
 
     def btn_volver_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/area_personal")
 
     def btn_buscar_click(e):
         texto_busqueda = input_busqueda.value

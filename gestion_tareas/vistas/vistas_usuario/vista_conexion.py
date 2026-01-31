@@ -8,33 +8,31 @@ def VistaConexion(page: ft.Page):
     COLOR_HEADER_BG = "#1F2855"      
     COLOR_BTN_BG = "#4682B4"         
     COLOR_INPUT_BG = "#EEEEEE"       
-    COLOR_SOMBRA = "#66000000"       
+    COLOR_SOMBRA = "#66000000"
+    
+    #texto para mostrar mensajes de error (empieza invisible)
+    txt_error = ft.Text(
+        "",
+        color="#D32F2F",
+        size=12,
+        weight=ft.FontWeight.BOLD,
+        text_align=ft.TextAlign.CENTER
+    )
 
     def btn_conectar_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Verificando credenciales..."))
-        page.snack_bar.open = True
+        #limpiamos el mensaje de error anterior
+        txt_error.value = ""
         page.update()
-
+        
         exito = realizar_conexion(txt_uri.value, txt_usuario.value, txt_pass.value)
 
         if exito:
-            page.snack_bar = ft.SnackBar(
-                ft.Text("Conexión exitosa", color="white"), 
-                bgcolor="green"
-            )
-            page.snack_bar.open = True
-            page.update()
             #navegamos a la vista del login
             page.go("/login")
-            
         else:
-            page.snack_bar = ft.SnackBar(
-                ft.Text("Error: Usuario, contraseña o URI incorrectos"), 
-                bgcolor="red"
-            )
-        
-        page.snack_bar.open = True
-        page.update()
+            #mostramos el mensaje de error en el texto rojo
+            txt_error.value = "❌ Usuario, contraseña o URI incorrectos"
+            page.update()
 
     def crear_input(es_password=False):
         return ft.TextField(
@@ -107,7 +105,10 @@ def VistaConexion(page: ft.Page):
                             ft.Container(content=txt_usuario, margin=ft.margin.only(bottom=15)),
 
                             ft.Text("Contraseña", weight=ft.FontWeight.BOLD, color="black", size=14),
-                            ft.Container(content=txt_pass, margin=ft.margin.only(bottom=25)),
+                            ft.Container(content=txt_pass, margin=ft.margin.only(bottom=15)),
+                            
+                            #mensaje de error (se muestra cuando hay error)
+                            ft.Container(content=txt_error, margin=ft.margin.only(bottom=10)),
 
                             ft.Container(content=btn_conectar, alignment=ft.Alignment(0, 0))
                         ]
