@@ -1,6 +1,5 @@
 import flet as ft
-from modelos.crud import obtener_todos_empleados, eliminar_empleado
-from modelos.consultas import filtrar_y_ordenar # Suponiendo que filtros.py se llama consultas.py en tu estructura
+from modelos.crud import obtener_todos_empleados, eliminar_empleado, actualizar_empleado, obtener_todos_proyectos, obtener_todos_departamentos
 
 def VistaGestionarTrabajadores(page: ft.Page):
     
@@ -20,76 +19,94 @@ def VistaGestionarTrabajadores(page: ft.Page):
 
     #opciones de filtro
     FILTROS_ESTADO = ["Todos", "ACTIVO", "INACTIVO", "PENDIENTE"]
-    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
+    # El filtro de proyectos lo inicializamos con "Todos", pero se llenará con la BD
+    FILTROS_PROYECTO = ["Todos"]
     FILTROS_ORDEN = [
         "Nombre A-Z",
         "Nombre Z-A",
         "Más reciente",
         "Más antiguo",
+        "Por proyecto",
     ]
 
     filtro_estado_actual = ["Todos"]
     filtro_proyecto_actual = ["Todos"]
     filtro_orden_actual = ["Nombre A-Z"]
 
-    # Variable para almacenar los trabajadores reales de la base de datos
+    # Variables globales de la vista para almacenar datos de la BD
     trabajadores_db = []
+    proyectos_maestros = []
+    departamentos_maestros = []
 
-    # --- LÓGICA DE CARGA DE DATOS ---
+    # --- LÓGICA DE BASE DE DATOS ---
 
-    def cargar_trabajadores_real():
-        """Obtiene todos los empleados de la base de datos MongoDB"""
-        exito, resultado = obtener_todos_empleados()
-        if exito:
-            formateados = []
-            for emp in resultado:
-                # Mapeamos los datos de la BD al formato que usa la UI
-                formateados.append({
-                    "_id": emp.get("_id"),
-                    "nombre": emp.get("nombre", "Sin nombre"),
-                    "apellidos": emp.get("apellidos", ""),
-                    "id": emp.get("id_empleado", "N/A"),
-                    "email": emp.get("email", "N/A"),
-                    "proyecto": emp.get("proyecto", "Sin proyecto"),
-                    "cargo": emp.get("cargo", "N/A"),
-                    "estado": emp.get("estado", "ACTIVO"),
-                    "fecha_alta": str(emp.get("fecha_incorporacion", ""))[:10] if emp.get("fecha_incorporacion") else "N/A"
-                })
-            return formateados
-        return []
+    def cargar_datos_maestros():
+        """Consulta la base de datos para traer trabajadores, proyectos y departamentos"""
+        nonlocal trabajadores_db, proyectos_maestros, departamentos_maestros, FILTROS_PROYECTO
+        
+        exito_t, list_t = obtener_todos_empleados()
+        if exito_t: trabajadores_db = list_t
+        
+        exito_p, list_p = obtener_todos_proyectos()
+        if exito_p: 
+            proyectos_maestros = list_p
+            FILTROS_PROYECTO = ["Todos"] + [p["nombre"] for p in proyectos_maestros]
+        
+        exito_d, list_d = obtener_todos_departamentos()
+        if exito_d: departamentos_maestros = list_d
 
     def actualizar_lista_ui():
-        """Aplica filtros a los datos cargados y actualiza los controles en pantalla"""
+        """Aplica los filtros de búsqueda, estado y proyecto sobre los datos de la memoria"""
         texto = input_busqueda.value.lower() if input_busqueda.value else ""
         
-        # Filtrado manual basado en el estado de los filtros
         filtrados = []
         for t in trabajadores_db:
-            nombre_completo = f"{t['nombre']} {t['apellidos']}".lower()
-            # Filtro búsqueda
-            if texto and texto not in nombre_completo and texto not in t["id"].lower():
+            nombre_completo = f"{t.get('nombre', '')} {t.get('apellidos', '')}".lower()
+            id_emp = t.get("id_empleado", "").lower()
+            
+            # 1. Filtro de búsqueda
+            if texto and (texto not in nombre_completo and texto not in id_emp):
                 continue
-            # Filtro estado
-            if filtro_estado_actual[0] != "Todos" and t["estado"] != filtro_estado_actual[0]:
+            
+            # 2. Filtro de estado
+            if filtro_estado_actual[0] != "Todos" and t.get("estado") != filtro_estado_actual[0]:
                 continue
+            
+            # 3. Filtro de proyecto
+            if filtro_proyecto_actual[0] != "Todos":
+                proys_trabajador = t.get("proyecto") or []
+                if isinstance(proys_trabajador, str): proys_trabajador = [proys_trabajador]
+                if filtro_proyecto_actual[0] not in proys_trabajador:
+                    continue
+                    
             filtrados.append(t)
 
-        # Ordenación
+        # 4. Ordenación
         if filtro_orden_actual[0] == "Nombre A-Z":
-            filtrados.sort(key=lambda x: x["nombre"])
+            filtrados.sort(key=lambda x: x.get("nombre", "").lower())
         elif filtro_orden_actual[0] == "Nombre Z-A":
-            filtrados.sort(key=lambda x: x["nombre"], reverse=True)
+            filtrados.sort(key=lambda x: x.get("nombre", "").lower(), reverse=True)
 
-        # Actualizamos controles
+        # Limpiamos y repintamos la lista
         lista_trabajadores.controls = []
-        for t in filtrados:
-            lista_trabajadores.controls.append(crear_tarjeta_trabajador(t))
+        if not filtrados:
+            lista_trabajadores.controls.append(
+                ft.Container(padding=20, content=ft.Text("No se encontraron trabajadores", color="grey", text_align="center"))
+            )
+        else:
+            for trabajador in filtrados:
+                lista_trabajadores.controls.append(crear_tarjeta_trabajador(trabajador))
         
-        texto_contador.value = f"{len(filtrados)} trabajadores"
+        contador_trabajadores.value = f"{len(filtrados)} trabajadores"
         page.update()
 
+    def refrescar_todo():
+        """Recarga de BD y refresca UI"""
+        cargar_datos_maestros()
+        actualizar_lista_ui()
+
     def btn_volver_click(e):
-        """Acción al hacer clic en el botón volver atrás - CORREGIDO A ADMIN"""
+        """Vuelve al Dashboard de Admin"""
         page.go("/area_admin")
 
     def btn_buscar_click(e):
@@ -107,15 +124,29 @@ def VistaGestionarTrabajadores(page: ft.Page):
         """Navega a la vista de roles"""
         page.go("/gestionar_roles")
 
-    #dialog detalle trabajador
+    # --- DIÁLOGOS DE GESTIÓN (DETALLE / EDITAR / ELIMINAR) ---
+
     def mostrar_detalle_trabajador(trabajador):
         """Muestra el diálogo con el detalle del trabajador"""
-        estado_color = COLOR_ACTIVO if trabajador["estado"] == "ACTIVO" else (COLOR_INACTIVO if trabajador["estado"] == "INACTIVO" else COLOR_PENDIENTE)
+        estado = trabajador.get("estado", "ACTIVO")
+        estado_color = COLOR_ACTIVO if estado == "ACTIVO" else (COLOR_INACTIVO if estado == "INACTIVO" else COLOR_PENDIENTE)
         
+        proys = trabajador.get("proyecto") or []
+        if isinstance(proys, str): proys = [proys]
+        
+        depts = trabajador.get("departamento") or []
+        nombres_depts = []
+        if isinstance(depts, list):
+            for d in depts:
+                if isinstance(d, dict): nombres_depts.append(d.get("nombre", "N/A"))
+                else: nombres_depts.append(str(d))
+        elif isinstance(depts, dict):
+            nombres_depts = [depts.get("nombre", "N/A")]
+
         dialog_detalle = ft.AlertDialog(
             modal=True,
-            title=ft.Text(f"{trabajador['nombre']} {trabajador['apellidos']}", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
+            title=ft.Text(f"{trabajador.get('nombre')} {trabajador.get('apellidos')}", size=16, weight=ft.FontWeight.BOLD, color="black"),
             content=ft.Container(
                 width=300,
                 bgcolor="white",
@@ -126,118 +157,174 @@ def VistaGestionarTrabajadores(page: ft.Page):
                         ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             controls=[
-                                ft.Text(f"ID: {trabajador['id']}", size=12, color=COLOR_LABEL),
+                                ft.Text(f"ID: {trabajador.get('id_empleado', 'N/A')}", size=12, color=COLOR_LABEL),
                                 ft.Container(
                                     bgcolor=estado_color,
                                     border_radius=10,
                                     padding=ft.padding.only(left=10, right=10, top=3, bottom=3),
-                                    content=ft.Text(trabajador["estado"], size=10, color="white", weight=ft.FontWeight.BOLD),
+                                    content=ft.Text(estado, size=10, color="white", weight=ft.FontWeight.BOLD),
                                 ),
                             ]
                         ),
                         ft.Divider(height=1, color=COLOR_BORDE),
                         ft.Column(spacing=2, controls=[
                             ft.Text("Email", size=11, color=COLOR_LABEL),
-                            ft.Text(trabajador["email"], size=12, color="black"),
+                            ft.Text(trabajador.get("email", "N/A"), size=12, color="black"),
                         ]),
                         ft.Column(spacing=2, controls=[
-                            ft.Text("Proyecto", size=11, color=COLOR_LABEL),
-                            ft.Text(trabajador["proyecto"], size=12, color="black"),
+                            ft.Text("Proyectos", size=11, color=COLOR_LABEL),
+                            ft.Text(", ".join(proys) if proys else "Ninguno", size=12, color="black"),
+                        ]),
+                        ft.Column(spacing=2, controls=[
+                            ft.Text("Departamentos", size=11, color=COLOR_LABEL),
+                            ft.Text(", ".join(nombres_depts) if nombres_depts else "Ninguno", size=12, color="black"),
                         ]),
                         ft.Column(spacing=2, controls=[
                             ft.Text("Cargo", size=11, color=COLOR_LABEL),
-                            ft.Text(trabajador["cargo"], size=12, color="black"),
+                            ft.Text(trabajador.get("cargo", "N/A"), size=12, color="black"),
                         ]),
                         ft.Column(spacing=2, controls=[
                             ft.Text("Fecha de alta", size=11, color=COLOR_LABEL),
-                            ft.Text(trabajador["fecha_alta"], size=12, color="black"),
+                            ft.Text(str(trabajador.get("fecha_incorporacion", "N/A"))[:10], size=12, color="black"),
                         ]),
                     ]
                 ),
             ),
             actions=[
-                ft.TextButton("Cerrar", on_click=lambda e: cerrar_dialog(dialog_detalle)),
+                ft.TextButton(content=ft.Text("Cerrar", color="black"), on_click=lambda e: cerrar_dialog(dialog_detalle)),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-
-        def cerrar_dialog(dialog):
-            dialog.open = False
-            page.update()
 
         page.overlay.append(dialog_detalle)
         dialog_detalle.open = True
         page.update()
 
-    #dialog editar trabajador
-    def mostrar_editar_trabajador(trabajador):
-        """Muestra el diálogo para editar trabajador"""
-        def guardar_cambios(e):
-            dialog_editar.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Trabajador {trabajador['nombre']} actualizado"))
-            page.snack_bar.open = True
+    def mostrar_editar_trabajador(t):
+        """Muestra el diálogo para editar TODOS los campos con seguridad NoneType"""
+        
+        proyectos_sel = t.get("proyecto") or []
+        if isinstance(proyectos_sel, str): proyectos_sel = [proyectos_sel]
+        
+        deptos_raw = t.get("departamento") or []
+        deptos_sel = []
+        if isinstance(deptos_raw, list):
+            for d in deptos_raw:
+                if isinstance(d, dict): deptos_sel.append(d.get("nombre"))
+                else: deptos_sel.append(str(d))
+        elif isinstance(deptos_raw, dict):
+            deptos_sel = [deptos_raw.get("nombre")]
+
+        input_nom = ft.TextField(label="Nombre", value=t.get("nombre"), border_color=COLOR_BORDE, text_size=12)
+        input_ape = ft.TextField(label="Apellidos", value=t.get("apellidos"), border_color=COLOR_BORDE, text_size=12)
+        input_cargo = ft.TextField(label="Cargo", value=t.get("cargo"), border_color=COLOR_BORDE, text_size=12)
+        input_email = ft.TextField(label="Email", value=t.get("email"), border_color=COLOR_BORDE, text_size=12)
+        input_tel = ft.TextField(label="Teléfono", value=t.get("telefono"), border_color=COLOR_BORDE, text_size=12)
+        input_dni = ft.TextField(label="Identificador (DNI)", value=t.get("identificador"), border_color=COLOR_BORDE, text_size=12)
+        input_ubi = ft.TextField(label="Ubicación", value=t.get("ubicacion"), border_color=COLOR_BORDE, text_size=12)
+
+        lista_empresas = sorted(list(set([d.get("empresa") for d in departamentos_maestros if d.get("empresa")])))
+        if not lista_empresas: lista_empresas = [t.get("empresa", "Empresa General")]
+
+        dropdown_emp = ft.DropdownM2(
+            label="Empresa", value=t.get("empresa"), border_color=COLOR_BORDE,
+            options=[ft.dropdownm2.Option(opt) for opt in lista_empresas]
+        )
+        dropdown_est = ft.DropdownM2(
+            label="Estado", value=t.get("estado"), border_color=COLOR_BORDE,
+            options=[ft.dropdownm2.Option(opt) for opt in ["ACTIVO", "INACTIVO", "PENDIENTE"]]
+        )
+
+        txt_proy_resumen = ft.Text(f"{len(proyectos_sel)} proyectos", size=11, color=COLOR_LABEL)
+        txt_dept_resumen = ft.Text(f"{len(deptos_sel)} departamentos", size=11, color=COLOR_LABEL)
+
+        def abrir_selector_proyectos(e):
+            if not dropdown_emp.value: return
+            opciones = [p["nombre"] for p in proyectos_maestros if p.get("cliente") == dropdown_emp.value]
+            checks = [ft.Checkbox(label=opt, value=opt in proyectos_sel, data=opt) for opt in opciones]
+            
+            def confirmar_p(e):
+                nonlocal proyectos_sel
+                proyectos_sel = [c.data for c in checks if c.value]
+                txt_proy_resumen.value = f"{len(proyectos_sel)} proyectos"
+                sel_dialog.open = False
+                page.update()
+
+            sel_dialog = ft.AlertDialog(
+                title=ft.Text("Proyectos", color="black"),
+                content=ft.Container(height=300, content=ft.ListView(controls=checks)),
+                actions=[ft.TextButton("Aceptar", on_click=confirmar_p)],
+                bgcolor="white"
+            )
+            page.overlay.append(sel_dialog)
+            sel_dialog.open = True
             page.update()
 
-        def cerrar_dialog(e):
-            dialog_editar.open = False
+        def abrir_selector_deptos(e):
+            if not dropdown_emp.value: return
+            opciones = [d["nombre"] for d in departamentos_maestros if d.get("empresa") == dropdown_emp.value]
+            checks = [ft.Checkbox(label=opt, value=opt in deptos_sel, data=opt) for opt in opciones]
+            
+            def confirmar_d(e):
+                nonlocal deptos_sel
+                deptos_sel = [c.data for c in checks if c.value]
+                txt_dept_resumen.value = f"{len(deptos_sel)} departamentos"
+                sel_dialog.open = False
+                page.update()
+
+            sel_dialog = ft.AlertDialog(
+                title=ft.Text("Departamentos", color="black"),
+                content=ft.Container(height=300, content=ft.ListView(controls=checks)),
+                actions=[ft.TextButton("Aceptar", on_click=confirmar_d)],
+                bgcolor="white"
+            )
+            page.overlay.append(sel_dialog)
+            sel_dialog.open = True
+            page.update()
+
+        def guardar_cambios(e):
+            datos_nuevos = {
+                "nombre": input_nom.value,
+                "apellidos": input_ape.value,
+                "email": input_email.value,
+                "cargo": input_cargo.value,
+                "telefono": input_tel.value,
+                "identificador": input_dni.value,
+                "ubicacion": input_ubi.value,
+                "empresa": dropdown_emp.value,
+                "estado": dropdown_est.value,
+                "proyecto": proyectos_sel,
+                "departamento": deptos_sel
+            }
+            exito, msj = actualizar_empleado(t["_id"], datos_nuevos)
+            if exito:
+                page.snack_bar = ft.SnackBar(ft.Text("✅ Actualizado"), bgcolor="green")
+                dialog_editar.open = False
+                refrescar_todo()
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
+            page.snack_bar.open = True
             page.update()
 
         dialog_editar = ft.AlertDialog(
             modal=True,
-            title=ft.Text(f"Editar: {trabajador['nombre']}", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
+            title=ft.Text(f"Editar Trabajador", size=16, weight="bold", color="black"),
             content=ft.Container(
-                width=300,
-                bgcolor="white",
-                content=ft.Column(
-                    spacing=10,
-                    tight=True,
-                    controls=[
-                        ft.TextField(
-                            label="Nombre",
-                            value=trabajador["nombre"],
-                            text_style=ft.TextStyle(size=12, color="black"),
-                            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-                            border_color=COLOR_BORDE,
-                            height=50,
-                        ),
-                        ft.TextField(
-                            label="Email",
-                            value=trabajador["email"],
-                            text_style=ft.TextStyle(size=12, color="black"),
-                            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-                            border_color=COLOR_BORDE,
-                            height=50,
-                        ),
-                        ft.TextField(
-                            label="Cargo",
-                            value=trabajador["cargo"],
-                            text_style=ft.TextStyle(size=12, color="black"),
-                            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-                            border_color=COLOR_BORDE,
-                            height=50,
-                        ),
-                        ft.DropdownM2(
-                            label="Estado",
-                            value=trabajador["estado"],
-                            text_style=ft.TextStyle(size=12, color="black"),
-                            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-                            bgcolor="white",
-                            fill_color="white",
-                            border_color=COLOR_BORDE,
-                            height=50,
-                            options=[
-                                ft.dropdownm2.Option("ACTIVO"),
-                                ft.dropdownm2.Option("INACTIVO"),
-                                ft.dropdownm2.Option("PENDIENTE"),
-                            ],
-                        ),
-                    ]
-                ),
+                width=350, height=500,
+                content=ft.Column([
+                    input_nom, input_ape, input_email, input_cargo, dropdown_emp,
+                    ft.Divider(),
+                    ft.Text("Asignaciones múltiples:", size=11, weight="bold", color=COLOR_LABEL),
+                    ft.Row([txt_proy_resumen, ft.IconButton(ft.Icons.ADD_LINK, on_click=abrir_selector_proyectos)], alignment="spaceBetween"),
+                    ft.Row([txt_dept_resumen, ft.IconButton(ft.Icons.ADD_LINK, on_click=abrir_selector_deptos)], alignment="spaceBetween"),
+                    ft.Divider(),
+                    input_dni, input_tel, input_ubi, dropdown_est
+                ], scroll="auto", spacing=12)
             ),
             actions=[
-                ft.TextButton("Cancelar", on_click=cerrar_dialog),
-                ft.TextButton("Guardar", on_click=guardar_cambios),
+                ft.TextButton(content=ft.Text("Cancelar", color="black"), on_click=lambda e: cerrar_dialog(dialog_editar)),
+                ft.ElevatedButton(content=ft.Text("Guardar", color="white"), bgcolor=COLOR_BTN_CREAR, on_click=guardar_cambios),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -246,36 +333,22 @@ def VistaGestionarTrabajadores(page: ft.Page):
         dialog_editar.open = True
         page.update()
 
-    #dialog confirmar eliminación
     def mostrar_confirmar_eliminar(trabajador):
-        """Muestra el diálogo de confirmación para eliminar trabajador real"""
         def confirmar_eliminar(e):
-            dialog_confirmar.open = False
-            
-            # 1. Llamamos al CRUD real
-            id_mongo = trabajador.get("_id")
-            if id_mongo:
-                exito, msj = eliminar_empleado(id_mongo)
-                if exito:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"✅ Trabajador eliminado correctamente"), bgcolor="green")
-                    # 2. Refrescamos datos y UI
-                    nonlocal trabajadores_db
-                    trabajadores_db = cargar_trabajadores_real()
-                    actualizar_lista_ui()
-                else:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
-            
+            exito, msj = eliminar_empleado(trabajador["_id"])
+            if exito:
+                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Trabajador eliminado"), bgcolor="green")
+                dialog_confirmar.open = False
+                refrescar_todo()
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
             page.snack_bar.open = True
-            page.update()
-
-        def cancelar_eliminar(e):
-            dialog_confirmar.open = False
             page.update()
 
         dialog_confirmar = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Eliminar trabajador", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
+            title=ft.Text("Eliminar trabajador", size=16, weight=ft.FontWeight.BOLD, color="black"),
             content=ft.Container(
                 width=280,
                 bgcolor="white",
@@ -283,7 +356,7 @@ def VistaGestionarTrabajadores(page: ft.Page):
                     spacing=10,
                     tight=True,
                     controls=[
-                        ft.Text("¿Estás seguro de que deseas eliminar este trabajador?", size=12, color="black"),
+                        ft.Text("¿Estás seguro de eliminar a este trabajador?", size=12, color="black"),
                         ft.Container(
                             bgcolor="#FFF3F3",
                             border_radius=8,
@@ -291,18 +364,17 @@ def VistaGestionarTrabajadores(page: ft.Page):
                             content=ft.Column(
                                 spacing=3,
                                 controls=[
-                                    ft.Text(f"{trabajador['nombre']} {trabajador['apellidos']}", size=13, color="black", weight=ft.FontWeight.BOLD),
-                                    ft.Text(f"{trabajador['id']} - {trabajador['email']}", size=11, color="#666666"),
+                                    ft.Text(f"{trabajador.get('nombre')} {trabajador.get('apellidos')}", size=13, color="black", weight="bold"),
+                                    ft.Text(f"ID: {trabajador.get('id_empleado')}", size=11, color="#666666"),
                                 ],
                             ),
                         ),
-                        ft.Text("Esta acción no se puede deshacer.", size=11, color=COLOR_ELIMINAR, italic=True),
                     ]
                 ),
             ),
             actions=[
-                ft.TextButton("Cancelar", on_click=cancelar_eliminar),
-                ft.TextButton("Eliminar", on_click=confirmar_eliminar, style=ft.ButtonStyle(color=COLOR_ELIMINAR)),
+                ft.TextButton(content=ft.Text("Cancelar", color="black"), on_click=lambda e: cerrar_dialog(dialog_confirmar)),
+                ft.ElevatedButton(content=ft.Text("Eliminar", color="white"), bgcolor=COLOR_ELIMINAR, on_click=confirmar_eliminar),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -311,160 +383,68 @@ def VistaGestionarTrabajadores(page: ft.Page):
         dialog_confirmar.open = True
         page.update()
 
-    #dialog filtros
-    def mostrar_dialog_filtros(e):
-        """Muestra el diálogo de filtros"""
-        radio_estado = ft.RadioGroup(
-            value=filtro_estado_actual[0],
-            content=ft.Column(
-                controls=[
-                    ft.Radio(value=estado, label=estado, label_style=ft.TextStyle(color="black", size=12)) 
-                    for estado in FILTROS_ESTADO
-                ],
-                spacing=2,
-            ),
-        )
-
-        radio_orden = ft.RadioGroup(
-            value=filtro_orden_actual[0],
-            content=ft.Column(
-                controls=[
-                    ft.Radio(value=orden, label=orden, label_style=ft.TextStyle(color="black", size=12)) 
-                    for orden in FILTROS_ORDEN
-                ],
-                spacing=2,
-            ),
-        )
-
-        def aplicar_filtros(e):
-            filtro_estado_actual[0] = radio_estado.value
-            filtro_orden_actual[0] = radio_orden.value
-            dialog_filtros.open = False
-            actualizar_lista_ui()
-            page.update()
-
-        def limpiar_filtros(e):
-            radio_estado.value = "Todos"
-            radio_orden.value = "Nombre A-Z"
-            page.update()
-
-        dialog_filtros = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Filtrar trabajadores", size=16, weight=ft.FontWeight.BOLD, color="black"),
-            bgcolor="white",
-            content=ft.Container(
-                width=300,
-                height=380,
-                bgcolor="white",
-                content=ft.Column(
-                    spacing=10,
-                    scroll=ft.ScrollMode.AUTO,
-                    controls=[
-                        ft.Text("Por Estado:", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                        radio_estado,
-                        ft.Divider(height=10, color=COLOR_BORDE),
-                        ft.Text("Ordenar por:", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                        radio_orden,
-                    ],
-                ),
-            ),
-            actions=[
-                ft.TextButton("Limpiar", on_click=limpiar_filtros),
-                ft.TextButton("Aplicar", on_click=aplicar_filtros),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        page.overlay.append(dialog_filtros)
-        dialog_filtros.open = True
+    def cerrar_dialog(dialog):
+        dialog.open = False
         page.update()
 
-    def crear_tarjeta_trabajador(trabajador):
-        """Crea una tarjeta para cada trabajador"""
-        estado_color = COLOR_ACTIVO if trabajador["estado"] == "ACTIVO" else (COLOR_INACTIVO if trabajador["estado"] == "INACTIVO" else COLOR_PENDIENTE)
+    # --- RENDERIZADO DE TARJETAS ---
+
+    def crear_tarjeta_trabajador(t):
+        estado = t.get("estado", "ACTIVO")
+        estado_color = COLOR_ACTIVO if estado == "ACTIVO" else (COLOR_INACTIVO if estado == "INACTIVO" else COLOR_PENDIENTE)
         
+        proys = t.get("proyecto") or []
+        if isinstance(proys, str): proys = [proys]
+        num_proy = len(proys)
+        
+        depts = t.get("departamento") or []
+        if isinstance(depts, dict): num_dept = 1
+        else: num_dept = len(depts)
+
         return ft.Container(
             bgcolor="white",
             border_radius=10,
             padding=ft.padding.all(10),
             margin=ft.margin.only(bottom=8),
-            shadow=ft.BoxShadow(
-                spread_radius=0,
-                blur_radius=4,
-                color=COLOR_SOMBRA_TARJETAS,
-                offset=ft.Offset(0, 2),
-            ),
+            shadow=ft.BoxShadow(spread_radius=0, blur_radius=4, color=COLOR_SOMBRA_TARJETAS, offset=ft.Offset(0, 2)),
             content=ft.Row(
                 spacing=8,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    #contenido principal (clickeable)
                     ft.Container(
                         expand=True,
+                        on_click=lambda e, worker=t: mostrar_detalle_trabajador(worker),
+                        ink=True,
                         content=ft.Column(
                             spacing=3,
                             controls=[
-                                #fila 1: Nombre + Estado
                                 ft.Row(
                                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                     controls=[
-                                        ft.Text(
-                                            f"{trabajador['nombre']} {trabajador['apellidos']}",
-                                            size=12,
-                                            color="black",
-                                            weight=ft.FontWeight.BOLD,
-                                            max_lines=1,
-                                            overflow="ellipsis"
-                                        ),
-                                        ft.Container(
-                                            width=10,
-                                            height=10,
-                                            border_radius=5,
-                                            bgcolor=estado_color,
-                                        ),
+                                        ft.Text(f"{t.get('nombre')} {t.get('apellidos')}", size=12, color="black", weight=ft.FontWeight.BOLD, max_lines=1, overflow="ellipsis"),
+                                        ft.Container(width=10, height=10, border_radius=5, bgcolor=estado_color),
                                     ]
                                 ),
-                                #fila 2: ID + Proyecto
                                 ft.Row(
                                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                     controls=[
-                                        ft.Text(trabajador["id"], size=10, color=COLOR_LABEL),
-                                        ft.Text(trabajador["proyecto"], size=10, color="#666666"),
+                                        ft.Text(f"ID: {t.get('id_empleado', 'N/A')}", size=10, color=COLOR_LABEL),
+                                        ft.Text(f"{num_proy} Proy | {num_dept} Dept", size=10, color="#666666"),
                                     ]
                                 ),
                             ]
                         ),
-                        on_click=lambda e, t=trabajador: mostrar_detalle_trabajador(t),
-                        ink=True,
                     ),
-                    #botones de acción
-                    ft.Container(
-                        content=ft.Icon(ft.Icons.EDIT, size=18, color=COLOR_EDITAR),
-                        on_click=lambda e, t=trabajador: mostrar_editar_trabajador(t),
-                        ink=True,
-                        padding=ft.padding.all(5),
-                        border_radius=5,
-                    ),
-                    ft.Container(
-                        content=ft.Icon(ft.Icons.DELETE, size=18, color=COLOR_ELIMINAR),
-                        on_click=lambda e, t=trabajador: mostrar_confirmar_eliminar(t),
-                        ink=True,
-                        padding=ft.padding.all(5),
-                        border_radius=5,
-                    ),
+                    ft.Container(content=ft.Icon(ft.Icons.EDIT, size=18, color=COLOR_EDITAR), on_click=lambda e, worker=t: mostrar_editar_trabajador(worker), ink=True, padding=5, border_radius=5),
+                    ft.Container(content=ft.Icon(ft.Icons.DELETE, size=18, color=COLOR_ELIMINAR), on_click=lambda e, worker=t: mostrar_confirmar_eliminar(worker), ink=True, padding=5, border_radius=5),
                 ]
             ),
         )
 
-    #botón volver
-    btn_volver = ft.Container(
-        content=ft.Text("←", size=24, color="white", weight=ft.FontWeight.BOLD),
-        on_click=btn_volver_click,
-        ink=True,
-        padding=10,
-    )
+    # --- ELEMENTOS DE LA PÁGINA ---
 
-    #campo de búsqueda
+    btn_volver = ft.Container(content=ft.Text("←", size=24, color="white", weight=ft.FontWeight.BOLD), on_click=btn_volver_click, ink=True, padding=10)
+
     input_busqueda = ft.TextField(
         hint_text="Buscar por nombre o ID...",
         hint_style=ft.TextStyle(size=11, color="#999999"),
@@ -477,139 +457,56 @@ def VistaGestionarTrabajadores(page: ft.Page):
         on_submit=lambda e: actualizar_lista_ui()
     )
 
-    #botón filtrar
-    btn_filtrar = ft.Container(
-        content=ft.Text("Filtrar", size=11, color="black"),
-        bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
-        border_radius=5,
-        padding=ft.padding.only(left=12, right=12, top=8, bottom=8),
-        on_click=mostrar_dialog_filtros,
-        ink=True,
-    )
-
-    #botón buscar
     btn_buscar = ft.Container(
         content=ft.Icon(ft.Icons.SEARCH, size=20, color="white"),
-        bgcolor=COLOR_LABEL,
-        border_radius=5,
-        padding=ft.padding.all(8),
-        on_click=btn_buscar_click,
-        ink=True,
+        bgcolor=COLOR_LABEL, border_radius=5, padding=8,
+        on_click=btn_buscar_click, ink=True,
     )
 
-    #fila de búsqueda y filtros
-    fila_busqueda = ft.Row(
-        spacing=8,
-        controls=[
-            input_busqueda,
-            btn_filtrar,
-            btn_buscar,
-        ]
-    )
+    contador_trabajadores = ft.Text("0 trabajadores", size=11, color=COLOR_LABEL)
+    lista_trabajadores = ft.ListView(spacing=0, expand=True)
 
-    #contador de trabajadores
-    texto_contador = ft.Text("0 trabajadores", size=11, color=COLOR_LABEL)
-
-    #lista de trabajadores
-    lista_trabajadores = ft.ListView(
-        spacing=0,
-        expand=True,
-    )
-
-    #botón crear trabajador
     btn_crear = ft.Container(
-        width=160,
-        height=40,
-        bgcolor=COLOR_BTN_CREAR,
-        border_radius=20,
-        alignment=ft.Alignment(0, 0),
-        ink=True,
+        width=160, height=40, bgcolor=COLOR_BTN_CREAR, border_radius=20, alignment=ft.Alignment(0, 0), ink=True,
         on_click=btn_crear_trabajador_click,
         content=ft.Text("Crear Trabajador", color="white", weight=ft.FontWeight.BOLD, size=12),
     )
 
-    #botón gestionar roles
     btn_roles = ft.Container(
-        width=140,
-        height=40,
-        bgcolor="#6A5ACD",
-        border_radius=20,
-        alignment=ft.Alignment(0, 0),
-        ink=True,
+        width=140, height=40, bgcolor="#6A5ACD", border_radius=20, alignment=ft.Alignment(0, 0), ink=True,
         on_click=btn_gestionar_roles_click,
         content=ft.Text("Gestionar Roles", color="white", weight=ft.FontWeight.BOLD, size=12),
     )
 
-    #tarjeta blanca principal
     tarjeta_blanca = ft.Container(
-        width=380,
-        bgcolor="white",
-        border_radius=25,
-        shadow=ft.BoxShadow(
-            spread_radius=0,
-            blur_radius=15,
-            color=COLOR_SOMBRA,
-            offset=ft.Offset(0, 5),
-        ),
+        width=380, bgcolor="white", border_radius=25,
+        shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
             padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
-            content=ft.Column(
-                spacing=10,
-                controls=[
-                    fila_busqueda,
-                    texto_contador,
-                    ft.Container(
-                        height=380,
-                        content=lista_trabajadores,
-                    ),
-                    ft.Row(
-                        alignment=ft.MainAxisAlignment.CENTER,
-                        spacing=10,
-                        controls=[btn_crear, btn_roles],
-                    ),
-                ]
-            )
+            content=ft.Column([
+                ft.Row([input_busqueda, btn_buscar], spacing=8),
+                contador_trabajadores,
+                ft.Container(height=380, content=lista_trabajadores),
+                ft.Row([btn_crear, btn_roles], alignment="center", spacing=10),
+            ], spacing=10)
         )
     )
 
-    #header flotante
     header_flotante = ft.Container(
-        width=300,
-        height=50,
-        bgcolor=COLOR_HEADER_BG,
-        border_radius=25,
-        alignment=ft.Alignment(0, 0),
-        content=ft.Text(
-            "GESTIONAR TRABAJADORES",
-            size=18,
-            weight=ft.FontWeight.BOLD,
-            color="white"
-        )
+        width=300, height=50, bgcolor=COLOR_HEADER_BG, border_radius=25, alignment=ft.Alignment(0, 0),
+        content=ft.Text("GESTIONAR TRABAJADORES", size=18, weight=ft.FontWeight.BOLD, color="white")
     )
 
-    #contenido superpuesto (tarjeta + header)
     contenido_superpuesto = ft.Container(
-        width=380,
-        height=620,
-        content=ft.Stack(
-            controls=[
-                ft.Container(
-                    content=tarjeta_blanca,
-                    top=30,
-                ),
-                ft.Container(
-                    content=header_flotante,
-                    top=0,
-                    left=40,
-                )
-            ]
-        )
+        width=380, height=620,
+        content=ft.Stack([
+            ft.Container(content=tarjeta_blanca, top=30),
+            ft.Container(content=header_flotante, top=0, left=40)
+        ])
     )
 
     # --- INICIALIZACIÓN ---
-    trabajadores_db = cargar_trabajadores_real()
-    actualizar_lista_ui()
+    refrescar_todo()
 
     return ft.Container(
         expand=True,
@@ -621,33 +518,8 @@ def VistaGestionarTrabajadores(page: ft.Page):
         content=ft.Stack(
             expand=True,
             controls=[
-                ft.Container(
-                    expand=True,
-                    alignment=ft.Alignment(0, 0),
-                    content=contenido_superpuesto
-                ),
-                ft.Container(
-                    content=btn_volver,
-                    top=10,
-                    left=10,
-                )
+                ft.Container(expand=True, alignment=ft.Alignment(0, 0), content=contenido_superpuesto),
+                ft.Container(content=btn_volver, top=10, left=10)
             ]
         )
     )
-
-
-#para probar directamente
-def main(page: ft.Page):
-    page.title = "App Tareas - Gestionar Trabajadores"
-    
-    page.window.width = 1200
-    page.window.height = 800
-    page.window.min_width = 400
-    page.window.min_height = 700
-    page.padding = 0 
-    
-    vista = VistaGestionarTrabajadores(page)
-    page.add(vista)
-
-if __name__ == "__main__":
-    ft.app(target=main)
