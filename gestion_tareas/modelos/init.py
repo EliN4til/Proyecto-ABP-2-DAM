@@ -149,6 +149,7 @@ def cargar_datos_prueba():
         requisitos="Hay que diseñar el modelo de la BBDD que usará la aplicación",
         icono="📋",
         id_proyecto=str(resumen_proyecto.inserted_id),
+        prioridad="alta",
         asignados=[resumen_laura]
     )
     db.tareas.insert_one(tarea.model_dump(by_alias=True, exclude=["id"]))
