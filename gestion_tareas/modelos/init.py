@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from pydantic import BaseModel, Field, EmailStr, BeforeValidator
-from typing import List, Optional, Annotated
+from typing import List, Optional, Annotated, Literal
 from datetime import datetime
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
@@ -31,7 +31,7 @@ class EmpleadoModel(BaseModel):
     email: EmailStr
     contrasenya: str
     foto: Optional[str] = None
-    estado: str = "ACTIVO"
+    estado: Literal["ACTIVO", "INACTIVO"] = "ACTIVO"
     empresa: str
     equipo: str
     proyecto: Optional[str] = None
@@ -55,7 +55,7 @@ class DepartamentoModel(BaseModel):
     email: Optional[str] = None
     telefono: Optional[str] = None
     presupuesto: Optional[float] = None
-    estado: str = "ACTIVO"
+    estado: Literal["ACTIVO", "INACTIVO"] = "ACTIVO"
 
 class EquipoModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
@@ -77,7 +77,7 @@ class ProyectoModel(BaseModel):
     responsable: Optional[str] = None
     cliente: str
     presupuesto: str
-    estado: str = "ACTIVO"
+    estado: Literal["ACTIVO", "PAUSADO"] = "ACTIVO"
     fecha_inicio: datetime
     fecha_fin: datetime
 
@@ -85,12 +85,12 @@ class TareaModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     titulo: str
     requisitos: str
-    estado: str = "pendiente"
+    estado: Literal["pendiente", "en_proceso", "completado"] = "pendiente"
     tags: List[str] = []
     icono: str
     id_proyecto: PyObjectId
     proyecto: Optional[str] = None
-    prioridad: str = "Media"
+    prioridad: Literal["alta", "media", "baja"] = "media"
     asignados: List[UsuarioResumen] = []
     compartido_por: Optional[str] = None
     atrasado: bool = False
