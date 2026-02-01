@@ -1,4 +1,7 @@
 import flet as ft
+from modelos.crud import obtener_tareas_atrasadas
+from modelos.consultas import filtrar_y_ordenar
+from datetime import datetime
 
 def VistaTareasAtrasadas(page: ft.Page):
     
@@ -16,7 +19,7 @@ def VistaTareasAtrasadas(page: ft.Page):
 
     #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
-    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
+    FILTROS_PROYECTO = ["Todos"]
     FILTROS_PRIORIDAD = ["Todas", "Alta", "Media", "Baja"]
     FILTROS_ORDEN = [
         "Más atrasado primero", 
@@ -35,117 +38,92 @@ def VistaTareasAtrasadas(page: ft.Page):
     filtro_prioridad_actual = ["Todas"]
     filtro_orden_actual = ["Más atrasado primero"]
 
-    #datos demo de tareas atrasadas
-    TAREAS_ATRASADAS = [
-        {
-            "titulo": "Arreglar bug linea 287 fichero UpdateDate.py",
-            "tag": "Desarrollo",
-            "emoji": "👨‍💻",
-            "proyecto": "App Móvil v2.0",
-            "departamento": "Desarrollo",
-            "prioridad": "Alta",
-            "asignados": ["Ana García", "Laura Sánchez"],
-            "fecha": "25/12/25",
-            "dias_atrasado": 5,
-            "requerimientos": [
-                "Identificar el error en la línea 287 del fichero UpdateDate.py",
-                "El bucle debe iterar correctamente sobre la lista de fechas",
-                "Validar que no se produzcan excepciones de tipo IndexError",
-                "Añadir logs para seguimiento del proceso",
-                "Realizar pruebas con datos de producción simulados",
-            ]
-        },
-        {
-            "titulo": "Diseñar mockups para dashboard",
-            "tag": "Diseño",
-            "emoji": "🎨",
-            "proyecto": "Dashboard Analytics",
-            "departamento": "Diseño",
-            "prioridad": "Media",
-            "asignados": ["Carlos López", "Sofia Ruiz"],
-            "fecha": "20/12/25",
-            "dias_atrasado": 10,
-            "requerimientos": [
-                "Crear diseño responsive para desktop y móvil",
-                "Incluir gráficos de rendimiento y métricas KPI",
-                "Usar la paleta de colores corporativa",
-                "Diseñar estados vacíos y de error",
-                "Exportar en formato Figma y PNG",
-            ]
-        },
-        {
-            "titulo": "Corregir validación formulario registro",
-            "tag": "Bug Fix",
-            "emoji": "🐛",
-            "proyecto": "Portal Web Cliente",
-            "departamento": "Desarrollo",
-            "prioridad": "Alta",
-            "asignados": ["Diego Torres"],
-            "fecha": "22/12/25",
-            "dias_atrasado": 8,
-            "requerimientos": [
-                "El campo email no valida correctamente dominios .co",
-                "El password debe aceptar caracteres especiales",
-                "Mostrar mensajes de error específicos por campo",
-                "Validar que las contraseñas coincidan",
-                "Añadir validación de teléfono internacional",
-            ]
-        },
-        {
-            "titulo": "Implementar endpoint de notificaciones",
-            "tag": "API",
-            "emoji": "🔌",
-            "proyecto": "API REST Services",
-            "departamento": "Desarrollo",
-            "prioridad": "Alta",
-            "asignados": ["María Rodríguez"],
-            "fecha": "18/12/25",
-            "dias_atrasado": 12,
-            "requerimientos": [
-                "Crear endpoint POST /api/notifications",
-                "Soportar notificaciones push y email",
-                "Implementar cola de mensajes para envíos masivos",
-                "Añadir rate limiting para evitar spam",
-                "Documentar en Swagger con ejemplos",
-            ]
-        },
-        {
-            "titulo": "Migrar base de datos a PostgreSQL 15",
-            "tag": "Base de Datos",
-            "emoji": "🗄️",
-            "proyecto": "Migración Cloud",
-            "departamento": "DevOps",
-            "prioridad": "Alta",
-            "asignados": ["Pedro Martínez"],
-            "fecha": "15/12/25",
-            "dias_atrasado": 15,
-            "requerimientos": [
-                "Realizar backup completo antes de migración",
-                "Actualizar queries incompatibles con PG15",
-                "Migrar procedimientos almacenados",
-                "Verificar índices y performance",
-                "Ejecutar tests de integración post-migración",
-            ]
-        },
-        {
-            "titulo": "Actualizar dependencias de seguridad",
-            "tag": "DevOps",
-            "emoji": "⚙️",
-            "proyecto": "Migración Cloud",
-            "departamento": "DevOps",
-            "prioridad": "Media",
-            "asignados": ["Pedro Martínez"],
-            "fecha": "23/12/25",
-            "dias_atrasado": 7,
-            "requerimientos": [
-                "Actualizar todas las dependencias con vulnerabilidades críticas",
-                "Ejecutar npm audit y pip audit",
-                "Verificar compatibilidad con versiones actuales",
-                "Actualizar lockfiles",
-                "Ejecutar suite de tests completa",
-            ]
-        },
-    ]
+    #cargamos las tareas atrasadas de la BD
+    def cargar_tareas_atrasadas():
+        """Obtiene las tareas atrasadas de la base de datos"""
+        exito, resultado = obtener_tareas_atrasadas()
+        if exito:
+            tareas = []
+            for t in resultado:
+                #formateamos la fecha
+                fecha = ""
+                dias_atrasado = 0
+                if t.get("fecha_limite"):
+                    fecha_limite = t["fecha_limite"]
+                    fecha = fecha_limite.strftime("%d/%m/%y")
+                    #calculamos días de atraso
+                    diferencia = datetime.now() - fecha_limite
+                    dias_atrasado = max(0, diferencia.days)
+                
+                #obtenemos los nombres de los asignados
+                asignados_nombres = []
+                for asignado in t.get("asignados", []):
+                    if isinstance(asignado, dict):
+                        asignados_nombres.append(asignado.get("nombre", "Sin nombre"))
+                    else:
+                        asignados_nombres.append(str(asignado))
+                
+                #obtenemos el primer tag o lo dejamos vacío
+                tags = t.get("tags", [])
+                tag = tags[0] if tags else "General"
+                
+                #creamos el diccionario de la tarea
+                tarea = {
+                    "_id": t.get("_id"),
+                    "titulo": t.get("titulo", "Sin título"),
+                    "tag": tag,
+                    "emoji": t.get("icono", "📋"),
+                    "proyecto": t.get("proyecto", "Sin proyecto"),
+                    "departamento": "General",
+                    "prioridad": t.get("prioridad", "Media"),
+                    "asignados": asignados_nombres,
+                    "fecha": fecha,
+                    "dias_atrasado": dias_atrasado,
+                    "requerimientos": [t.get("requisitos", "Sin requisitos")]
+                }
+                tareas.append(tarea)
+            return tareas
+        else:
+            #si hay error, devolvemos lista vacía
+            print(f"Error cargando tareas: {resultado}")
+            return []
+    
+    #cargamos las tareas al inicio
+    TAREAS_ATRASADAS = cargar_tareas_atrasadas()
+    #guardamos todas las tareas para poder filtrar
+    todas_las_tareas = []
+    for t in TAREAS_ATRASADAS:
+        todas_las_tareas.append(t.copy())
+    
+    def actualizar_lista_tareas():
+        """Actualiza la lista de tareas en pantalla"""
+        #preparamos los filtros
+        filtros = {
+            "prioridad": filtro_prioridad_actual[0],
+            "tag": filtro_tag_actual[0],
+            "proyecto": filtro_proyecto_actual[0]
+        }
+        
+        #obtenemos el texto de búsqueda
+        texto = ""
+        if hasattr(input_busqueda, 'value'):
+            texto = input_busqueda.value
+        
+        #filtramos y ordenamos usando la función importada
+        tareas_filtradas = filtrar_y_ordenar(
+            todas_las_tareas, 
+            filtros, 
+            texto, 
+            filtro_orden_actual[0],
+            "fecha"
+        )
+        
+        #actualizamos la lista
+        lista_tareas.controls = []
+        for tarea in tareas_filtradas:
+            tarjeta = crear_tarjeta_tarea(tarea)
+            lista_tareas.controls.append(tarjeta)
+        page.update()
 
     def get_color_prioridad(prioridad):
         if prioridad == "Alta":
@@ -159,8 +137,9 @@ def VistaTareasAtrasadas(page: ft.Page):
         page.go("/area_personal")
 
     def btn_buscar_click(e):
-        texto_busqueda = input_busqueda.value
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {texto_busqueda}"))
+        #aplicamos el filtro de búsqueda
+        actualizar_lista_tareas()
+        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
         page.snack_bar.open = True
         page.update()
 
@@ -304,13 +283,20 @@ def VistaTareasAtrasadas(page: ft.Page):
             filtro_orden_actual[0] = radio_orden.value
             filtro_prioridad_actual[0] = radio_prioridad.value
             dialog_filtros.open = False
-            page.snack_bar = ft.SnackBar(ft.Text("Filtros aplicados"))
+            actualizar_lista_tareas()
+            page.snack_bar = ft.SnackBar(ft.Text("✅ Filtros aplicados"))
             page.snack_bar.open = True
             page.update()
 
         def limpiar_filtros(e):
             radio_orden.value = "Más atrasado primero"
             radio_prioridad.value = "Todas"
+            filtro_orden_actual[0] = "Más atrasado primero"
+            filtro_prioridad_actual[0] = "Todas"
+            filtro_tag_actual[0] = "Todos"
+            filtro_proyecto_actual[0] = "Todos"
+            input_busqueda.value = ""
+            actualizar_lista_tareas()
             page.update()
 
         def abrir_filtro_tags(e):
@@ -399,7 +385,8 @@ def VistaTareasAtrasadas(page: ft.Page):
         def aplicar_tag(e):
             filtro_tag_actual[0] = radio_tags.value
             dialog_tags.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Tag: {filtro_tag_actual[0]}"))
+            actualizar_lista_tareas()
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tag: {filtro_tag_actual[0]}"))
             page.snack_bar.open = True
             page.update()
 
@@ -459,7 +446,8 @@ def VistaTareasAtrasadas(page: ft.Page):
         def aplicar_proyecto(e):
             filtro_proyecto_actual[0] = radio_proyecto.value
             dialog_proyecto.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Proyecto: {filtro_proyecto_actual[0]}"))
+            actualizar_lista_tareas()
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Proyecto: {filtro_proyecto_actual[0]}"))
             page.snack_bar.open = True
             page.update()
 

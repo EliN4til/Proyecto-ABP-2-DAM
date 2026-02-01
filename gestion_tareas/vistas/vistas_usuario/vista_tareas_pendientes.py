@@ -1,4 +1,6 @@
 import flet as ft
+from modelos.crud import obtener_tareas_por_estado, eliminar_tarea
+from modelos.consultas import filtrar_y_ordenar
 
 def VistaTareasPendientes(page: ft.Page):
     
@@ -17,7 +19,7 @@ def VistaTareasPendientes(page: ft.Page):
 
     #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
-    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
+    FILTROS_PROYECTO = ["Todos"]
     FILTROS_PRIORIDAD = ["Todas", "Alta", "Media", "Baja"]
     FILTROS_ORDEN = [
         "Más reciente primero", 
@@ -36,117 +38,91 @@ def VistaTareasPendientes(page: ft.Page):
     filtro_prioridad_actual = ["Todas"]
     filtro_orden_actual = ["Más reciente primero"]
 
-    #datos demo de tareas pendientes
-    TAREAS_PENDIENTES = [
-        {
-            "titulo": "Arreglar bug linea 287 fichero UpdateDate.py",
-            "tag": "Desarrollo",
-            "emoji": "👨‍💻",
-            "proyecto": "App Móvil v2.0",
-            "departamento": "Desarrollo",
-            "prioridad": "Alta",
-            "asignados": ["Ana García", "Laura Sánchez"],
-            "fecha_inicio": "25/12/25",
-            "fecha_fin": "31/12/25",
-            "requerimientos": [
-                "Identificar el error en la línea 287 del fichero UpdateDate.py",
-                "El bucle debe iterar correctamente sobre la lista de fechas",
-                "Validar que no se produzcan excepciones de tipo IndexError",
-                "Añadir logs para seguimiento del proceso",
-                "Realizar pruebas con datos de producción simulados",
-            ]
-        },
-        {
-            "titulo": "Implementar autenticación OAuth2",
-            "tag": "Backend",
-            "emoji": "🔧",
-            "proyecto": "API REST Services",
-            "departamento": "Desarrollo",
-            "prioridad": "Alta",
-            "asignados": ["María Rodríguez"],
-            "fecha_inicio": "26/12/25",
-            "fecha_fin": "05/01/26",
-            "requerimientos": [
-                "Configurar cliente OAuth2 con Google y GitHub",
-                "Implementar flujo de autorización",
-                "Guardar tokens de acceso de forma segura",
-                "Manejar refresh de tokens automático",
-                "Añadir tests de integración",
-            ]
-        },
-        {
-            "titulo": "Diseñar mockups para dashboard",
-            "tag": "Diseño",
-            "emoji": "🎨",
-            "proyecto": "Dashboard Analytics",
-            "departamento": "Diseño",
-            "prioridad": "Media",
-            "asignados": ["Carlos López", "Sofia Ruiz"],
-            "fecha_inicio": "27/12/25",
-            "fecha_fin": "03/01/26",
-            "requerimientos": [
-                "Crear diseño responsive para desktop y móvil",
-                "Incluir gráficos de rendimiento y métricas KPI",
-                "Usar la paleta de colores corporativa",
-                "Diseñar estados vacíos y de error",
-                "Exportar en formato Figma y PNG",
-            ]
-        },
-        {
-            "titulo": "Escribir tests unitarios módulo Auth",
-            "tag": "Testing",
-            "emoji": "🧪",
-            "proyecto": "API REST Services",
-            "departamento": "QA",
-            "prioridad": "Media",
-            "asignados": ["María Rodríguez"],
-            "fecha_inicio": "28/12/25",
-            "fecha_fin": "08/01/26",
-            "requerimientos": [
-                "Cobertura mínima del 80% en el módulo de autenticación",
-                "Testear login, logout y refresh de tokens",
-                "Incluir tests para casos de error y edge cases",
-                "Mockear las llamadas a servicios externos",
-                "Documentar los tests con descripciones claras",
-            ]
-        },
-        {
-            "titulo": "Configurar pipeline CI/CD",
-            "tag": "DevOps",
-            "emoji": "⚙️",
-            "proyecto": "Migración Cloud",
-            "departamento": "DevOps",
-            "prioridad": "Alta",
-            "asignados": ["Pedro Martínez"],
-            "fecha_inicio": "29/12/25",
-            "fecha_fin": "10/01/26",
-            "requerimientos": [
-                "Configurar GitHub Actions para build automático",
-                "Añadir etapa de tests automatizados",
-                "Configurar deploy automático a staging",
-                "Implementar notificaciones en Slack",
-                "Documentar el proceso de deployment",
-            ]
-        },
-        {
-            "titulo": "Documentar API endpoints v2",
-            "tag": "Documentación",
-            "emoji": "📝",
-            "proyecto": "API REST Services",
-            "departamento": "Desarrollo",
-            "prioridad": "Baja",
-            "asignados": ["Juan Fernández"],
-            "fecha_inicio": "30/12/25",
-            "fecha_fin": "15/01/26",
-            "requerimientos": [
-                "Documentar todos los endpoints del API v2 en Swagger",
-                "Incluir ejemplos de request y response",
-                "Describir códigos de error y sus significados",
-                "Añadir sección de autenticación y autorización",
-                "Revisar y actualizar la documentación existente",
-            ]
-        },
-    ]
+    #cargamos las tareas pendientes de la BD
+    def cargar_tareas_pendientes():
+        """Obtiene las tareas pendientes de la base de datos"""
+        exito, resultado = obtener_tareas_por_estado("pendiente")
+        if exito:
+            tareas = []
+            for t in resultado:
+                #formateamos las fechas
+                fecha_inicio = ""
+                if t.get("fecha_inicio"):
+                    fecha_inicio = t["fecha_inicio"].strftime("%d/%m/%y")
+                
+                fecha_fin = ""
+                if t.get("fecha_limite"):
+                    fecha_fin = t["fecha_limite"].strftime("%d/%m/%y")
+                
+                #obtenemos los nombres de los asignados
+                asignados_nombres = []
+                for asignado in t.get("asignados", []):
+                    if isinstance(asignado, dict):
+                        asignados_nombres.append(asignado.get("nombre", "Sin nombre"))
+                    else:
+                        asignados_nombres.append(str(asignado))
+                
+                #obtenemos el primer tag o lo dejamos vacío
+                tags = t.get("tags", [])
+                tag = tags[0] if tags else "General"
+                
+                #creamos el diccionario de la tarea
+                tarea = {
+                    "_id": t.get("_id"),
+                    "titulo": t.get("titulo", "Sin título"),
+                    "tag": tag,
+                    "emoji": t.get("icono", "📋"),
+                    "proyecto": t.get("proyecto", "Sin proyecto"),
+                    "departamento": "General",
+                    "prioridad": t.get("prioridad", "Media"),
+                    "asignados": asignados_nombres,
+                    "fecha_inicio": fecha_inicio,
+                    "fecha_fin": fecha_fin,
+                    "requerimientos": [t.get("requisitos", "Sin requisitos")]
+                }
+                tareas.append(tarea)
+            return tareas
+        else:
+            #si hay error, devolvemos lista vacía
+            print(f"Error cargando tareas: {resultado}")
+            return []
+    
+    #cargamos las tareas al inicio
+    TAREAS_PENDIENTES = cargar_tareas_pendientes()
+    #guardamos todas las tareas para poder filtrar
+    todas_las_tareas = []
+    for t in TAREAS_PENDIENTES:
+        todas_las_tareas.append(t.copy())
+    
+    def actualizar_lista_tareas():
+        """Actualiza la lista de tareas en pantalla"""
+        #preparamos los filtros
+        filtros = {
+            "prioridad": filtro_prioridad_actual[0],
+            "tag": filtro_tag_actual[0],
+            "proyecto": filtro_proyecto_actual[0]
+        }
+        
+        #obtenemos el texto de búsqueda
+        texto = ""
+        if hasattr(input_busqueda, 'value'):
+            texto = input_busqueda.value
+        
+        #filtramos y ordenamos usando la función importada
+        tareas_filtradas = filtrar_y_ordenar(
+            todas_las_tareas, 
+            filtros, 
+            texto, 
+            filtro_orden_actual[0],
+            "fecha_fin"
+        )
+        
+        #actualizamos la lista
+        lista_tareas.controls = []
+        for tarea in tareas_filtradas:
+            tarjeta = crear_tarjeta_tarea(tarea)
+            lista_tareas.controls.append(tarjeta)
+        page.update()
 
     def get_color_prioridad(prioridad):
         if prioridad == "Alta":
@@ -160,15 +136,14 @@ def VistaTareasPendientes(page: ft.Page):
         page.go("/area_personal")
 
     def btn_buscar_click(e):
-        texto_busqueda = input_busqueda.value
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {texto_busqueda}"))
+        #aplicamos el filtro de búsqueda
+        actualizar_lista_tareas()
+        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
         page.snack_bar.open = True
         page.update()
 
     def btn_anadir_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Añadir nueva tarea"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/nueva_tarea")
 
     #dialog detalle tarea
     def mostrar_detalle_tarea(tarea):
@@ -293,8 +268,23 @@ def VistaTareasPendientes(page: ft.Page):
     def mostrar_confirmar_eliminar(tarea):
         def confirmar_eliminar(e):
             dialog_confirmar.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Tarea '{tarea['titulo']}' eliminada"))
-            page.snack_bar.open = True
+            
+            #eliminamos la tarea de la BD
+            id_tarea = tarea.get("_id")
+            if id_tarea:
+                exito, resultado = eliminar_tarea(id_tarea)
+                if exito:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tarea '{tarea['titulo']}' eliminada"))
+                    page.snack_bar.open = True
+                    #recargamos la lista de tareas
+                    lista_tareas.controls = [crear_tarjeta_tarea(t) for t in cargar_tareas_pendientes()]
+                else:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al eliminar: {resultado}"))
+                    page.snack_bar.open = True
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text("❌ Error: No se pudo identificar la tarea"))
+                page.snack_bar.open = True
+            
             page.update()
 
         def cancelar_eliminar(e):
@@ -374,13 +364,21 @@ def VistaTareasPendientes(page: ft.Page):
             filtro_orden_actual[0] = radio_orden.value
             filtro_prioridad_actual[0] = radio_prioridad.value
             dialog_filtros.open = False
-            page.snack_bar = ft.SnackBar(ft.Text("Filtros aplicados"))
+            #actualizamos la lista con los nuevos filtros
+            actualizar_lista_tareas()
+            page.snack_bar = ft.SnackBar(ft.Text("✅ Filtros aplicados"))
             page.snack_bar.open = True
             page.update()
 
         def limpiar_filtros(e):
             radio_orden.value = "Más reciente primero"
             radio_prioridad.value = "Todas"
+            filtro_orden_actual[0] = "Más reciente primero"
+            filtro_prioridad_actual[0] = "Todas"
+            filtro_tag_actual[0] = "Todos"
+            filtro_proyecto_actual[0] = "Todos"
+            input_busqueda.value = ""
+            actualizar_lista_tareas()
             page.update()
 
         def abrir_filtro_tags(e):
@@ -469,7 +467,8 @@ def VistaTareasPendientes(page: ft.Page):
         def aplicar_tag(e):
             filtro_tag_actual[0] = radio_tags.value
             dialog_tags.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Tag: {filtro_tag_actual[0]}"))
+            actualizar_lista_tareas()
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tag: {filtro_tag_actual[0]}"))
             page.snack_bar.open = True
             page.update()
 
@@ -529,7 +528,8 @@ def VistaTareasPendientes(page: ft.Page):
         def aplicar_proyecto(e):
             filtro_proyecto_actual[0] = radio_proyecto.value
             dialog_proyecto.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Proyecto: {filtro_proyecto_actual[0]}"))
+            actualizar_lista_tareas()
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Proyecto: {filtro_proyecto_actual[0]}"))
             page.snack_bar.open = True
             page.update()
 
