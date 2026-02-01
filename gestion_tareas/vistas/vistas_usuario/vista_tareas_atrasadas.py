@@ -1,5 +1,5 @@
 import flet as ft
-from modelos.crud import obtener_tareas_atrasadas
+from modelos.crud import obtener_tareas_atrasadas, completar_tarea
 from modelos.consultas import filtrar_y_ordenar
 from datetime import datetime
 
@@ -16,10 +16,11 @@ def VistaTareasAtrasadas(page: ft.Page):
     COLOR_PRIORIDAD_ALTA = "#E53935"
     COLOR_PRIORIDAD_MEDIA = "#FF9800"
     COLOR_PRIORIDAD_BAJA = "#4CAF50"
+    COLOR_COMPLETADO = "#4CAF50"
 
     #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
-    FILTROS_PROYECTO = ["Todos"]
+    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
     FILTROS_PRIORIDAD = ["Todas", "Alta", "Media", "Baja"]
     FILTROS_ORDEN = [
         "Más atrasado primero", 
@@ -38,7 +39,8 @@ def VistaTareasAtrasadas(page: ft.Page):
     filtro_prioridad_actual = ["Todas"]
     filtro_orden_actual = ["Más atrasado primero"]
 
-    #cargamos las tareas atrasadas de la BD
+    # --- LÓGICA DE BASE DE DATOS ---
+
     def cargar_tareas_atrasadas():
         """Obtiene las tareas atrasadas de la base de datos"""
         exito, resultado = obtener_tareas_atrasadas()
@@ -84,19 +86,14 @@ def VistaTareasAtrasadas(page: ft.Page):
                 tareas.append(tarea)
             return tareas
         else:
-            #si hay error, devolvemos lista vacía
             print(f"Error cargando tareas: {resultado}")
             return []
     
     #cargamos las tareas al inicio
-    TAREAS_ATRASADAS = cargar_tareas_atrasadas()
-    #guardamos todas las tareas para poder filtrar
-    todas_las_tareas = []
-    for t in TAREAS_ATRASADAS:
-        todas_las_tareas.append(t.copy())
+    todas_las_tareas = cargar_tareas_atrasadas()
     
     def actualizar_lista_tareas():
-        """Actualiza la lista de tareas en pantalla"""
+        """Actualiza la lista de tareas en pantalla aplicando filtros sobre la memoria"""
         #preparamos los filtros
         filtros = {
             "prioridad": filtro_prioridad_actual[0],
@@ -105,9 +102,7 @@ def VistaTareasAtrasadas(page: ft.Page):
         }
         
         #obtenemos el texto de búsqueda
-        texto = ""
-        if hasattr(input_busqueda, 'value'):
-            texto = input_busqueda.value
+        texto = input_busqueda.value if hasattr(input_busqueda, 'value') else ""
         
         #filtramos y ordenamos usando la función importada
         tareas_filtradas = filtrar_y_ordenar(
@@ -120,15 +115,48 @@ def VistaTareasAtrasadas(page: ft.Page):
         
         #actualizamos la lista
         lista_tareas.controls = []
-        for tarea in tareas_filtradas:
-            tarjeta = crear_tarjeta_tarea(tarea)
-            lista_tareas.controls.append(tarjeta)
+        if not tareas_filtradas:
+            lista_tareas.controls.append(
+                ft.Container(
+                    padding=20,
+                    content=ft.Text("No hay tareas que coincidan con los filtros", color="grey")
+                )
+            )
+        else:
+            for tarea in tareas_filtradas:
+                tarjeta = crear_tarjeta_tarea(tarea)
+                lista_tareas.controls.append(tarjeta)
         page.update()
 
+    def handle_completar_tarea(e, tarea):
+        """Marca la tarea como completada en la BD y la elimina de la vista actual"""
+        id_tarea = tarea.get("_id")
+        if not id_tarea: return
+
+        exito, mensaje = completar_tarea(id_tarea)
+        
+        if exito:
+            page.snack_bar = ft.SnackBar(
+                ft.Text(f"✅ Tarea '{tarea['titulo']}' marcada como completada"),
+                bgcolor=COLOR_COMPLETADO
+            )
+            # Recargamos de la base de datos y refrescamos la UI
+            nonlocal todas_las_tareas
+            todas_las_tareas = cargar_tareas_atrasadas()
+            actualizar_lista_tareas()
+        else:
+            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {mensaje}"), bgcolor=COLOR_ATRASADO)
+        
+        page.snack_bar.open = True
+        page.update()
+
+    # --- DIÁLOGOS Y UI ---
+
     def get_color_prioridad(prioridad):
-        if prioridad == "Alta":
+        p = prioridad.lower()
+        if p == "alta":
             return COLOR_PRIORIDAD_ALTA
-        elif prioridad == "Media":
+        elif p == "media":
             return COLOR_PRIORIDAD_MEDIA
         else:
             return COLOR_PRIORIDAD_BAJA
@@ -137,13 +165,11 @@ def VistaTareasAtrasadas(page: ft.Page):
         page.go("/area_personal")
 
     def btn_buscar_click(e):
-        #aplicamos el filtro de búsqueda
         actualizar_lista_tareas()
         page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
         page.snack_bar.open = True
         page.update()
 
-    #dialog tarea detalle
     def mostrar_detalle_tarea(tarea):
         requerimientos_list = ft.Column(
             spacing=6,
@@ -255,7 +281,8 @@ def VistaTareasAtrasadas(page: ft.Page):
         dialog_detalle.open = True
         page.update()
 
-    #dialog filtros
+    # --- DIÁLOGOS DE FILTROS ---
+
     def mostrar_dialog_filtros(e):
         radio_orden = ft.RadioGroup(
             value=filtro_orden_actual[0],
@@ -369,7 +396,6 @@ def VistaTareasAtrasadas(page: ft.Page):
         dialog_filtros.open = True
         page.update()
 
-    #dialog filtro por tags
     def mostrar_dialog_tags():
         radio_tags = ft.RadioGroup(
             value=filtro_tag_actual[0],
@@ -430,7 +456,6 @@ def VistaTareasAtrasadas(page: ft.Page):
         dialog_tags.open = True
         page.update()
 
-    #dialog filtro por proyecto
     def mostrar_dialog_proyecto():
         radio_proyecto = ft.RadioGroup(
             value=filtro_proyecto_actual[0],
@@ -491,13 +516,15 @@ def VistaTareasAtrasadas(page: ft.Page):
         dialog_proyecto.open = True
         page.update()
 
+    # --- RENDERIZADO DE TARJETAS ---
+
     def crear_tarjeta_tarea(tarea):
-        """Crea una tarjeta para cada tarea atrasada"""
+        """Crea una tarjeta para cada tarea atrasada con el botón de completar"""
         return ft.Container(
             bgcolor="white",
             border_radius=10,
-            padding=ft.padding.all(10),
-            margin=ft.margin.only(bottom=8),
+            padding=ft.padding.all(12),
+            margin=ft.margin.only(bottom=10),
             border=ft.border.all(1, "#FFCDD2"),
             shadow=ft.BoxShadow(
                 spread_radius=0,
@@ -506,7 +533,7 @@ def VistaTareasAtrasadas(page: ft.Page):
                 offset=ft.Offset(0, 2),
             ),
             content=ft.Column(
-                spacing=4,
+                spacing=8,
                 controls=[
                     #fila 1: Emoji + Título + Prioridad
                     ft.Row(
@@ -562,13 +589,37 @@ def VistaTareasAtrasadas(page: ft.Page):
                             ),
                         ]
                     ),
+                    ft.Divider(height=1, color="#F0F0F0"),
+                    # Fila 4: Botones de Acción (Detalles y Completar)
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        controls=[
+                            ft.TextButton(
+                                "Ver detalles",
+                                icon=ft.Icons.INFO_OUTLINE,
+                                on_click=lambda e, t=tarea: mostrar_detalle_tarea(t),
+                                style=ft.ButtonStyle(color=COLOR_LABEL)
+                            ),
+                            ft.ElevatedButton(
+                                "Marcar completado",
+                                icon=ft.Icons.CHECK_CIRCLE,
+                                bgcolor=COLOR_COMPLETADO,
+                                color="white",
+                                height=34,
+                                style=ft.ButtonStyle(
+                                    shape=ft.RoundedRectangleBorder(radius=8),
+                                    text_style=ft.TextStyle(size=11, weight="bold")
+                                ),
+                                on_click=lambda e, t=tarea: handle_completar_tarea(e, t)
+                            )
+                        ]
+                    )
                 ]
             ),
-            on_click=lambda e, t=tarea: mostrar_detalle_tarea(t),
-            ink=True,
         )
 
-    #campo de búsqueda
+    # --- ELEMENTOS DE LA PÁGINA ---
+
     input_busqueda = ft.TextField(
         hint_text="Buscar por palabras clave...",
         hint_style=ft.TextStyle(size=11, color="#999999"),
@@ -580,7 +631,6 @@ def VistaTareasAtrasadas(page: ft.Page):
         content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
     )
 
-    #botón filtrar
     btn_filtrar = ft.Container(
         content=ft.Text("Filtrar", size=11, color="black"),
         bgcolor="white",
@@ -591,7 +641,6 @@ def VistaTareasAtrasadas(page: ft.Page):
         ink=True,
     )
 
-    #botón buscar (icono lupa)
     btn_buscar = ft.Container(
         content=ft.Icon(ft.Icons.SEARCH, size=20, color="white"),
         bgcolor=COLOR_LABEL,
@@ -601,7 +650,6 @@ def VistaTareasAtrasadas(page: ft.Page):
         ink=True,
     )
 
-    #fila de búsqueda y filtros
     fila_busqueda = ft.Row(
         spacing=8,
         controls=[
@@ -611,10 +659,8 @@ def VistaTareasAtrasadas(page: ft.Page):
         ]
     )
 
-    #lista de tareas
     lista_tareas = ft.ListView(
         spacing=0,
-        controls=[crear_tarjeta_tarea(tarea) for tarea in TAREAS_ATRASADAS],
         expand=True,
     )
 
@@ -628,7 +674,6 @@ def VistaTareasAtrasadas(page: ft.Page):
         content=ft.Column(
             spacing=0,
             controls=[
-                #flecha de retroceso
                 ft.Container(
                     padding=ft.padding.only(left=15, top=10, bottom=5),
                     alignment=ft.Alignment(-1, 0),
@@ -640,8 +685,6 @@ def VistaTareasAtrasadas(page: ft.Page):
                         padding=3,
                     ),
                 ),
-
-                #header azul
                 ft.Container(
                     height=55,
                     width=400,
@@ -649,8 +692,6 @@ def VistaTareasAtrasadas(page: ft.Page):
                     alignment=ft.Alignment(0, 0),
                     content=ft.Text("TAREAS ATRASADAS", size=18, weight=ft.FontWeight.BOLD, color="white")
                 ),
-                
-                #contenido
                 ft.Container(
                     padding=ft.padding.only(left=18, right=18, top=15, bottom=15),
                     expand=True,
@@ -667,6 +708,9 @@ def VistaTareasAtrasadas(page: ft.Page):
         )
     )
 
+    # Inicialización
+    actualizar_lista_tareas()
+
     return ft.Container(
         expand=True,
         gradient=ft.LinearGradient(
@@ -677,18 +721,3 @@ def VistaTareasAtrasadas(page: ft.Page):
         alignment=ft.Alignment(0, 0), 
         content=tarjeta_blanca
     )
-
-def main(page: ft.Page):
-    page.title = "App Tareas - Tareas Atrasadas"
-    
-    page.window.width = 1200
-    page.window.height = 800
-    page.window.min_width = 380
-    page.window.min_height = 780
-    page.padding = 0 
-    
-    vista = VistaTareasAtrasadas(page)
-    page.add(vista)
-
-if __name__ == "__main__":
-    ft.app(target=main)

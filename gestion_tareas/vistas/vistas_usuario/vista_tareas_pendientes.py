@@ -1,5 +1,5 @@
 import flet as ft
-from modelos.crud import obtener_tareas_por_estado, eliminar_tarea
+from modelos.crud import obtener_tareas_por_estado, eliminar_tarea, completar_tarea
 from modelos.consultas import filtrar_y_ordenar
 
 def VistaTareasPendientes(page: ft.Page):
@@ -16,10 +16,11 @@ def VistaTareasPendientes(page: ft.Page):
     COLOR_PRIORIDAD_ALTA = "#E53935"
     COLOR_PRIORIDAD_MEDIA = "#FF9800"
     COLOR_PRIORIDAD_BAJA = "#4CAF50"
+    COLOR_COMPLETADO = "#4CAF50"
 
     #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
-    FILTROS_PROYECTO = ["Todos"]
+    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
     FILTROS_PRIORIDAD = ["Todas", "Alta", "Media", "Baja"]
     FILTROS_ORDEN = [
         "Más reciente primero", 
@@ -124,10 +125,32 @@ def VistaTareasPendientes(page: ft.Page):
             lista_tareas.controls.append(tarjeta)
         page.update()
 
+    def handle_completar_tarea(e, tarea):
+        """Marca la tarea como completada en la BD y la quita de la lista de pendientes"""
+        id_tarea = tarea.get("_id")
+        if not id_tarea: return
+
+        exito, resultado = completar_tarea(id_tarea)
+        if exito:
+            page.snack_bar = ft.SnackBar(
+                ft.Text(f"✅ Tarea '{tarea['titulo']}' marcada como realizada"),
+                bgcolor=COLOR_COMPLETADO
+            )
+            # Volvemos a cargar de la BD y refrescamos la UI
+            nonlocal todas_las_tareas
+            todas_las_tareas = cargar_tareas_pendientes()
+            actualizar_lista_tareas()
+        else:
+            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al completar: {resultado}"), bgcolor=COLOR_ELIMINAR)
+        
+        page.snack_bar.open = True
+        page.update()
+
     def get_color_prioridad(prioridad):
-        if prioridad == "Alta":
+        p = prioridad.lower()
+        if p == "alta":
             return COLOR_PRIORIDAD_ALTA
-        elif prioridad == "Media":
+        elif p == "media":
             return COLOR_PRIORIDAD_MEDIA
         else:
             return COLOR_PRIORIDAD_BAJA
@@ -277,7 +300,9 @@ def VistaTareasPendientes(page: ft.Page):
                     page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tarea '{tarea['titulo']}' eliminada"))
                     page.snack_bar.open = True
                     #recargamos la lista de tareas
-                    lista_tareas.controls = [crear_tarjeta_tarea(t) for t in cargar_tareas_pendientes()]
+                    nonlocal todas_las_tareas
+                    todas_las_tareas = cargar_tareas_pendientes()
+                    actualizar_lista_tareas()
                 else:
                     page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al eliminar: {resultado}"))
                     page.snack_bar.open = True
@@ -574,89 +599,101 @@ def VistaTareasPendientes(page: ft.Page):
         page.update()
 
     def crear_tarjeta_tarea(tarea):
-        """Crea una tarjeta para cada tarea pendiente"""
+        """Crea una tarjeta para cada tarea pendiente con botón de completar"""
         return ft.Container(
             bgcolor="white",
             border_radius=10,
-            padding=ft.padding.all(10),
-            margin=ft.margin.only(bottom=8),
+            padding=ft.padding.all(12),
+            margin=ft.margin.only(bottom=10),
             shadow=ft.BoxShadow(
                 spread_radius=0,
                 blur_radius=5,
                 color=COLOR_SOMBRA_TARJETAS,
                 offset=ft.Offset(0, 2),
             ),
-            content=ft.Row(
+            content=ft.Column(
                 spacing=8,
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    #contenido principal (clickeable)
-                    ft.Container(
-                        expand=True,
-                        content=ft.Column(
-                            spacing=4,
-                            controls=[
-                                #fila 1: Emoji + Título
-                                ft.Row(
-                                    spacing=8,
-                                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                                    controls=[
-                                        ft.Text(tarea["emoji"], size=22),
-                                        ft.Text(
-                                            tarea["titulo"],
-                                            size=12,
-                                            color="black",
-                                            weight=ft.FontWeight.BOLD,
-                                            expand=True,
-                                            max_lines=1,
-                                            overflow=ft.TextOverflow.ELLIPSIS,
-                                        ),
-                                    ]
-                                ),
-                                #fila 2: Proyecto + Prioridad
-                                ft.Row(
-                                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                                    controls=[
-                                        ft.Text(tarea["proyecto"], size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                        ft.Container(
-                                            bgcolor=get_color_prioridad(tarea["prioridad"]),
-                                            border_radius=8,
-                                            padding=ft.padding.only(left=6, right=6, top=1, bottom=1),
-                                            content=ft.Text(tarea["prioridad"], size=9, color="white", weight=ft.FontWeight.BOLD),
-                                        ),
-                                    ]
-                                ),
-                                #fila 3: Tag + Fecha rango
-                                ft.Row(
-                                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                                    controls=[
-                                        ft.Row(
-                                            spacing=3,
-                                            controls=[
-                                                ft.Text("TAG:", size=9, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
-                                                ft.Text(tarea["tag"], size=9, color="black", weight=ft.FontWeight.W_500),
-                                            ]
-                                        ),
-                                        ft.Text(
-                                            f"{tarea['fecha_inicio']} - {tarea['fecha_fin']}",
-                                            size=9,
-                                            color="#666666",
-                                        ),
-                                    ]
-                                ),
-                            ]
-                        ),
-                        on_click=lambda e, t=tarea: mostrar_detalle_tarea(t),
-                        ink=True,
+                    # Fila 1: Emoji + Título + Botón Eliminar
+                    ft.Row(
+                        spacing=8,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                        controls=[
+                            ft.Text(tarea["emoji"], size=22),
+                            ft.Text(
+                                tarea["titulo"],
+                                size=12,
+                                color="black",
+                                weight=ft.FontWeight.BOLD,
+                                expand=True,
+                                max_lines=1,
+                                overflow=ft.TextOverflow.ELLIPSIS,
+                            ),
+                            ft.Container(
+                                content=ft.Text("X", size=14, color=COLOR_ELIMINAR, weight=ft.FontWeight.BOLD),
+                                on_click=lambda e, t=tarea: mostrar_confirmar_eliminar(t),
+                                ink=True,
+                                padding=ft.padding.all(6),
+                                border_radius=5,
+                            ),
+                        ]
                     ),
-                    #botón X para eliminar
-                    ft.Container(
-                        content=ft.Text("X", size=14, color=COLOR_ELIMINAR, weight=ft.FontWeight.BOLD),
-                        on_click=lambda e, t=tarea: mostrar_confirmar_eliminar(t),
-                        ink=True,
-                        padding=ft.padding.all(6),
-                        border_radius=5,
+                    # Fila 2: Proyecto + Prioridad (Badge)
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        controls=[
+                            ft.Text(tarea["proyecto"], size=10, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                            ft.Container(
+                                bgcolor=get_color_prioridad(tarea["prioridad"]),
+                                border_radius=8,
+                                padding=ft.padding.only(left=6, right=6, top=1, bottom=1),
+                                content=ft.Text(tarea["prioridad"], size=9, color="white", weight=ft.FontWeight.BOLD),
+                            ),
+                        ]
                     ),
+                    # Fila 3: Tag + Fecha rango
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        controls=[
+                            ft.Row(
+                                spacing=3,
+                                controls=[
+                                    ft.Text("TAG:", size=9, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                    ft.Text(tarea["tag"], size=9, color="black", weight=ft.FontWeight.W_500),
+                                ]
+                            ),
+                            ft.Text(
+                                f"{tarea['fecha_inicio']} - {tarea['fecha_fin']}",
+                                size=9,
+                                color="#666666",
+                            ),
+                        ]
+                    ),
+                    ft.Divider(height=1, color="#F0F0F0"),
+                    # Fila 4: Botones de Acción (NUEVO)
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        controls=[
+                            ft.TextButton(
+                                "Ver detalles",
+                                icon=ft.Icons.INFO_OUTLINE,
+                                on_click=lambda e, t=tarea: mostrar_detalle_tarea(t),
+                                style=ft.ButtonStyle(color=COLOR_LABEL, text_style=ft.TextStyle(size=10))
+                            ),
+                            ft.ElevatedButton(
+                                "Marcar completada",
+                                icon=ft.Icons.CHECK_CIRCLE,
+                                bgcolor=COLOR_COMPLETADO,
+                                color="white",
+                                height=34,
+                                style=ft.ButtonStyle(
+                                    shape=ft.RoundedRectangleBorder(radius=8),
+                                    text_style=ft.TextStyle(size=11, weight="bold")
+                                ),
+                                on_click=lambda e, t=tarea: handle_completar_tarea(e, t)
+                            )
+                        ]
+                    )
                 ]
             ),
         )

@@ -1,5 +1,6 @@
 import flet as ft
 from datetime import datetime
+from modelos.crud import crear_tarea, obtener_todos_proyectos, obtener_todos_empleados, obtener_todos_departamentos
 
 def VistaNuevaTarea(page: ft.Page):
     
@@ -25,47 +26,34 @@ def VistaNuevaTarea(page: ft.Page):
         "Backend": "🔧",
     }
 
-    PROYECTOS_DEMO = [
-        "App Móvil v2.0",
-        "Portal Web Cliente",
-        "API REST Services",
-        "Dashboard Analytics",
-        "Sistema de Pagos",
-        "CRM Interno",
-        "Migración Cloud",
-    ]
-
-    DEPARTAMENTOS_DEMO = [
-        "Desarrollo",
-        "Diseño",
-        "QA",
-        "DevOps",
-        "Recursos Humanos",
-        "Finanzas",
-        "Innovación",
-        "Marketing",
-    ]
-
-    PRIORIDADES = ["Alta", "Media", "Baja"]
-
-    PERSONAS_DEMO = [
-        {"nombre": "Ana García", "id": "EMP001", "departamento": "Desarrollo", "proyecto": "App Móvil v2.0"},
-        {"nombre": "Carlos López", "id": "EMP002", "departamento": "Diseño", "proyecto": "Portal Web Cliente"},
-        {"nombre": "María Rodríguez", "id": "EMP003", "departamento": "QA", "proyecto": "API REST Services"},
-        {"nombre": "Pedro Martínez", "id": "EMP004", "departamento": "DevOps", "proyecto": "Migración Cloud"},
-        {"nombre": "Laura Sánchez", "id": "EMP005", "departamento": "Desarrollo", "proyecto": "Sistema de Pagos"},
-        {"nombre": "Juan Fernández", "id": "EMP006", "departamento": "Desarrollo", "proyecto": "Dashboard Analytics"},
-        {"nombre": "Sofia Ruiz", "id": "EMP007", "departamento": "Innovación", "proyecto": "Dashboard Analytics"},
-        {"nombre": "Diego Torres", "id": "EMP008", "departamento": "Marketing", "proyecto": "Portal Web Cliente"},
-    ]
+    # --- VARIABLES DE ESTADO Y DATOS REALES ---
+    proyectos_db = []
+    empleados_db = []
+    departamentos_db = []
 
     tags_seleccionados = []
-    personas_seleccionadas = []
+    personas_seleccionadas = [] # Guardaremos objetos completos del empleado
     emoji_index_actual = [0]
-    proyecto_seleccionado = [None]
-    departamento_seleccionado = [None]
+    proyecto_seleccionado_obj = [None] # Guardaremos el dict completo del proyecto
+    departamento_seleccionado_nombre = [None]
     prioridad_seleccionada = ["Media"]
 
+    # --- CARGAR DATOS DE LA BD ---
+    def cargar_datos_iniciales():
+        nonlocal proyectos_db, empleados_db, departamentos_db
+        
+        exito_p, proys = obtener_todos_proyectos()
+        if exito_p: proyectos_db = proys
+        
+        exito_e, emps = obtener_todos_empleados()
+        if exito_e: empleados_db = emps
+
+        exito_d, deptos = obtener_todos_departamentos()
+        if exito_d: departamentos_db = deptos
+
+    cargar_datos_iniciales()
+
+    # --- COMPONENTES DE FECHA ---
     fecha_inicio_texto = ft.Text("DD/MM/AA", size=12, color="black", weight=ft.FontWeight.W_500)
     fecha_fin_texto = ft.Text("DD/MM/AA", size=12, color="black", weight=ft.FontWeight.W_500)
 
@@ -128,23 +116,67 @@ def VistaNuevaTarea(page: ft.Page):
     page.overlay.append(date_picker_inicio)
     page.overlay.append(date_picker_fin)
 
+    # --- LÓGICA DE GUARDADO REAL ---
+    def btn_crear_click(e):
+        # 1. Validaciones
+        if not input_titulo.value:
+            page.snack_bar = ft.SnackBar(ft.Text("❌ El título es obligatorio"), bgcolor="red")
+            page.snack_bar.open = True
+            page.update()
+            return
+        
+        if not proyecto_seleccionado_obj[0]:
+            page.snack_bar = ft.SnackBar(ft.Text("❌ Selecciona un proyecto"), bgcolor="red")
+            page.snack_bar.open = True
+            page.update()
+            return
+
+        if not date_picker_fin.value:
+            page.snack_bar = ft.SnackBar(ft.Text("❌ Selecciona una fecha de fin"), bgcolor="red")
+            page.snack_bar.open = True
+            page.update()
+            return
+
+        # 2. Preparar el objeto de la tarea (siguiendo el TareaModel)
+        # Convertimos la lista de personas al formato UsuarioResumen (Subset pattern)
+        asignados_formateados = []
+        for p in personas_seleccionadas:
+            asignados_formateados.append({
+                "id_usuario": p.get("_id"),
+                "nombre": p.get("nombre", "Usuario")
+            })
+
+        nueva_tarea_data = {
+            "titulo": input_titulo.value,
+            "requisitos": texto_requerimientos.value if texto_requerimientos.value else "Sin requisitos",
+            "estado": "pendiente",
+            "tags": tags_seleccionados,
+            "icono": emoji_text.value,
+            "id_proyecto": proyecto_seleccionado_obj[0].get("_id"),
+            "proyecto": proyecto_seleccionado_obj[0].get("nombre"),
+            "prioridad": prioridad_seleccionada[0].lower(),
+            "asignados": asignados_formateados,
+            "fecha_inicio": date_picker_inicio.value if date_picker_inicio.value else datetime.now(),
+            "fecha_limite": date_picker_fin.value,
+            "atrasado": False
+        }
+
+        # 3. Llamada al CRUD
+        exito, resultado = crear_tarea(nueva_tarea_data)
+
+        if exito:
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tarea creada correctamente"), bgcolor="green")
+            page.snack_bar.open = True
+            page.go("/tareas_pendientes")
+        else:
+            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
+            page.snack_bar.open = True
+        
+        page.update()
+
+    # --- FUNCIONES DE LA INTERFAZ ---
     def btn_volver_click(e):
         page.go("/area_personal")
-
-    def btn_crear_click(e):
-        if not input_titulo.value:
-            page.snack_bar = ft.SnackBar(ft.Text("El título es obligatorio"))
-            page.snack_bar.open = True
-            page.update()
-            return
-        if not proyecto_seleccionado[0]:
-            page.snack_bar = ft.SnackBar(ft.Text("Selecciona un proyecto"))
-            page.snack_bar.open = True
-            page.update()
-            return
-        page.snack_bar = ft.SnackBar(ft.Text(f"Tarea '{input_titulo.value}' creada en {proyecto_seleccionado[0]}"))
-        page.snack_bar.open = True
-        page.update()
 
     def abrir_fecha_inicio(e):
         date_picker_inicio.open = True
@@ -161,13 +193,6 @@ def VistaNuevaTarea(page: ft.Page):
             emoji_text.value = TAGS_EMOJIS[tag_actual]
             page.update()
 
-    emoji_container = ft.Container(
-        content=emoji_text,
-        padding=ft.padding.only(top=12),
-        on_click=cambiar_emoji,
-        tooltip="Click para cambiar emoji",
-    )
-
     def actualizar_emoji():
         if len(tags_seleccionados) == 0:
             emoji_text.value = "📋"
@@ -182,21 +207,27 @@ def VistaNuevaTarea(page: ft.Page):
     # Dialog seleccionar proyecto
     def crear_dialog_proyecto():
         radio_proyecto = ft.RadioGroup(
-            value=proyecto_seleccionado[0],
+            value=proyecto_seleccionado_obj[0].get("nombre") if proyecto_seleccionado_obj[0] else None,
             content=ft.Column(
                 controls=[
-                    ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(size=12, color="black")) 
-                    for proy in PROYECTOS_DEMO
+                    ft.Radio(value=proy["nombre"], label=proy["nombre"], label_style=ft.TextStyle(size=12, color="black"), data=proy) 
+                    for proy in proyectos_db
                 ],
                 spacing=2,
             ),
         )
         
         def cerrar_dialog(e):
-            proyecto_seleccionado[0] = radio_proyecto.value
+            # Buscamos el objeto proyecto que corresponde al nombre seleccionado
+            nombre_sel = radio_proyecto.value
+            for p in proyectos_db:
+                if p["nombre"] == nombre_sel:
+                    proyecto_seleccionado_obj[0] = p
+                    break
+            
             dialog_proyecto.open = False
-            if proyecto_seleccionado[0]:
-                texto_proyecto_seleccionado.value = proyecto_seleccionado[0]
+            if proyecto_seleccionado_obj[0]:
+                texto_proyecto_seleccionado.value = proyecto_seleccionado_obj[0]["nombre"]
                 texto_proyecto_seleccionado.color = "black"
             page.update()
         
@@ -209,7 +240,7 @@ def VistaNuevaTarea(page: ft.Page):
                 height=280,
                 bgcolor="white",
                 content=ft.ListView(
-                    controls=[radio_proyecto],
+                    controls=[radio_proyecto] if proyectos_db else [ft.Text("No hay proyectos en la BD", color="red")],
                     spacing=5,
                 ),
             ),
@@ -229,21 +260,21 @@ def VistaNuevaTarea(page: ft.Page):
     # Dialog seleccionar departamento
     def crear_dialog_departamento():
         radio_departamento = ft.RadioGroup(
-            value=departamento_seleccionado[0],
+            value=departamento_seleccionado_nombre[0],
             content=ft.Column(
                 controls=[
-                    ft.Radio(value=dep, label=dep, label_style=ft.TextStyle(size=12, color="black")) 
-                    for dep in DEPARTAMENTOS_DEMO
+                    ft.Radio(value=dep["nombre"], label=dep["nombre"], label_style=ft.TextStyle(size=12, color="black")) 
+                    for dep in departamentos_db
                 ],
                 spacing=2,
             ),
         )
         
         def cerrar_dialog(e):
-            departamento_seleccionado[0] = radio_departamento.value
+            departamento_seleccionado_nombre[0] = radio_departamento.value
             dialog_departamento.open = False
-            if departamento_seleccionado[0]:
-                texto_departamento_seleccionado.value = departamento_seleccionado[0]
+            if departamento_seleccionado_nombre[0]:
+                texto_departamento_seleccionado.value = departamento_seleccionado_nombre[0]
                 texto_departamento_seleccionado.color = "black"
             page.update()
         
@@ -256,7 +287,7 @@ def VistaNuevaTarea(page: ft.Page):
                 height=300,
                 bgcolor="white",
                 content=ft.ListView(
-                    controls=[radio_departamento],
+                    controls=[radio_departamento] if departamentos_db else [ft.Text("No hay departamentos en la BD", color="red")],
                     spacing=5,
                 ),
             ),
@@ -273,14 +304,8 @@ def VistaNuevaTarea(page: ft.Page):
         dialog.open = True
         page.update()
 
-    # Dialog seleccionar personas (filtrado por proyecto)
+    # Dialog seleccionar personas (con checkbox)
     def crear_dialog_personas():
-        # Filtrar personas por proyecto seleccionado
-        if proyecto_seleccionado[0]:
-            personas_filtradas = [p for p in PERSONAS_DEMO if p["proyecto"] == proyecto_seleccionado[0]]
-        else:
-            personas_filtradas = PERSONAS_DEMO
-        
         checkboxes_personas = []
         
         def on_checkbox_change(e):
@@ -292,8 +317,8 @@ def VistaNuevaTarea(page: ft.Page):
                 if persona in personas_seleccionadas:
                     personas_seleccionadas.remove(persona)
         
-        for persona in personas_filtradas:
-            label_text = f"{persona['nombre']} ({persona['id']} - {persona['departamento']})"
+        for persona in empleados_db:
+            label_text = f"{persona.get('nombre')} {persona.get('apellidos', '')}"
             cb = ft.Checkbox(
                 label=label_text,
                 value=persona in personas_seleccionadas,
@@ -312,22 +337,20 @@ def VistaNuevaTarea(page: ft.Page):
                 texto_personas_seleccionadas.value = personas_seleccionadas[0]["nombre"]
                 texto_personas_seleccionadas.color = "black"
             else:
-                texto_personas_seleccionadas.value = f"{len(personas_seleccionadas)} personas seleccionadas"
+                texto_personas_seleccionadas.value = f"{len(personas_seleccionadas)} seleccionados"
                 texto_personas_seleccionadas.color = "black"
             page.update()
         
-        titulo_dialog = "Asignar a" if proyecto_seleccionado[0] else "Asignar a (selecciona proyecto primero)"
-        
         dialog_personas = ft.AlertDialog(
             modal=True,
-            title=ft.Text(titulo_dialog, size=14, weight=ft.FontWeight.BOLD, color="black"),
+            title=ft.Text("Asignar a", size=14, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
                 width=320,
                 height=300,
                 bgcolor="white",
                 content=ft.ListView(
-                    controls=checkboxes_personas if checkboxes_personas else [ft.Text("No hay personas en este proyecto", size=12, color="#999999")],
+                    controls=checkboxes_personas if checkboxes_personas else [ft.Text("No hay trabajadores registrados", size=12, color="#999999")],
                     spacing=5,
                 ),
             ),
@@ -528,7 +551,12 @@ def VistaNuevaTarea(page: ft.Page):
                     spacing=10,
                     vertical_alignment=ft.CrossAxisAlignment.START,
                     controls=[
-                        emoji_container,
+                        emoji_container := ft.Container(
+                            content=emoji_text,
+                            padding=ft.padding.only(top=12),
+                            on_click=cambiar_emoji,
+                            tooltip="Click para cambiar emoji",
+                        ),
                         ft.Column(
                             spacing=3,
                             expand=True,
