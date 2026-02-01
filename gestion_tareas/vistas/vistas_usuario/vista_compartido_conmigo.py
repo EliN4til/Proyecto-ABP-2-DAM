@@ -1,4 +1,8 @@
 import flet as ft
+from modelos.crud import obtener_tareas_por_usuario, obtener_todos_proyectos
+from modelos.consultas import filtrar_y_ordenar
+from servicios.sesion_service import obtener_id_usuario
+from datetime import datetime
 
 def VistaCompartidoConmigo(page: ft.Page):
     
@@ -16,7 +20,10 @@ def VistaCompartidoConmigo(page: ft.Page):
 
     #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
-    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
+    
+    # El filtro de proyectos lo inicializamos con "Todos", pero se llenará con la BD
+    filtros_proyecto_dinamicos = ["Todos"]
+    
     FILTROS_PRIORIDAD = ["Todas", "Alta", "Media", "Baja"]
     FILTROS_ORDEN = [
         "Más reciente primero", 
@@ -35,122 +42,96 @@ def VistaCompartidoConmigo(page: ft.Page):
     filtro_prioridad_actual = ["Todas"]
     filtro_orden_actual = ["Más reciente primero"]
 
-    #datos demo de tareas compartidas conmigo
-    TAREAS_COMPARTIDAS = [
-        {
-            "titulo": "Arreglar bug linea 287 fichero UpdateDate.py",
-            "tag": "Desarrollo",
-            "emoji": "👨‍💻",
-            "proyecto": "App Móvil v2.0",
-            "departamento": "Desarrollo",
-            "prioridad": "Alta",
-            "compartido_por": "Ana García",
-            "fecha": "25/12/25",
-            "atrasado": True,
-            "requerimientos": [
-                "Identificar el error en la línea 287 del fichero UpdateDate.py",
-                "El bucle debe iterar correctamente sobre la lista de fechas",
-                "Validar que no se produzcan excepciones de tipo IndexError",
-                "Añadir logs para seguimiento del proceso",
-                "Realizar pruebas con datos de producción simulados",
-            ]
-        },
-        {
-            "titulo": "Diseñar mockups para dashboard",
-            "tag": "Diseño",
-            "emoji": "🎨",
-            "proyecto": "Dashboard Analytics",
-            "departamento": "Diseño",
-            "prioridad": "Media",
-            "compartido_por": "Carlos López",
-            "fecha": "28/12/25",
-            "atrasado": True,
-            "requerimientos": [
-                "Crear diseño responsive para desktop y móvil",
-                "Incluir gráficos de rendimiento y métricas KPI",
-                "Usar la paleta de colores corporativa",
-                "Diseñar estados vacíos y de error",
-                "Exportar en formato Figma y PNG",
-            ]
-        },
-        {
-            "titulo": "Escribir tests unitarios módulo Auth",
-            "tag": "Testing",
-            "emoji": "🧪",
-            "proyecto": "API REST Services",
-            "departamento": "QA",
-            "prioridad": "Media",
-            "compartido_por": "María Rodríguez",
-            "fecha": "30/12/25",
-            "atrasado": False,
-            "requerimientos": [
-                "Cobertura mínima del 80% en el módulo de autenticación",
-                "Testear login, logout y refresh de tokens",
-                "Incluir tests para casos de error y edge cases",
-                "Mockear las llamadas a servicios externos",
-                "Documentar los tests con descripciones claras",
-            ]
-        },
-        {
-            "titulo": "Documentar API endpoints v2",
-            "tag": "Documentación",
-            "emoji": "📝",
-            "proyecto": "API REST Services",
-            "departamento": "Desarrollo",
-            "prioridad": "Baja",
-            "compartido_por": "Sofia Ruiz",
-            "fecha": "02/01/26",
-            "atrasado": False,
-            "requerimientos": [
-                "Documentar todos los endpoints del API v2 en Swagger",
-                "Incluir ejemplos de request y response",
-                "Describir códigos de error y sus significados",
-                "Añadir sección de autenticación y autorización",
-                "Revisar y actualizar la documentación existente",
-            ]
-        },
-        {
-            "titulo": "Configurar pipeline CI/CD",
-            "tag": "DevOps",
-            "emoji": "⚙️",
-            "proyecto": "Migración Cloud",
-            "departamento": "DevOps",
-            "prioridad": "Alta",
-            "compartido_por": "Pedro Martínez",
-            "fecha": "05/01/26",
-            "atrasado": False,
-            "requerimientos": [
-                "Configurar GitHub Actions para build automático",
-                "Añadir etapa de tests automatizados",
-                "Configurar deploy automático a staging",
-                "Implementar notificaciones en Slack",
-                "Documentar el proceso de deployment",
-            ]
-        },
-        {
-            "titulo": "Optimizar consultas SQL reportes",
-            "tag": "Base de Datos",
-            "emoji": "🗄️",
-            "proyecto": "Sistema de Pagos",
-            "departamento": "Desarrollo",
-            "prioridad": "Alta",
-            "compartido_por": "Diego Torres",
-            "fecha": "08/01/26",
-            "atrasado": False,
-            "requerimientos": [
-                "Analizar consultas lentas con EXPLAIN",
-                "Crear índices necesarios para mejorar rendimiento",
-                "Optimizar JOINs en las consultas de reportes",
-                "Reducir tiempo de respuesta a menos de 2 segundos",
-                "Documentar cambios realizados en la base de datos",
-            ]
-        },
-    ]
+    # Variable para almacenar las tareas cargadas de la BD
+    todas_las_tareas_db = []
+
+    # --- LÓGICA DE CARGA DE DATOS ---
+
+    def cargar_datos_reales():
+        """Obtiene las tareas asignadas al usuario actual y los proyectos existentes"""
+        nonlocal todas_las_tareas_db, filtros_proyecto_dinamicos
+        
+        id_usuario = obtener_id_usuario()
+        if not id_usuario:
+            return []
+
+        # 1. Cargamos proyectos para los filtros
+        exito_p, proys = obtener_todos_proyectos()
+        if exito_p:
+            filtros_proyecto_dinamicos = ["Todos"] + [p["nombre"] for p in proys]
+
+        # 2. Cargamos tareas donde el usuario está asignado
+        exito, resultado = obtener_tareas_por_usuario(id_usuario)
+        if exito:
+            tareas_formateadas = []
+            ahora = datetime.now()
+            
+            for t in resultado:
+                # Calculamos si está atrasada
+                atrasada = False
+                fecha_str = "Sin fecha"
+                if t.get("fecha_limite"):
+                    fecha_limite = t["fecha_limite"]
+                    fecha_str = fecha_limite.strftime("%d/%m/%y")
+                    if t.get("estado") != "completada" and fecha_limite < ahora:
+                        atrasada = True
+                
+                # Mapeo al formato de la UI
+                tarea = {
+                    "_id": t.get("_id"),
+                    "titulo": t.get("titulo", "Sin título"),
+                    "tag": t.get("tags", ["General"])[0] if t.get("tags") else "General",
+                    "emoji": t.get("icono", "📋"),
+                    "proyecto": t.get("proyecto", "Sin proyecto"),
+                    "departamento": "General", # Se puede ampliar si se guarda en la tarea
+                    "prioridad": t.get("prioridad", "Media").capitalize(),
+                    "compartido_por": t.get("compartido_por", "Sistema"),
+                    "fecha": fecha_str,
+                    "atrasado": atrasada,
+                    "requerimientos": [t.get("requisitos", "Sin requisitos detallados")]
+                }
+                tareas_formateadas.append(tarea)
+            return tareas_formateadas
+        return []
+
+    def actualizar_lista_tareas():
+        """Aplica filtros y actualiza el ListView"""
+        filtros = {
+            "prioridad": filtro_prioridad_actual[0],
+            "tag": filtro_tag_actual[0],
+            "proyecto": filtro_proyecto_actual[0]
+        }
+        
+        texto = input_busqueda.value if hasattr(input_busqueda, 'value') else ""
+        
+        tareas_filtradas = filtrar_y_ordenar(
+            todas_las_tareas_db, 
+            filtros, 
+            texto, 
+            filtro_orden_actual[0],
+            "fecha"
+        )
+        
+        lista_tareas.controls = []
+        if not tareas_filtradas:
+            lista_tareas.controls.append(
+                ft.Container(
+                    padding=30,
+                    content=ft.Text("No se encontraron tareas compartidas contigo.", color="grey", text_align="center")
+                )
+            )
+        else:
+            for tarea in tareas_filtradas:
+                lista_tareas.controls.append(crear_tarjeta_tarea(tarea))
+        page.update()
+
+    # --- FUNCIONES DE INTERFAZ ---
 
     def get_color_prioridad(prioridad):
-        if prioridad == "Alta":
+        p = prioridad.lower()
+        if p == "alta":
             return COLOR_PRIORIDAD_ALTA
-        elif prioridad == "Media":
+        elif p == "media":
             return COLOR_PRIORIDAD_MEDIA
         else:
             return COLOR_PRIORIDAD_BAJA
@@ -159,8 +140,8 @@ def VistaCompartidoConmigo(page: ft.Page):
         page.go("/area_personal")
 
     def btn_buscar_click(e):
-        texto_busqueda = input_busqueda.value
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {texto_busqueda}"))
+        actualizar_lista_tareas()
+        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
         page.snack_bar.open = True
         page.update()
 
@@ -318,6 +299,7 @@ def VistaCompartidoConmigo(page: ft.Page):
             filtro_orden_actual[0] = radio_orden.value
             filtro_prioridad_actual[0] = radio_prioridad.value
             dialog_filtros.open = False
+            actualizar_lista_tareas()
             page.snack_bar = ft.SnackBar(ft.Text("Filtros aplicados"))
             page.snack_bar.open = True
             page.update()
@@ -413,6 +395,7 @@ def VistaCompartidoConmigo(page: ft.Page):
         def aplicar_tag(e):
             filtro_tag_actual[0] = radio_tags.value
             dialog_tags.open = False
+            actualizar_lista_tareas()
             page.snack_bar = ft.SnackBar(ft.Text(f"Tag: {filtro_tag_actual[0]}"))
             page.snack_bar.open = True
             page.update()
@@ -464,7 +447,7 @@ def VistaCompartidoConmigo(page: ft.Page):
             content=ft.Column(
                 controls=[
                     ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(size=11, color="black")) 
-                    for proy in FILTROS_PROYECTO
+                    for proy in filtros_proyecto_dinamicos
                 ],
                 spacing=2,
             ),
@@ -473,6 +456,7 @@ def VistaCompartidoConmigo(page: ft.Page):
         def aplicar_proyecto(e):
             filtro_proyecto_actual[0] = radio_proyecto.value
             dialog_proyecto.open = False
+            actualizar_lista_tareas()
             page.snack_bar = ft.SnackBar(ft.Text(f"Proyecto: {filtro_proyecto_actual[0]}"))
             page.snack_bar.open = True
             page.update()
@@ -606,6 +590,7 @@ def VistaCompartidoConmigo(page: ft.Page):
         height=38,
         expand=True,
         content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        on_submit=btn_buscar_click
     )
 
     #botón filtrar
@@ -642,7 +627,6 @@ def VistaCompartidoConmigo(page: ft.Page):
     #lista de tareas
     lista_tareas = ft.ListView(
         spacing=0,
-        controls=[crear_tarjeta_tarea(tarea) for tarea in TAREAS_COMPARTIDAS],
         expand=True,
     )
 
@@ -695,6 +679,10 @@ def VistaCompartidoConmigo(page: ft.Page):
         )
     )
 
+    # --- INICIALIZACIÓN DE LA VISTA ---
+    todas_las_tareas_db = cargar_datos_reales()
+    actualizar_lista_tareas()
+
     return ft.Container(
         expand=True,
         gradient=ft.LinearGradient(
@@ -705,6 +693,7 @@ def VistaCompartidoConmigo(page: ft.Page):
         alignment=ft.Alignment(0, 0), 
         content=tarjeta_blanca
     )
+
 
 def main(page: ft.Page):
     page.title = "App Tareas - Compartido Conmigo"

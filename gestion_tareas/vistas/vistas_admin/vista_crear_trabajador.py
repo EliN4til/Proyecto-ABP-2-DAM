@@ -1,4 +1,6 @@
 import flet as ft
+from datetime import datetime
+from modelos.crud import crear_empleado
 
 def VistaCrearTrabajador(page: ft.Page):
     
@@ -19,22 +21,58 @@ def VistaCrearTrabajador(page: ft.Page):
     ESTADOS = ["ACTIVO", "INACTIVO", "PENDIENTE"]
 
     def btn_volver_click(e):
-        """Acción al hacer clic en el botón volver atrás"""
-        page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
-        page.snack_bar.open = True
-        page.update()
+        """Acción al hacer clic en el botón volver atrás - CORREGIDO A GESTIONAR TRABAJADORES"""
+        page.go("/gestionar_trabajadores")
 
     def btn_crear_click(e):
-        """Acción al hacer clic en el botón crear trabajador"""
-        #validar campos obligatorios
-        if not input_nombre.value or not input_apellidos.value:
-            page.snack_bar = ft.SnackBar(ft.Text("Por favor, completa los campos obligatorios"))
+        """Recopila los datos del formulario e inserta el trabajador en la base de datos real"""
+        
+        # 1. Validar campos obligatorios
+        if not input_nombre.value or not input_apellidos.value or not input_correo.value:
+            page.snack_bar = ft.SnackBar(ft.Text("❌ Nombre, Apellidos y Correo son obligatorios"), bgcolor="red")
             page.snack_bar.open = True
             page.update()
             return
+
+        # 2. Preparar los datos para el modelo MongoDB
+        # Nota: Adaptamos al esquema EmpleadoModel que requiere 'departamento' como un objeto
+        nuevo_empleado = {
+            "identificador": input_identificador.value if input_identificador.value else "N/A",
+            "nombre": input_nombre.value,
+            "apellidos": input_apellidos.value,
+            "email": input_correo.value,
+            "contrasenya": "1234", # Contraseña por defecto para el primer acceso
+            "estado": dropdown_estado.value if dropdown_estado.value else "ACTIVO",
+            "empresa": dropdown_empresa.value if dropdown_empresa.value else "TechSolutions S.L",
+            "equipo": dropdown_equipo.value if dropdown_equipo.value else "General",
+            "proyecto": "Sin asignar",
+            "departamento": {
+                "nombre": dropdown_departamento.value if dropdown_departamento.value else "General",
+                "ubicacion": dropdown_ubicacion.value if dropdown_ubicacion.value else "N/A"
+            },
+            "cargo": dropdown_cargo.value if dropdown_cargo.value else "Empleado",
+            "id_empleado": input_id_empleado.value if input_id_empleado.value else f"EMP-{datetime.now().strftime('%M%S')}",
+            "telefono": input_telefono.value if input_telefono.value else "N/A",
+            "ubicacion": dropdown_ubicacion.value if dropdown_ubicacion.value else "Oficina Central",
+            "fecha_incorporacion": datetime.now(),
+            "es_admin": False
+        }
+
+        # 3. Llamada al CRUD
+        exito, resultado = crear_empleado(nuevo_empleado)
+
+        if exito:
+            page.snack_bar = ft.SnackBar(
+                ft.Text(f"✅ Trabajador {input_nombre.value} creado con éxito"),
+                bgcolor="green"
+            )
+            page.snack_bar.open = True
+            # Volvemos a la lista de trabajadores para ver el nuevo registro
+            page.go("/gestionar_trabajadores")
+        else:
+            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al guardar: {resultado}"), bgcolor="red")
+            page.snack_bar.open = True
         
-        page.snack_bar = ft.SnackBar(ft.Text(f"Trabajador {input_nombre.value} {input_apellidos.value} creado correctamente"))
-        page.snack_bar.open = True
         page.update()
 
     def crear_campo_texto(hint: str, expand: bool = False):
@@ -78,7 +116,7 @@ def VistaCrearTrabajador(page: ft.Page):
         padding=10,
     )
 
-    #campos del formulario
+    #campos del formulario (Controles guardados en variables para acceder a su .value)
     input_nombre = crear_campo_texto("Nombre del trabajador")
     input_apellidos = crear_campo_texto("Apellidos del trabajador")
     input_identificador = crear_campo_texto("DNI / NIE / Pasaporte")
@@ -150,7 +188,7 @@ def VistaCrearTrabajador(page: ft.Page):
             
             #correo y teléfono
             ft.Column(spacing=3, controls=[
-                crear_label("Correo corporativo"),
+                crear_label("Correo corporativo *"),
                 input_correo,
             ]),
             ft.Column(spacing=3, controls=[

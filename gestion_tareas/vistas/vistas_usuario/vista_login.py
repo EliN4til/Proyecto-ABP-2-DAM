@@ -30,8 +30,15 @@ def VistaLogin(page: ft.Page):
         if exito:
             #guardamos el usuario en el servicio de la sesión
             guardar_usuario(resultado)
-            #navegamos al área personal
-            page.go("/area_personal")
+            
+            # --- LÓGICA DE REDIRECCIÓN SEGÚN ROL ---
+            # Comprobamos si el usuario tiene permisos de administrador
+            if resultado.get("es_admin", False) == True:
+                # Si es admin, lo enviamos al dashboard de administración
+                page.go("/area_admin")
+            else:
+                # Si es un trabajador normal, lo enviamos a su área personal
+                page.go("/area_personal")
         else:
             #mostramos el mensaje de error en el texto rojo
             txt_error.value = "❌ " + resultado
@@ -133,7 +140,7 @@ def VistaLogin(page: ft.Page):
     )
 
 def main(page: ft.Page):
-    page.title = "App Tareas - Conexión"
+    page.title = "App Tareas - Inicio de Sesión"
     
     page.window.width = 1200
     page.window.height = 800

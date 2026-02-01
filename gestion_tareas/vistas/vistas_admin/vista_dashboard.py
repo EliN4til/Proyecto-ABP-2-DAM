@@ -40,39 +40,33 @@ def VistaAreaAdmin(page: ft.Page):
 
     #funciones de click para cada botón
     def click_mis_datos(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Mis datos"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/mis_datos")
 
     def click_gestionar_trabajadores(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Gestionar Trabajadores"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/gestionar_trabajadores")
 
     def click_gestionar_departamentos(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Gestionar Departamentos"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/gestionar_departamentos")
 
     def click_gestionar_proyectos(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Gestionar Proyectos"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/gestionar_proyectos")
 
     def click_ver_estadisticas(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Ver Estadísticas"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/estadisticas")
 
     def click_configuracion(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Configuración"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/configuracion")
 
     def click_auditoria(e):
-        page.snack_bar = ft.SnackBar(ft.Text("Registro de Auditoría"))
-        page.snack_bar.open = True
-        page.update()
+        page.go("/auditoria")
+    
+    def click_ir_area_personal(e):
+        """Navega al dashboard de usuario normal"""
+        page.go("/area_personal")
+    
+    def click_logout(e):
+        """Cierra sesión volviendo al login"""
+        page.go("/login")
 
     #tarjeta blanca principal
     tarjeta_blanca = ft.Container(
@@ -118,6 +112,8 @@ def VistaAreaAdmin(page: ft.Page):
                         spacing=12,
                         controls=[
                             crear_boton_menu("📋", "Registro de\nAuditoría", click_auditoria),
+                            crear_boton_menu("👤", "Ir al Área\nPersonal", click_ir_area_personal),
+                            crear_boton_menu("🚪", "Cerrar\nSesión", click_logout),
                         ]
                     ),
                 ]
@@ -143,7 +139,7 @@ def VistaAreaAdmin(page: ft.Page):
     #contenido superpuesto (tarjeta + header)
     contenido_superpuesto = ft.Container(
         width=340,
-        height=400,
+        height=420,
         content=ft.Stack(
             controls=[
                 ft.Container(

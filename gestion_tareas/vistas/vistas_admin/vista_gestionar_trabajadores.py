@@ -1,4 +1,6 @@
 import flet as ft
+from modelos.crud import obtener_todos_empleados, eliminar_empleado
+from modelos.consultas import filtrar_y_ordenar # Suponiendo que filtros.py se llama consultas.py en tu estructura
 
 def VistaGestionarTrabajadores(page: ft.Page):
     
@@ -17,120 +19,93 @@ def VistaGestionarTrabajadores(page: ft.Page):
     COLOR_BTN_CREAR = "#4682B4"
 
     #opciones de filtro
-    FILTROS_ESTADO = ["Todos", "Activos", "Inactivos", "Pendientes"]
+    FILTROS_ESTADO = ["Todos", "ACTIVO", "INACTIVO", "PENDIENTE"]
     FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
     FILTROS_ORDEN = [
         "Nombre A-Z",
         "Nombre Z-A",
         "Más reciente",
         "Más antiguo",
-        "Por proyecto",
     ]
 
     filtro_estado_actual = ["Todos"]
     filtro_proyecto_actual = ["Todos"]
     filtro_orden_actual = ["Nombre A-Z"]
 
-    #datos demo de trabajadores
-    TRABAJADORES = [
-        {
-            "nombre": "Ana García",
-            "id": "EMP001",
-            "email": "ana.garcia@techsolutions.com",
-            "proyecto": "App Móvil v2.0",
-            "cargo": "Senior Developer",
-            "estado": "ACTIVO",
-            "fecha_alta": "15/03/2021",
-        },
-        {
-            "nombre": "Carlos López",
-            "id": "EMP002",
-            "email": "carlos.lopez@techsolutions.com",
-            "proyecto": "Portal Web Cliente",
-            "cargo": "UX Designer",
-            "estado": "ACTIVO",
-            "fecha_alta": "22/06/2021",
-        },
-        {
-            "nombre": "María Rodríguez",
-            "id": "EMP003",
-            "email": "maria.rodriguez@techsolutions.com",
-            "proyecto": "API REST Services",
-            "cargo": "QA Lead",
-            "estado": "ACTIVO",
-            "fecha_alta": "10/01/2022",
-        },
-        {
-            "nombre": "Pedro Martínez",
-            "id": "EMP004",
-            "email": "pedro.martinez@techsolutions.com",
-            "proyecto": "Migración Cloud",
-            "cargo": "DevOps Engineer",
-            "estado": "INACTIVO",
-            "fecha_alta": "05/09/2020",
-        },
-        {
-            "nombre": "Laura Sánchez",
-            "id": "EMP005",
-            "email": "laura.sanchez@techsolutions.com",
-            "proyecto": "Dashboard Analytics",
-            "cargo": "Backend Lead",
-            "estado": "ACTIVO",
-            "fecha_alta": "18/04/2022",
-        },
-        {
-            "nombre": "Juan Fernández",
-            "id": "EMP006",
-            "email": "juan.fernandez@techsolutions.com",
-            "proyecto": "Portal Web Cliente",
-            "cargo": "Frontend Developer",
-            "estado": "PENDIENTE",
-            "fecha_alta": "01/12/2024",
-        },
-        {
-            "nombre": "Sofia Ruiz",
-            "id": "EMP007",
-            "email": "sofia.ruiz@techsolutions.com",
-            "proyecto": "CRM Interno",
-            "cargo": "Technical Writer",
-            "estado": "ACTIVO",
-            "fecha_alta": "20/07/2023",
-        },
-        {
-            "nombre": "Diego Torres",
-            "id": "EMP008",
-            "email": "diego.torres@techsolutions.com",
-            "proyecto": "Sistema de Pagos",
-            "cargo": "DBA",
-            "estado": "INACTIVO",
-            "fecha_alta": "12/02/2021",
-        },
-    ]
+    # Variable para almacenar los trabajadores reales de la base de datos
+    trabajadores_db = []
+
+    # --- LÓGICA DE CARGA DE DATOS ---
+
+    def cargar_trabajadores_real():
+        """Obtiene todos los empleados de la base de datos MongoDB"""
+        exito, resultado = obtener_todos_empleados()
+        if exito:
+            formateados = []
+            for emp in resultado:
+                # Mapeamos los datos de la BD al formato que usa la UI
+                formateados.append({
+                    "_id": emp.get("_id"),
+                    "nombre": emp.get("nombre", "Sin nombre"),
+                    "apellidos": emp.get("apellidos", ""),
+                    "id": emp.get("id_empleado", "N/A"),
+                    "email": emp.get("email", "N/A"),
+                    "proyecto": emp.get("proyecto", "Sin proyecto"),
+                    "cargo": emp.get("cargo", "N/A"),
+                    "estado": emp.get("estado", "ACTIVO"),
+                    "fecha_alta": str(emp.get("fecha_incorporacion", ""))[:10] if emp.get("fecha_incorporacion") else "N/A"
+                })
+            return formateados
+        return []
+
+    def actualizar_lista_ui():
+        """Aplica filtros a los datos cargados y actualiza los controles en pantalla"""
+        texto = input_busqueda.value.lower() if input_busqueda.value else ""
+        
+        # Filtrado manual basado en el estado de los filtros
+        filtrados = []
+        for t in trabajadores_db:
+            nombre_completo = f"{t['nombre']} {t['apellidos']}".lower()
+            # Filtro búsqueda
+            if texto and texto not in nombre_completo and texto not in t["id"].lower():
+                continue
+            # Filtro estado
+            if filtro_estado_actual[0] != "Todos" and t["estado"] != filtro_estado_actual[0]:
+                continue
+            filtrados.append(t)
+
+        # Ordenación
+        if filtro_orden_actual[0] == "Nombre A-Z":
+            filtrados.sort(key=lambda x: x["nombre"])
+        elif filtro_orden_actual[0] == "Nombre Z-A":
+            filtrados.sort(key=lambda x: x["nombre"], reverse=True)
+
+        # Actualizamos controles
+        lista_trabajadores.controls = []
+        for t in filtrados:
+            lista_trabajadores.controls.append(crear_tarjeta_trabajador(t))
+        
+        texto_contador.value = f"{len(filtrados)} trabajadores"
+        page.update()
 
     def btn_volver_click(e):
-        """Acción al hacer clic en el botón volver atrás"""
-        page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
-        page.snack_bar.open = True
-        page.update()
+        """Acción al hacer clic en el botón volver atrás - CORREGIDO A ADMIN"""
+        page.go("/area_admin")
 
     def btn_buscar_click(e):
         """Acción al hacer clic en el botón buscar"""
-        texto_busqueda = input_busqueda.value
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {texto_busqueda}"))
+        actualizar_lista_ui()
+        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
         page.snack_bar.open = True
         page.update()
 
     def btn_crear_trabajador_click(e):
-        """Acción al hacer clic en el botón crear trabajador"""
-        page.snack_bar = ft.SnackBar(ft.Text("Crear nuevo trabajador"))
-        page.snack_bar.open = True
-        page.update()
+        """Navega a la vista de creación"""
+        page.go("/crear_trabajador")
 
     def btn_gestionar_roles_click(e):
-        """Acción al hacer clic en el botón gestionar roles"""
-        page.snack_bar = ft.SnackBar(ft.Text("Gestionar roles"))
-        page.snack_bar.open = True
-        page.update()
+        """Navega a la vista de roles"""
+        page.go("/gestionar_roles")
 
     #dialog detalle trabajador
     def mostrar_detalle_trabajador(trabajador):
@@ -139,7 +114,7 @@ def VistaGestionarTrabajadores(page: ft.Page):
         
         dialog_detalle = ft.AlertDialog(
             modal=True,
-            title=ft.Text(trabajador["nombre"], size=16, weight=ft.FontWeight.BOLD, color="black"),
+            title=ft.Text(f"{trabajador['nombre']} {trabajador['apellidos']}", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
                 width=300,
@@ -273,10 +248,23 @@ def VistaGestionarTrabajadores(page: ft.Page):
 
     #dialog confirmar eliminación
     def mostrar_confirmar_eliminar(trabajador):
-        """Muestra el diálogo de confirmación para eliminar trabajador"""
+        """Muestra el diálogo de confirmación para eliminar trabajador real"""
         def confirmar_eliminar(e):
             dialog_confirmar.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Trabajador {trabajador['nombre']} eliminado"))
+            
+            # 1. Llamamos al CRUD real
+            id_mongo = trabajador.get("_id")
+            if id_mongo:
+                exito, msj = eliminar_empleado(id_mongo)
+                if exito:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"✅ Trabajador eliminado correctamente"), bgcolor="green")
+                    # 2. Refrescamos datos y UI
+                    nonlocal trabajadores_db
+                    trabajadores_db = cargar_trabajadores_real()
+                    actualizar_lista_ui()
+                else:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
+            
             page.snack_bar.open = True
             page.update()
 
@@ -303,7 +291,7 @@ def VistaGestionarTrabajadores(page: ft.Page):
                             content=ft.Column(
                                 spacing=3,
                                 controls=[
-                                    ft.Text(trabajador["nombre"], size=13, color="black", weight=ft.FontWeight.BOLD),
+                                    ft.Text(f"{trabajador['nombre']} {trabajador['apellidos']}", size=13, color="black", weight=ft.FontWeight.BOLD),
                                     ft.Text(f"{trabajador['id']} - {trabajador['email']}", size=11, color="#666666"),
                                 ],
                             ),
@@ -352,19 +340,13 @@ def VistaGestionarTrabajadores(page: ft.Page):
             filtro_estado_actual[0] = radio_estado.value
             filtro_orden_actual[0] = radio_orden.value
             dialog_filtros.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Filtros aplicados"))
-            page.snack_bar.open = True
+            actualizar_lista_ui()
             page.update()
 
         def limpiar_filtros(e):
             radio_estado.value = "Todos"
             radio_orden.value = "Nombre A-Z"
             page.update()
-
-        def abrir_filtro_proyecto(e):
-            dialog_filtros.open = False
-            page.update()
-            mostrar_dialog_proyecto()
 
         dialog_filtros = ft.AlertDialog(
             modal=True,
@@ -383,21 +365,6 @@ def VistaGestionarTrabajadores(page: ft.Page):
                         ft.Divider(height=10, color=COLOR_BORDE),
                         ft.Text("Ordenar por:", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
                         radio_orden,
-                        ft.Divider(height=10, color=COLOR_BORDE),
-                        ft.Container(
-                            content=ft.Row(
-                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                                controls=[
-                                    ft.Text("Filtrar por Proyecto", size=13, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=16, color=COLOR_LABEL),
-                                ]
-                            ),
-                            on_click=abrir_filtro_proyecto,
-                            ink=True,
-                            padding=ft.padding.all(10),
-                            border_radius=5,
-                            bgcolor="#F5F5F5",
-                        ),
                     ],
                 ),
             ),
@@ -410,67 +377,6 @@ def VistaGestionarTrabajadores(page: ft.Page):
 
         page.overlay.append(dialog_filtros)
         dialog_filtros.open = True
-        page.update()
-
-    #dialog proyecto
-    def mostrar_dialog_proyecto():
-        """Diálogo para seleccionar filtro por proyecto"""
-        radio_proyecto = ft.RadioGroup(
-            value=filtro_proyecto_actual[0],
-            content=ft.Column(
-                controls=[
-                    ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(color="black", size=12)) 
-                    for proy in FILTROS_PROYECTO
-                ],
-                spacing=2,
-            ),
-        )
-
-        def aplicar_proyecto(e):
-            filtro_proyecto_actual[0] = radio_proyecto.value
-            dialog_proyecto.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Proyecto: {filtro_proyecto_actual[0]}"))
-            page.snack_bar.open = True
-            page.update()
-
-        def volver_filtros(e):
-            dialog_proyecto.open = False
-            page.update()
-            mostrar_dialog_filtros(None)
-
-        dialog_proyecto = ft.AlertDialog(
-            modal=True,
-            title=ft.Row(
-                controls=[
-                    ft.Container(
-                        content=ft.Text("←", size=20, color="black", weight="bold"),
-                        on_click=volver_filtros,
-                        ink=True,
-                        border_radius=50,
-                        padding=5,
-                    ),
-                    ft.Text("Seleccionar Proyecto", size=14, weight=ft.FontWeight.BOLD, color="black"),
-                ],
-                spacing=10,
-            ),
-            bgcolor="white",
-            content=ft.Container(
-                width=300,
-                height=300,
-                bgcolor="white",
-                content=ft.ListView(
-                    controls=[radio_proyecto],
-                    spacing=5,
-                ),
-            ),
-            actions=[
-                ft.TextButton("Aplicar", on_click=aplicar_proyecto),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        page.overlay.append(dialog_proyecto)
-        dialog_proyecto.open = True
         page.update()
 
     def crear_tarjeta_trabajador(trabajador):
@@ -503,10 +409,12 @@ def VistaGestionarTrabajadores(page: ft.Page):
                                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                     controls=[
                                         ft.Text(
-                                            trabajador["nombre"],
+                                            f"{trabajador['nombre']} {trabajador['apellidos']}",
                                             size=12,
                                             color="black",
                                             weight=ft.FontWeight.BOLD,
+                                            max_lines=1,
+                                            overflow="ellipsis"
                                         ),
                                         ft.Container(
                                             width=10,
@@ -558,7 +466,7 @@ def VistaGestionarTrabajadores(page: ft.Page):
 
     #campo de búsqueda
     input_busqueda = ft.TextField(
-        hint_text="Buscar por nombre...",
+        hint_text="Buscar por nombre o ID...",
         hint_style=ft.TextStyle(size=11, color="#999999"),
         text_style=ft.TextStyle(size=12, color="black"),
         border_color=COLOR_BORDE,
@@ -566,6 +474,7 @@ def VistaGestionarTrabajadores(page: ft.Page):
         height=38,
         expand=True,
         content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        on_submit=lambda e: actualizar_lista_ui()
     )
 
     #botón filtrar
@@ -600,12 +509,11 @@ def VistaGestionarTrabajadores(page: ft.Page):
     )
 
     #contador de trabajadores
-    contador_trabajadores = ft.Text(f"{len(TRABAJADORES)} trabajadores", size=11, color=COLOR_LABEL)
+    texto_contador = ft.Text("0 trabajadores", size=11, color=COLOR_LABEL)
 
     #lista de trabajadores
     lista_trabajadores = ft.ListView(
         spacing=0,
-        controls=[crear_tarjeta_trabajador(trabajador) for trabajador in TRABAJADORES],
         expand=True,
     )
 
@@ -650,7 +558,7 @@ def VistaGestionarTrabajadores(page: ft.Page):
                 spacing=10,
                 controls=[
                     fila_busqueda,
-                    contador_trabajadores,
+                    texto_contador,
                     ft.Container(
                         height=380,
                         content=lista_trabajadores,
@@ -698,6 +606,10 @@ def VistaGestionarTrabajadores(page: ft.Page):
             ]
         )
     )
+
+    # --- INICIALIZACIÓN ---
+    trabajadores_db = cargar_trabajadores_real()
+    actualizar_lista_ui()
 
     return ft.Container(
         expand=True,
