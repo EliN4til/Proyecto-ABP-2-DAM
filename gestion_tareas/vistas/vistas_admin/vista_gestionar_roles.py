@@ -1,4 +1,5 @@
 import flet as ft
+from modelos.crud import obtener_todos_roles, crear_rol, actualizar_rol, eliminar_rol
 
 def VistaGestionarRoles(page: ft.Page):
     
@@ -13,87 +14,51 @@ def VistaGestionarRoles(page: ft.Page):
     COLOR_ELIMINAR = "#E53935"
     COLOR_BTN_CREAR = "#4682B4"
 
-    #datos demo de roles
-    ROLES = [
-        {
-            "nombre": "Administrador",
-            "codigo": "ADMIN",
-            "descripcion": "Acceso total al sistema",
-            "usuarios": 3,
-            "color": "#E53935",
-            "permisos": {
-                "usuarios": ["crear", "editar", "eliminar", "ver"],
-                "tareas": ["crear", "editar", "eliminar", "ver", "asignar"],
-                "equipos": ["crear", "editar", "eliminar", "ver"],
-                "departamentos": ["crear", "editar", "eliminar", "ver"],
-                "configuracion": ["editar", "ver"],
-                "estadisticas": ["ver"],
-                "auditoria": ["ver"],
-            }
-        },
-        {
-            "nombre": "Manager",
-            "codigo": "MGR",
-            "descripcion": "Gestión de equipos y tareas",
-            "usuarios": 8,
-            "color": "#FF9800",
-            "permisos": {
-                "usuarios": ["ver"],
-                "tareas": ["crear", "editar", "ver", "asignar"],
-                "equipos": ["editar", "ver"],
-                "departamentos": ["ver"],
-                "configuracion": [],
-                "estadisticas": ["ver"],
-                "auditoria": [],
-            }
-        },
-        {
-            "nombre": "Empleado",
-            "codigo": "EMP",
-            "descripcion": "Acceso básico a tareas propias",
-            "usuarios": 35,
-            "color": "#4CAF50",
-            "permisos": {
-                "usuarios": [],
-                "tareas": ["crear", "editar", "ver"],
-                "equipos": ["ver"],
-                "departamentos": ["ver"],
-                "configuracion": [],
-                "estadisticas": [],
-                "auditoria": [],
-            }
-        },
-        {
-            "nombre": "Invitado",
-            "codigo": "GUEST",
-            "descripcion": "Solo lectura",
-            "usuarios": 5,
-            "color": "#9E9E9E",
-            "permisos": {
-                "usuarios": [],
-                "tareas": ["ver"],
-                "equipos": ["ver"],
-                "departamentos": ["ver"],
-                "configuracion": [],
-                "estadisticas": [],
-                "auditoria": [],
-            }
-        },
-    ]
+    # Variable para almacenar los roles cargados de la base de datos
+    roles_db = []
 
     #lista de todos los permisos posibles
     MODULOS = ["usuarios", "tareas", "equipos", "departamentos", "configuracion", "estadisticas", "auditoria"]
     ACCIONES = ["crear", "editar", "eliminar", "ver", "asignar"]
 
-    def btn_volver_click(e):
-        """Acción al hacer clic en el botón volver atrás"""
-        page.snack_bar = ft.SnackBar(ft.Text("Volver atrás"))
-        page.snack_bar.open = True
+    # --- LÓGICA DE CARGA DE DATOS ---
+
+    def cargar_roles_real():
+        """Obtiene los roles desde la base de datos MongoDB"""
+        exito, resultado = obtener_todos_roles()
+        if exito:
+            return resultado
+        return []
+
+    def refrescar_lista_ui():
+        """Recarga los datos de la BD y actualiza los controles de la lista"""
+        nonlocal roles_db
+        roles_db = cargar_roles_real()
+        
+        lista_roles.controls = []
+        if not roles_db:
+            lista_roles.controls.append(
+                ft.Container(
+                    padding=20,
+                    content=ft.Text("No hay roles configurados", color="grey", text_align="center")
+                )
+            )
+        else:
+            for rol in roles_db:
+                lista_roles.controls.append(crear_tarjeta_rol(rol))
+        
+        texto_contador.value = f"{len(roles_db)} roles configurados"
         page.update()
+
+    def btn_volver_click(e):
+        """Acción al hacer clic en el botón volver atrás - CORREGIDO A ADMIN"""
+        page.go("/area_admin")
+
+    # --- DIÁLOGOS CRUD ---
 
     #dialog detalle rol con permisos
     def mostrar_detalle_rol(rol):
-        """Muestra el diálogo con el detalle del rol y sus permisos"""
+        """Muestra el diálogo con el detalle del rol y sus permisos reales"""
         
         def crear_fila_permisos(modulo: str, permisos_activos: list):
             """Crea una fila mostrando los permisos de un módulo"""
@@ -126,24 +91,26 @@ def VistaGestionarRoles(page: ft.Page):
                 )
             )
         
-        lista_permisos = [crear_fila_permisos(modulo, rol["permisos"].get(modulo, [])) for modulo in MODULOS]
+        # Obtenemos el diccionario de permisos del rol
+        dict_permisos = rol.get("permisos", {})
+        lista_permisos = [crear_fila_permisos(modulo, dict_permisos.get(modulo, [])) for modulo in MODULOS]
 
         dialog_detalle = ft.AlertDialog(
             modal=True,
+            bgcolor="white",
             title=ft.Row(
                 controls=[
                     ft.Container(
                         width=12,
                         height=12,
                         border_radius=6,
-                        bgcolor=rol["color"],
+                        bgcolor=rol.get("color", "#4682B4"),
                     ),
                     ft.Text(rol["nombre"], size=16, weight=ft.FontWeight.BOLD, color="black"),
                     ft.Text(f"({rol['codigo']})", size=12, color=COLOR_LABEL),
                 ],
                 spacing=8,
             ),
-            bgcolor="white",
             content=ft.Container(
                 width=320,
                 height=350,
@@ -151,8 +118,8 @@ def VistaGestionarRoles(page: ft.Page):
                 content=ft.Column(
                     spacing=10,
                     controls=[
-                        ft.Text(rol["descripcion"], size=12, color="#666666"),
-                        ft.Text(f"👥 {rol['usuarios']} usuarios asignados", size=11, color=COLOR_LABEL),
+                        ft.Text(rol.get("descripcion", "Sin descripción"), size=12, color="#666666"),
+                        ft.Text(f"👥 {rol.get('usuarios', 0)} usuarios asignados", size=11, color=COLOR_LABEL),
                         ft.Divider(height=1, color=COLOR_BORDE),
                         ft.Text("Permisos por módulo:", size=12, color="black", weight=ft.FontWeight.BOLD),
                         ft.Container(
@@ -174,21 +141,23 @@ def VistaGestionarRoles(page: ft.Page):
 
     #dialog editar rol
     def mostrar_editar_rol(rol):
-        """Muestra el diálogo para editar rol"""
+        """Muestra el diálogo para editar rol persistente"""
         
-        #crear checkboxes para cada permiso
+        # Diccionario para rastrear los checkboxes de permisos
         permisos_checkboxes = {}
         
         def crear_seccion_modulo(modulo: str):
-            permisos_activos = rol["permisos"].get(modulo, [])
+            # Obtenemos permisos actuales del rol para este módulo
+            permisos_actuales = rol.get("permisos", {}).get(modulo, [])
             checkboxes = []
             for accion in ACCIONES:
                 cb = ft.Checkbox(
                     label=accion.capitalize(),
-                    value=accion in permisos_activos,
+                    value=accion in permisos_actuales,
                     label_style=ft.TextStyle(size=11, color="black"),
                 )
                 checkboxes.append(cb)
+                # Guardamos referencia: módulo_acción
                 permisos_checkboxes[f"{modulo}_{accion}"] = cb
             
             return ft.Container(
@@ -204,44 +173,49 @@ def VistaGestionarRoles(page: ft.Page):
         
         secciones_modulos = [crear_seccion_modulo(modulo) for modulo in MODULOS]
         
-        def guardar_cambios(e):
-            dialog_editar.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Rol '{rol['nombre']}' actualizado"))
-            page.snack_bar.open = True
-            page.update()
+        input_nombre = ft.TextField(label="Nombre del rol", value=rol["nombre"], border_color=COLOR_BORDE, height=50, text_size=13)
+        input_desc = ft.TextField(label="Descripción", value=rol.get("descripcion", ""), border_color=COLOR_BORDE, height=50, text_size=13)
 
-        def cerrar(e):
-            dialog_editar.open = False
+        def guardar_cambios_click(e):
+            # 1. Recopilar nuevos permisos del formulario
+            nuevos_permisos = {}
+            for modulo in MODULOS:
+                lista_acc = []
+                for accion in ACCIONES:
+                    if permisos_checkboxes[f"{modulo}_{accion}"].value:
+                        lista_acc.append(accion)
+                nuevos_permisos[modulo] = lista_acc
+
+            datos_actualizados = {
+                "nombre": input_nombre.value,
+                "descripcion": input_desc.value,
+                "permisos": nuevos_permisos
+            }
+
+            # 2. Llamada al CRUD
+            exito, msj = actualizar_rol(rol["_id"], datos_actualizados)
+            if exito:
+                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Rol '{input_nombre.value}' actualizado"), bgcolor="green")
+                dialog_editar.open = False
+                refrescar_lista_ui()
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
+            
+            page.snack_bar.open = True
             page.update()
 
         dialog_editar = ft.AlertDialog(
             modal=True,
-            title=ft.Text(f"Editar: {rol['nombre']}", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
+            title=ft.Text(f"Editar: {rol['nombre']}", size=16, weight=ft.FontWeight.BOLD, color="black"),
             content=ft.Container(
-                width=340,
-                height=400,
-                bgcolor="white",
+                width=340, height=400,
                 content=ft.Column(
                     spacing=10,
                     scroll=ft.ScrollMode.AUTO,
                     controls=[
-                        ft.TextField(
-                            label="Nombre del rol",
-                            value=rol["nombre"],
-                            text_style=ft.TextStyle(size=12, color="black"),
-                            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-                            border_color=COLOR_BORDE,
-                            height=50,
-                        ),
-                        ft.TextField(
-                            label="Descripción",
-                            value=rol["descripcion"],
-                            text_style=ft.TextStyle(size=12, color="black"),
-                            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-                            border_color=COLOR_BORDE,
-                            height=50,
-                        ),
+                        input_nombre,
+                        input_desc,
                         ft.Divider(height=1, color=COLOR_BORDE),
                         ft.Text("Permisos:", size=12, color="black", weight=ft.FontWeight.BOLD),
                         *secciones_modulos,
@@ -249,8 +223,8 @@ def VistaGestionarRoles(page: ft.Page):
                 ),
             ),
             actions=[
-                ft.TextButton("Cancelar", on_click=cerrar),
-                ft.TextButton("Guardar", on_click=guardar_cambios),
+                ft.TextButton("Cancelar", on_click=lambda e: cerrar_dialog(dialog_editar)),
+                ft.ElevatedButton("Guardar", bgcolor=COLOR_BTN_CREAR, color="white", on_click=guardar_cambios_click),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -261,24 +235,25 @@ def VistaGestionarRoles(page: ft.Page):
 
     #dialog confirmar eliminación
     def mostrar_confirmar_eliminar(rol):
-        """Muestra el diálogo de confirmación para eliminar rol"""
+        """Muestra el diálogo de confirmación para eliminar rol real"""
         def confirmar_eliminar(e):
-            dialog_confirmar.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Rol '{rol['nombre']}' eliminado"))
+            exito, msj = eliminar_rol(rol["_id"])
+            if exito:
+                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Rol '{rol['nombre']}' eliminado"), bgcolor="green")
+                dialog_confirmar.open = False
+                refrescar_lista_ui()
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
+            
             page.snack_bar.open = True
-            page.update()
-
-        def cancelar_eliminar(e):
-            dialog_confirmar.open = False
             page.update()
 
         dialog_confirmar = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Eliminar rol", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
+            title=ft.Text("Eliminar rol", size=16, weight=ft.FontWeight.BOLD, color="black"),
             content=ft.Container(
                 width=280,
-                bgcolor="white",
                 content=ft.Column(
                     spacing=10,
                     tight=True,
@@ -290,9 +265,8 @@ def VistaGestionarRoles(page: ft.Page):
                             padding=10,
                             content=ft.Row(
                                 controls=[
-                                    ft.Container(width=10, height=10, border_radius=5, bgcolor=rol["color"]),
+                                    ft.Container(width=10, height=10, border_radius=5, bgcolor=rol.get("color", "red")),
                                     ft.Text(rol["nombre"], size=12, color="black", weight=ft.FontWeight.BOLD),
-                                    ft.Text(f"({rol['usuarios']} usuarios)", size=11, color="#666666"),
                                 ],
                                 spacing=8,
                             ),
@@ -302,7 +276,7 @@ def VistaGestionarRoles(page: ft.Page):
                 ),
             ),
             actions=[
-                ft.TextButton("Cancelar", on_click=cancelar_eliminar),
+                ft.TextButton("Cancelar", on_click=lambda e: cerrar_dialog(dialog_confirmar)),
                 ft.TextButton("Eliminar", on_click=confirmar_eliminar, style=ft.ButtonStyle(color=COLOR_ELIMINAR)),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
@@ -314,7 +288,7 @@ def VistaGestionarRoles(page: ft.Page):
 
     #dialog crear nuevo rol
     def mostrar_crear_rol(e):
-        """Muestra el diálogo para crear un nuevo rol"""
+        """Muestra el diálogo para crear un nuevo rol en la base de datos"""
         
         permisos_checkboxes = {}
         
@@ -342,72 +316,66 @@ def VistaGestionarRoles(page: ft.Page):
         
         secciones_modulos = [crear_seccion_modulo(modulo) for modulo in MODULOS]
         
-        input_nombre = ft.TextField(
-            label="Nombre del rol",
-            hint_text="Ej: Supervisor",
-            text_style=ft.TextStyle(size=12, color="black"),
-            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-            border_color=COLOR_BORDE,
-            height=50,
-        )
+        input_nombre = ft.TextField(label="Nombre del rol", hint_text="Ej: Supervisor", border_color=COLOR_BORDE, height=50, text_size=13)
+        input_codigo = ft.TextField(label="Código", hint_text="Ej: SUP", border_color=COLOR_BORDE, height=50, text_size=13)
+        input_descripcion = ft.TextField(label="Descripción", hint_text="Descripción corta...", border_color=COLOR_BORDE, height=50, text_size=13)
         
-        input_codigo = ft.TextField(
-            label="Código",
-            hint_text="Ej: SUP",
-            text_style=ft.TextStyle(size=12, color="black"),
-            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-            border_color=COLOR_BORDE,
-            height=50,
-        )
-        
-        input_descripcion = ft.TextField(
-            label="Descripción",
-            hint_text="Descripción del rol...",
-            text_style=ft.TextStyle(size=12, color="black"),
-            label_style=ft.TextStyle(size=11, color=COLOR_LABEL),
-            border_color=COLOR_BORDE,
-            height=50,
-        )
-        
-        def crear_rol(e):
-            if not input_nombre.value:
-                page.snack_bar = ft.SnackBar(ft.Text("Por favor, introduce un nombre"))
+        def crear_rol_confirmar(e):
+            if not input_nombre.value or not input_codigo.value:
+                page.snack_bar = ft.SnackBar(ft.Text("❌ Nombre y Código son obligatorios"), bgcolor="red")
                 page.snack_bar.open = True
                 page.update()
                 return
-            dialog_crear.open = False
-            page.snack_bar = ft.SnackBar(ft.Text(f"Rol '{input_nombre.value}' creado"))
-            page.snack_bar.open = True
-            page.update()
 
-        def cerrar(e):
-            dialog_crear.open = False
+            # Recopilar permisos
+            dict_permisos = {}
+            for modulo in MODULOS:
+                acc_sel = []
+                for accion in ACCIONES:
+                    if permisos_checkboxes[f"{modulo}_{accion}"].value:
+                        acc_sel.append(accion)
+                dict_permisos[modulo] = acc_sel
+
+            nuevo_rol_data = {
+                "nombre": input_nombre.value,
+                "codigo": input_codigo.value.upper(),
+                "descripcion": input_descripcion.value,
+                "usuarios": 0,
+                "color": "#4682B4", # Color por defecto
+                "permisos": dict_permisos
+            }
+
+            exito, msj = crear_rol(nuevo_rol_data)
+            if exito:
+                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Rol '{input_nombre.value}' creado con éxito"), bgcolor="green")
+                dialog_crear.open = False
+                refrescar_lista_ui()
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
+            
+            page.snack_bar.open = True
             page.update()
 
         dialog_crear = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Crear Nuevo Rol", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
+            title=ft.Text("Crear Nuevo Rol", size=16, weight=ft.FontWeight.BOLD, color="black"),
             content=ft.Container(
-                width=340,
-                height=420,
-                bgcolor="white",
+                width=340, height=420,
                 content=ft.Column(
                     spacing=10,
                     scroll=ft.ScrollMode.AUTO,
                     controls=[
-                        input_nombre,
-                        input_codigo,
-                        input_descripcion,
+                        input_nombre, input_codigo, input_descripcion,
                         ft.Divider(height=1, color=COLOR_BORDE),
-                        ft.Text("Permisos:", size=12, color="black", weight=ft.FontWeight.BOLD),
+                        ft.Text("Asignar Permisos:", size=12, color="black", weight=ft.FontWeight.BOLD),
                         *secciones_modulos,
                     ]
                 ),
             ),
             actions=[
-                ft.TextButton("Cancelar", on_click=cerrar),
-                ft.TextButton("Crear", on_click=crear_rol),
+                ft.TextButton("Cancelar", on_click=lambda e: cerrar_dialog(dialog_crear)),
+                ft.ElevatedButton("Crear", bgcolor=COLOR_BTN_CREAR, color="white", on_click=crear_rol_confirmar),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -420,8 +388,10 @@ def VistaGestionarRoles(page: ft.Page):
         dialog.open = False
         page.update()
 
+    # --- RENDERIZADO DE TARJETAS ---
+
     def crear_tarjeta_rol(rol):
-        """Crea una tarjeta para cada rol"""
+        """Crea una tarjeta visual para cada rol"""
         return ft.Container(
             bgcolor="white",
             border_radius=10,
@@ -442,7 +412,7 @@ def VistaGestionarRoles(page: ft.Page):
                         width=8,
                         height=50,
                         border_radius=4,
-                        bgcolor=rol["color"],
+                        bgcolor=rol.get("color", "#4682B4"),
                     ),
                     #contenido principal (clickeable)
                     ft.Container(
@@ -458,12 +428,12 @@ def VistaGestionarRoles(page: ft.Page):
                                             bgcolor=COLOR_LABEL,
                                             border_radius=8,
                                             padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
-                                            content=ft.Text(rol["codigo"], size=9, color="white"),
+                                            content=ft.Text(rol.get("codigo", "ROL"), size=9, color="white"),
                                         ),
                                     ]
                                 ),
-                                ft.Text(rol["descripcion"], size=10, color="#666666", max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                                ft.Text(f"👥 {rol['usuarios']} usuarios", size=10, color=COLOR_LABEL),
+                                ft.Text(rol.get("descripcion", ""), size=10, color="#666666", max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                                ft.Text(f"👥 {rol.get('usuarios', 0)} usuarios", size=10, color=COLOR_LABEL),
                             ]
                         ),
                         on_click=lambda e, r=rol: mostrar_detalle_rol(r),
@@ -488,7 +458,8 @@ def VistaGestionarRoles(page: ft.Page):
             ),
         )
 
-    #botón volver
+    # --- ELEMENTOS FIJOS DE LA PÁGINA ---
+
     btn_volver = ft.Container(
         content=ft.Text("←", size=24, color="white", weight=ft.FontWeight.BOLD),
         on_click=btn_volver_click,
@@ -496,17 +467,13 @@ def VistaGestionarRoles(page: ft.Page):
         padding=10,
     )
 
-    #contador de roles
-    contador_roles = ft.Text(f"{len(ROLES)} roles configurados", size=11, color=COLOR_LABEL)
+    texto_contador = ft.Text("0 roles configurados", size=11, color=COLOR_LABEL)
 
-    #lista de roles
     lista_roles = ft.ListView(
         spacing=0,
-        controls=[crear_tarjeta_rol(rol) for rol in ROLES],
         expand=True,
     )
 
-    #botón crear nuevo rol
     btn_crear = ft.Container(
         width=160,
         height=44,
@@ -534,7 +501,7 @@ def VistaGestionarRoles(page: ft.Page):
             content=ft.Column(
                 spacing=12,
                 controls=[
-                    contador_roles,
+                    texto_contador,
                     ft.Container(
                         height=420,
                         content=lista_roles,
@@ -581,6 +548,9 @@ def VistaGestionarRoles(page: ft.Page):
             ]
         )
     )
+
+    # --- INICIALIZACIÓN ---
+    refrescar_lista_ui()
 
     return ft.Container(
         expand=True,
