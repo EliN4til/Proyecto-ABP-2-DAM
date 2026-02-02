@@ -412,6 +412,23 @@ def obtener_tareas_por_estado(estado: str) -> Tuple[bool, Any]:
         return (False, str(e))
 
 
+def obtener_tareas_pendientes_usuario(id_usuario: str, nombre_usuario: str) -> Tuple[bool, Any]:
+    #obtiene las tareas pendientes que el usuario creó O tiene asignadas
+    try:
+        tareas = list(db.tareas.find({
+            "estado": "pendiente",
+            "$or": [
+                {"asignados.id_usuario": id_usuario},  # Asignadas al usuario
+                {"compartido_por": nombre_usuario}      # Creadas por el usuario
+            ]
+        }))
+        for t in tareas:
+            t["_id"] = str(t["_id"])
+        return (True, tareas)
+    except Exception as e:
+        return (False, str(e))
+
+
 def obtener_tareas_por_usuario(id_usuario: str) -> Tuple[bool, Any]:
     #obtiene las tareas asignadas a un usuario específico
     try:
@@ -438,18 +455,25 @@ def obtener_tareas_atrasadas() -> Tuple[bool, Any]:
         return (False, str(e))
 
 
-def actualizar_tarea(id_tarea: str, datos: dict) -> Tuple[bool, Any]:
+def actualizar_tarea(id_tarea, datos: dict) -> Tuple[bool, Any]:
     #actualiza una tarea y genera log
-    if not es_id_valido(id_tarea):
+    #convierte a string si viene como ObjectId
+    id_str = str(id_tarea) if isinstance(id_tarea, ObjectId) else id_tarea
+    
+    if not es_id_valido(id_str):
         return (False, "id no válido")
     
     try:
+        #añadimos fecha de modificación automáticamente
+        datos["fecha_modificacion"] = datetime.now()
+        
         resultado = db.tareas.update_one(
-            {"_id": ObjectId(id_tarea)},
+            {"_id": ObjectId(id_str)},
             {"$set": datos}
         )
         if resultado.matched_count > 0:
-            registrar_log("Editar", "Tareas", f"tarea actualizada id: {id_tarea}")
+            titulo = datos.get("titulo", id_str)
+            registrar_log("Editar", "Tareas", f"tarea actualizada: {titulo}")
             return (True, "tarea actualizada")
         return (False, "no se encontró la tarea")
     except Exception as e:

@@ -1,6 +1,8 @@
 import flet as ft
-from modelos.crud import obtener_tareas_por_estado, eliminar_tarea, completar_tarea
+from datetime import datetime
+from modelos.crud import obtener_tareas_por_estado, eliminar_tarea, completar_tarea, actualizar_tarea, obtener_todos_proyectos, obtener_todos_empleados, obtener_todos_departamentos, obtener_tareas_pendientes_usuario
 from modelos.consultas import filtrar_y_ordenar
+from servicios.sesion_service import obtener_usuario
 
 def VistaTareasPendientes(page: ft.Page):
     
@@ -17,6 +19,13 @@ def VistaTareasPendientes(page: ft.Page):
     COLOR_PRIORIDAD_MEDIA = "#FF9800"
     COLOR_PRIORIDAD_BAJA = "#4CAF50"
     COLOR_COMPLETADO = "#4CAF50"
+    COLOR_EDITAR = "#1976D2"
+
+    TAGS_EMOJIS = {
+        "Desarrollo": "👨‍💻", "Bug Fix": "🐛", "Testing": "🧪", "Diseño": "🎨",
+        "Documentación": "📝", "DevOps": "⚙️", "Base de Datos": "🗄️",
+        "API": "🔌", "Frontend": "🖥️", "Backend": "🔧",
+    }
 
     #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
@@ -39,25 +48,53 @@ def VistaTareasPendientes(page: ft.Page):
     filtro_prioridad_actual = ["Todas"]
     filtro_orden_actual = ["Más reciente primero"]
 
+    # Datos maestros para el diálogo de edición
+    proyectos_db = []
+    empleados_db = []
+    departamentos_db = []
+    usuario_actual = obtener_usuario()
+
+    def cargar_datos_maestros():
+        nonlocal proyectos_db, empleados_db, departamentos_db
+        ex_p, lp = obtener_todos_proyectos()
+        if ex_p: proyectos_db = lp
+        ex_e, le = obtener_todos_empleados()
+        if ex_e: empleados_db = le
+        ex_d, ld = obtener_todos_departamentos()
+        if ex_d: departamentos_db = ld
+
+    cargar_datos_maestros()
+
     #cargamos las tareas pendientes de la BD
     def cargar_tareas_pendientes():
-        """Obtiene las tareas pendientes de la base de datos"""
-        exito, resultado = obtener_tareas_por_estado("pendiente")
+        """Obtiene las tareas pendientes del usuario (creadas por él o asignadas a él)"""
+        # Obtenemos ID y nombre del usuario logueado
+        id_usuario = str(usuario_actual.get("_id")) if usuario_actual else ""
+        nombre_usuario = usuario_actual.get("nombre", "") if usuario_actual else ""
+        
+        # Usamos la nueva función que filtra por usuario
+        exito, resultado = obtener_tareas_pendientes_usuario(id_usuario, nombre_usuario)
+        
         if exito:
             tareas = []
             for t in resultado:
                 #formateamos las fechas
                 fecha_inicio = ""
+                fecha_inicio_obj = None
                 if t.get("fecha_inicio"):
                     fecha_inicio = t["fecha_inicio"].strftime("%d/%m/%y")
+                    fecha_inicio_obj = t["fecha_inicio"]
                 
                 fecha_fin = ""
+                fecha_fin_obj = None
                 if t.get("fecha_limite"):
                     fecha_fin = t["fecha_limite"].strftime("%d/%m/%y")
+                    fecha_fin_obj = t["fecha_limite"]
                 
                 #obtenemos los nombres de los asignados
                 asignados_nombres = []
-                for asignado in t.get("asignados", []):
+                asignados_obj = t.get("asignados", [])
+                for asignado in asignados_obj:
                     if isinstance(asignado, dict):
                         asignados_nombres.append(asignado.get("nombre", "Sin nombre"))
                     else:
@@ -72,14 +109,20 @@ def VistaTareasPendientes(page: ft.Page):
                     "_id": t.get("_id"),
                     "titulo": t.get("titulo", "Sin título"),
                     "tag": tag,
+                    "tags": tags,  # Guardamos todos los tags
                     "emoji": t.get("icono", "📋"),
                     "proyecto": t.get("proyecto", "Sin proyecto"),
-                    "departamento": "General",
+                    "id_proyecto": t.get("id_proyecto"),
+                    "departamento": t.get("departamento", "General"),
                     "prioridad": t.get("prioridad", "Media"),
                     "asignados": asignados_nombres,
+                    "asignados_obj": asignados_obj,  # Guardamos objetos completos
                     "fecha_inicio": fecha_inicio,
                     "fecha_fin": fecha_fin,
-                    "requerimientos": [t.get("requisitos", "Sin requisitos")]
+                    "fecha_inicio_obj": fecha_inicio_obj,
+                    "fecha_fin_obj": fecha_fin_obj,
+                    "requerimientos": [t.get("requisitos", "Sin requisitos")],
+                    "requisitos_raw": t.get("requisitos", "Sin requisitos"),
                 }
                 tareas.append(tarea)
             return tareas
@@ -167,6 +210,511 @@ def VistaTareasPendientes(page: ft.Page):
 
     def btn_anadir_click(e):
         page.go("/nueva_tarea")
+
+    # ============================================
+    # DIÁLOGO DE EDICIÓN DE TAREA
+    # ============================================
+    def mostrar_dialog_editar(tarea):
+        """Muestra un diálogo completo para editar todos los datos de la tarea"""
+        
+        # Estados temporales para la edición
+        edit_tags_seleccionados = list(tarea.get("tags", []))
+        edit_personas_seleccionadas = []
+        
+        # Reconstruir objetos de personas desde asignados_obj
+        for asig in tarea.get("asignados_obj", []):
+            if isinstance(asig, dict):
+                # Buscar en empleados_db el objeto completo
+                for emp in empleados_db:
+                    if str(emp.get("_id")) == str(asig.get("id_usuario")):
+                        edit_personas_seleccionadas.append(emp)
+                        break
+        
+        edit_proyecto_obj = [None]
+        # Buscar proyecto actual
+        for p in proyectos_db:
+            if p.get("nombre") == tarea.get("proyecto"):
+                edit_proyecto_obj[0] = p
+                break
+        
+        edit_departamento = [tarea.get("departamento")]
+        edit_prioridad = [tarea.get("prioridad", "Media").capitalize()]
+        edit_emoji = [tarea.get("emoji", "📋")]
+        
+        # Campos de texto
+        input_titulo_edit = ft.TextField(
+            value=tarea.get("titulo", ""),
+            hint_text="Título de la tarea",
+            border_color=COLOR_BORDE,
+            text_style=ft.TextStyle(size=12, color="black"),
+            height=40,
+            content_padding=ft.padding.symmetric(horizontal=10, vertical=8),
+        )
+        
+        input_requisitos_edit = ft.TextField(
+            value=tarea.get("requisitos_raw", ""),
+            hint_text="Requerimientos...",
+            border_color=COLOR_BORDE,
+            text_style=ft.TextStyle(size=12, color="black"),
+            multiline=True,
+            min_lines=3,
+            max_lines=5,
+            content_padding=ft.padding.all(10),
+        )
+        
+        # Textos de visualización
+        txt_proyecto_edit = ft.Text(
+            edit_proyecto_obj[0]["nombre"] if edit_proyecto_obj[0] else "Selecciona...",
+            size=11,
+            color="black" if edit_proyecto_obj[0] else "#999999",
+            overflow=ft.TextOverflow.ELLIPSIS,
+        )
+        
+        txt_departamento_edit = ft.Text(
+            edit_departamento[0] if edit_departamento[0] and edit_departamento[0] != "General" else "Selecciona...",
+            size=11,
+            color="black" if edit_departamento[0] and edit_departamento[0] != "General" else "#999999",
+            overflow=ft.TextOverflow.ELLIPSIS,
+        )
+        
+        def get_texto_personas():
+            if len(edit_personas_seleccionadas) == 0:
+                return "Selecciona..."
+            elif len(edit_personas_seleccionadas) == 1:
+                return edit_personas_seleccionadas[0].get("nombre", "Usuario")
+            else:
+                return f"{edit_personas_seleccionadas[0].get('nombre')} (+{len(edit_personas_seleccionadas)-1})"
+        
+        txt_personas_edit = ft.Text(
+            get_texto_personas(),
+            size=11,
+            color="black" if edit_personas_seleccionadas else "#999999",
+            overflow=ft.TextOverflow.ELLIPSIS,
+        )
+        
+        def get_texto_tags():
+            if len(edit_tags_seleccionados) == 0:
+                return "Selecciona..."
+            elif len(edit_tags_seleccionados) == 1:
+                return edit_tags_seleccionados[0]
+            else:
+                return f"{len(edit_tags_seleccionados)} tags"
+        
+        txt_tags_edit = ft.Text(
+            get_texto_tags(),
+            size=11,
+            color="black" if edit_tags_seleccionados else "#999999",
+            overflow=ft.TextOverflow.ELLIPSIS,
+        )
+        
+        emoji_display = ft.Text(edit_emoji[0], size=30)
+        
+        # Date pickers
+        txt_fecha_inicio = ft.Text(
+            tarea.get("fecha_inicio") or "DD/MM/AA",
+            size=11,
+            color="black" if tarea.get("fecha_inicio") else "#999999",
+        )
+        txt_fecha_fin = ft.Text(
+            tarea.get("fecha_fin") or "DD/MM/AA",
+            size=11,
+            color="black" if tarea.get("fecha_fin") else "#999999",
+        )
+        
+        edit_fecha_inicio_val = [tarea.get("fecha_inicio_obj")]
+        edit_fecha_fin_val = [tarea.get("fecha_fin_obj")]
+        
+        def on_fecha_inicio_change(e):
+            if e.control.value:
+                edit_fecha_inicio_val[0] = e.control.value
+                txt_fecha_inicio.value = e.control.value.strftime("%d/%m/%y")
+                txt_fecha_inicio.color = "black"
+                page.update()
+        
+        def on_fecha_fin_change(e):
+            if e.control.value:
+                edit_fecha_fin_val[0] = e.control.value
+                txt_fecha_fin.value = e.control.value.strftime("%d/%m/%y")
+                txt_fecha_fin.color = "black"
+                page.update()
+        
+        dp_inicio = ft.DatePicker(on_change=on_fecha_inicio_change)
+        dp_fin = ft.DatePicker(on_change=on_fecha_fin_change)
+        page.overlay.extend([dp_inicio, dp_fin])
+        
+        # Dropdown prioridad
+        def on_prioridad_change(e):
+            edit_prioridad[0] = e.control.value
+        
+        dropdown_prioridad_edit = ft.DropdownM2(
+            value=edit_prioridad[0],
+            options=[
+                ft.dropdownm2.Option("Alta"),
+                ft.dropdownm2.Option("Media"),
+                ft.dropdownm2.Option("Baja"),
+            ],
+            width=100,
+            height=40,
+            text_style=ft.TextStyle(size=11, color="black"),
+            border_color=COLOR_BORDE,
+            content_padding=ft.padding.only(left=10),
+            on_change=on_prioridad_change,
+        )
+        
+        # --- Sub-diálogos de selección ---
+        def abrir_sel_proyecto_edit(e):
+            radio_p = ft.RadioGroup(
+                value=edit_proyecto_obj[0]["nombre"] if edit_proyecto_obj[0] else None,
+                content=ft.Column([
+                    ft.Radio(value=p["nombre"], label=p["nombre"], label_style=ft.TextStyle(size=11, color="black"))
+                    for p in proyectos_db
+                ], spacing=2)
+            )
+            def ok_click(e):
+                if radio_p.value:
+                    for p in proyectos_db:
+                        if p["nombre"] == radio_p.value:
+                            edit_proyecto_obj[0] = p
+                            break
+                    txt_proyecto_edit.value = edit_proyecto_obj[0]["nombre"]
+                    txt_proyecto_edit.color = "black"
+                    # Reset departamento
+                    edit_departamento[0] = None
+                    txt_departamento_edit.value = "Selecciona..."
+                    txt_departamento_edit.color = "#999999"
+                dg.open = False
+                page.update()
+            dg = ft.AlertDialog(
+                title=ft.Text("Proyecto", size=14, weight="bold", color="black"),
+                content=ft.Container(width=280, height=200, content=ft.ListView([radio_p])),
+                actions=[ft.TextButton("Ok", on_click=ok_click)],
+                bgcolor="white"
+            )
+            page.overlay.append(dg)
+            dg.open = True
+            page.update()
+        
+        def abrir_sel_departamento_edit(e):
+            if not edit_proyecto_obj[0]:
+                page.snack_bar = ft.SnackBar(ft.Text("⚠️ Selecciona un proyecto primero"), bgcolor="orange")
+                page.snack_bar.open = True
+                page.update()
+                return
+            filt = [d for d in departamentos_db if d.get("proyecto_asignado") == edit_proyecto_obj[0]["nombre"]]
+            radio_d = ft.RadioGroup(
+                value=edit_departamento[0],
+                content=ft.Column([
+                    ft.Radio(value=d["nombre"], label=d["nombre"], label_style=ft.TextStyle(size=11, color="black"))
+                    for d in filt
+                ], spacing=2)
+            )
+            def ok_click(e):
+                if radio_d.value:
+                    edit_departamento[0] = radio_d.value
+                    txt_departamento_edit.value = radio_d.value
+                    txt_departamento_edit.color = "black"
+                dg.open = False
+                page.update()
+            content = ft.ListView([radio_d]) if filt else ft.Text("No hay departamentos vinculados", size=11, color="red")
+            dg = ft.AlertDialog(
+                title=ft.Text("Departamento", size=14, weight="bold", color="black"),
+                content=ft.Container(width=280, height=200, content=content),
+                actions=[ft.TextButton("Ok", on_click=ok_click)],
+                bgcolor="white"
+            )
+            page.overlay.append(dg)
+            dg.open = True
+            page.update()
+        
+        def abrir_sel_personas_edit(e):
+            mi_id = str(usuario_actual.get("_id")) if usuario_actual else ""
+            def on_c(ev):
+                emp = ev.control.data
+                if ev.control.value:
+                    if emp not in edit_personas_seleccionadas:
+                        edit_personas_seleccionadas.append(emp)
+                else:
+                    if emp in edit_personas_seleccionadas:
+                        edit_personas_seleccionadas.remove(emp)
+            chks = []
+            for emp in empleados_db:
+                esta_sel = any(str(s.get("_id")) == str(emp.get("_id")) for s in edit_personas_seleccionadas)
+                es_yo = str(emp.get("_id")) == mi_id
+                # Formato: Nombre Apellido (identificador)
+                nombre = emp.get('nombre', '')
+                apellidos = emp.get('apellidos', '')
+                identificador = emp.get('identificador', '')
+                label_texto = f"{nombre} {apellidos} ({identificador})"
+                if es_yo:
+                    label_texto += " - Tú"
+                chks.append(ft.Checkbox(
+                    label=label_texto,
+                    value=esta_sel,
+                    data=emp,
+                    on_change=on_c,
+                    label_style=ft.TextStyle(size=10, color="black")
+                ))
+            def ok_click(e):
+                txt_personas_edit.value = get_texto_personas()
+                txt_personas_edit.color = "black" if edit_personas_seleccionadas else "#999999"
+                dg.open = False
+                page.update()
+            dg = ft.AlertDialog(
+                title=ft.Text("Asignar a", size=14, weight="bold", color="black"),
+                content=ft.Container(width=320, height=280, content=ft.ListView(chks)),
+                actions=[ft.TextButton("Ok", on_click=ok_click)],
+                bgcolor="white"
+            )
+            page.overlay.append(dg)
+            dg.open = True
+            page.update()
+        
+        def abrir_sel_tags_edit(e):
+            def on_t(ev):
+                tag = ev.control.data
+                if ev.control.value:
+                    if tag not in edit_tags_seleccionados:
+                        edit_tags_seleccionados.append(tag)
+                else:
+                    if tag in edit_tags_seleccionados:
+                        edit_tags_seleccionados.remove(tag)
+            chks = [
+                ft.Checkbox(
+                    label=f"{TAGS_EMOJIS[t]} {t}",
+                    value=t in edit_tags_seleccionados,
+                    data=t,
+                    on_change=on_t,
+                    label_style=ft.TextStyle(size=11, color="black")
+                )
+                for t in TAGS_EMOJIS.keys()
+            ]
+            def ok_click(e):
+                txt_tags_edit.value = get_texto_tags()
+                txt_tags_edit.color = "black" if edit_tags_seleccionados else "#999999"
+                if edit_tags_seleccionados:
+                    edit_emoji[0] = TAGS_EMOJIS[edit_tags_seleccionados[0]]
+                    emoji_display.value = edit_emoji[0]
+                dg.open = False
+                page.update()
+            dg = ft.AlertDialog(
+                title=ft.Text("Tags", size=14, weight="bold", color="black"),
+                content=ft.Container(width=280, height=300, content=ft.ListView(chks)),
+                actions=[ft.TextButton("Ok", on_click=ok_click)],
+                bgcolor="white"
+            )
+            page.overlay.append(dg)
+            dg.open = True
+            page.update()
+        
+        # --- Guardar cambios ---
+        def guardar_edicion(e):
+            # Validaciones
+            if not input_titulo_edit.value or not input_titulo_edit.value.strip():
+                page.snack_bar = ft.SnackBar(ft.Text("❌ El título es obligatorio"), bgcolor="red")
+                page.snack_bar.open = True
+                page.update()
+                return
+            
+            if not edit_proyecto_obj[0]:
+                page.snack_bar = ft.SnackBar(ft.Text("❌ Selecciona un proyecto"), bgcolor="red")
+                page.snack_bar.open = True
+                page.update()
+                return
+            
+            # Preparar datos actualizados
+            asignados_fmt = [
+                {"id_usuario": str(p.get("_id")), "nombre": p.get("nombre")}
+                for p in edit_personas_seleccionadas
+            ]
+            
+            datos_actualizados = {
+                "titulo": input_titulo_edit.value.strip(),
+                "requisitos": input_requisitos_edit.value if input_requisitos_edit.value else "Sin requisitos",
+                "tags": edit_tags_seleccionados,
+                "icono": edit_emoji[0],
+                "id_proyecto": str(edit_proyecto_obj[0].get("_id")),
+                "proyecto": edit_proyecto_obj[0].get("nombre"),
+                "departamento": edit_departamento[0] if edit_departamento[0] else "General",
+                "prioridad": edit_prioridad[0].lower(),
+                "asignados": asignados_fmt,
+                "fecha_inicio": edit_fecha_inicio_val[0] if edit_fecha_inicio_val[0] else datetime.now(),
+                "fecha_limite": edit_fecha_fin_val[0],
+            }
+            
+            # Llamar a actualizar_tarea
+            exito, resultado = actualizar_tarea(tarea.get("_id"), datos_actualizados)
+            
+            dialog_editar.open = False
+            
+            if exito:
+                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tarea actualizada correctamente"), bgcolor=COLOR_COMPLETADO)
+                page.snack_bar.open = True
+                # Recargar tareas
+                nonlocal todas_las_tareas
+                todas_las_tareas = cargar_tareas_pendientes()
+                actualizar_lista_tareas()
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor=COLOR_ELIMINAR)
+                page.snack_bar.open = True
+            
+            page.update()
+        
+        def cancelar_edicion(e):
+            dialog_editar.open = False
+            page.update()
+        
+        # --- Contenido del diálogo ---
+        contenido_edicion = ft.Container(
+            width=340,
+            height=480,
+            content=ft.Column(
+                spacing=10,
+                scroll=ft.ScrollMode.AUTO,
+                controls=[
+                    # Emoji + Título
+                    ft.Row([
+                        emoji_display,
+                        ft.Column([
+                            ft.Row([
+                                ft.Text("Título", size=10, color=COLOR_LABEL, weight="bold"),
+                                ft.Text("*", size=10, color="#D32F2F", weight="bold"),
+                            ], spacing=2),
+                            input_titulo_edit,
+                        ], expand=True, spacing=2),
+                    ], spacing=10, vertical_alignment="start"),
+                    
+                    # Proyecto + Departamento
+                    ft.Row([
+                        ft.Column([
+                            ft.Row([
+                                ft.Text("Proyecto", size=10, color=COLOR_LABEL, weight="bold"),
+                                ft.Text("*", size=10, color="#D32F2F", weight="bold"),
+                            ], spacing=2),
+                            ft.Container(
+                                content=txt_proyecto_edit,
+                                border=ft.border.all(1, COLOR_BORDE),
+                                border_radius=5,
+                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                height=38,
+                                on_click=abrir_sel_proyecto_edit,
+                                ink=True,
+                            ),
+                        ], expand=True, spacing=2),
+                        ft.Column([
+                            ft.Text("Departamento", size=10, color=COLOR_LABEL, weight="bold"),
+                            ft.Container(
+                                content=txt_departamento_edit,
+                                border=ft.border.all(1, COLOR_BORDE),
+                                border_radius=5,
+                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                height=38,
+                                on_click=abrir_sel_departamento_edit,
+                                ink=True,
+                            ),
+                        ], expand=True, spacing=2),
+                    ], spacing=10),
+                    
+                    # Asignados
+                    ft.Column([
+                        ft.Text("Asignar a", size=10, color=COLOR_LABEL, weight="bold"),
+                        ft.Container(
+                            content=txt_personas_edit,
+                            border=ft.border.all(1, COLOR_BORDE),
+                            border_radius=5,
+                            padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                            height=38,
+                            on_click=abrir_sel_personas_edit,
+                            ink=True,
+                        ),
+                    ], spacing=2),
+                    
+                    # Tags + Prioridad
+                    ft.Row([
+                        ft.Column([
+                            ft.Text("Tags", size=10, color=COLOR_LABEL, weight="bold"),
+                            ft.Container(
+                                content=txt_tags_edit,
+                                border=ft.border.all(1, COLOR_BORDE),
+                                border_radius=5,
+                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                height=38,
+                                width=120,
+                                on_click=abrir_sel_tags_edit,
+                                ink=True,
+                            ),
+                        ], spacing=2),
+                        ft.Column([
+                            ft.Text("Prioridad", size=10, color=COLOR_LABEL, weight="bold"),
+                            dropdown_prioridad_edit,
+                        ], spacing=2),
+                    ], spacing=10, alignment="spaceBetween"),
+                    
+                    # Fechas
+                    ft.Row([
+                        ft.Column([
+                            ft.Text("Fecha Inicio", size=10, color=COLOR_LABEL, weight="bold"),
+                            ft.Container(
+                                content=txt_fecha_inicio,
+                                border=ft.border.all(1, COLOR_BORDE),
+                                border_radius=5,
+                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                height=38,
+                                on_click=lambda _: setattr(dp_inicio, "open", True) or page.update(),
+                                ink=True,
+                            ),
+                        ], expand=True, spacing=2),
+                        ft.Column([
+                            ft.Text("Fecha Límite", size=10, color=COLOR_LABEL, weight="bold"),
+                            ft.Container(
+                                content=txt_fecha_fin,
+                                border=ft.border.all(1, COLOR_BORDE),
+                                border_radius=5,
+                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                height=38,
+                                on_click=lambda _: setattr(dp_fin, "open", True) or page.update(),
+                                ink=True,
+                            ),
+                        ], expand=True, spacing=2),
+                    ], spacing=10),
+                    
+                    # Requerimientos
+                    ft.Column([
+                        ft.Text("Requerimientos", size=10, color=COLOR_LABEL, weight="bold"),
+                        input_requisitos_edit,
+                    ], spacing=2),
+                    
+                    # Leyenda
+                    ft.Row([
+                        ft.Text("*", size=10, color="#D32F2F", weight="bold"),
+                        ft.Text("Campos obligatorios", size=9, color="#666666", italic=True),
+                    ], spacing=2),
+                ]
+            )
+        )
+        
+        dialog_editar = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Icon(ft.Icons.EDIT, color=COLOR_EDITAR, size=22),
+                ft.Text("Editar Tarea", size=16, weight="bold", color="black"),
+            ], spacing=8),
+            bgcolor="white",
+            content=contenido_edicion,
+            actions=[
+                ft.TextButton("Cancelar", on_click=cancelar_edicion),
+                ft.ElevatedButton(
+                    "Guardar",
+                    on_click=guardar_edicion,
+                    bgcolor=COLOR_EDITAR,
+                    color="white",
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        page.overlay.append(dialog_editar)
+        dialog_editar.open = True
+        page.update()
 
     #dialog detalle tarea
     def mostrar_detalle_tarea(tarea):
@@ -400,69 +948,26 @@ def VistaTareasPendientes(page: ft.Page):
             radio_prioridad.value = "Todas"
             filtro_orden_actual[0] = "Más reciente primero"
             filtro_prioridad_actual[0] = "Todas"
-            filtro_tag_actual[0] = "Todos"
-            filtro_proyecto_actual[0] = "Todos"
-            input_busqueda.value = ""
-            actualizar_lista_tareas()
             page.update()
-
-        def abrir_filtro_tags(e):
-            dialog_filtros.open = False
-            page.update()
-            mostrar_dialog_tags()
-
-        def abrir_filtro_proyecto(e):
-            dialog_filtros.open = False
-            page.update()
-            mostrar_dialog_proyecto()
 
         dialog_filtros = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Filtrar tareas", size=16, weight=ft.FontWeight.BOLD, color="black"),
+            title=ft.Text("Filtros y Orden", size=16, weight=ft.FontWeight.BOLD, color="black"),
             bgcolor="white",
             content=ft.Container(
                 width=300,
-                height=420,
+                height=400,
                 bgcolor="white",
                 content=ft.Column(
-                    spacing=8,
+                    spacing=15,
                     scroll=ft.ScrollMode.AUTO,
                     controls=[
-                        ft.Text("Por Prioridad:", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                        radio_prioridad,
-                        ft.Divider(height=8, color=COLOR_BORDE),
-                        ft.Text("Ordenar por:", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
+                        ft.Text("Ordenar por:", size=12, color=COLOR_LABEL, weight=ft.FontWeight.BOLD),
                         radio_orden,
-                        ft.Divider(height=8, color=COLOR_BORDE),
-                        ft.Container(
-                            content=ft.Row(
-                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                                controls=[
-                                    ft.Text("Filtrar por Tag", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, color=COLOR_LABEL),
-                                ]
-                            ),
-                            on_click=abrir_filtro_tags,
-                            ink=True,
-                            padding=ft.padding.all(8),
-                            border_radius=5,
-                            bgcolor="#F5F5F5",
-                        ),
-                        ft.Container(
-                            content=ft.Row(
-                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                                controls=[
-                                    ft.Text("Filtrar por Proyecto", size=12, weight=ft.FontWeight.BOLD, color=COLOR_LABEL),
-                                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS, size=14, color=COLOR_LABEL),
-                                ]
-                            ),
-                            on_click=abrir_filtro_proyecto,
-                            ink=True,
-                            padding=ft.padding.all(8),
-                            border_radius=5,
-                            bgcolor="#F5F5F5",
-                        ),
-                    ],
+                        ft.Divider(height=1, color=COLOR_BORDE),
+                        ft.Text("Filtrar por prioridad:", size=12, color=COLOR_LABEL, weight=ft.FontWeight.BOLD),
+                        radio_prioridad,
+                    ]
                 ),
             ),
             actions=[
@@ -476,130 +981,8 @@ def VistaTareasPendientes(page: ft.Page):
         dialog_filtros.open = True
         page.update()
 
-    #dialog filtro por tags
-    def mostrar_dialog_tags():
-        radio_tags = ft.RadioGroup(
-            value=filtro_tag_actual[0],
-            content=ft.Column(
-                controls=[
-                    ft.Radio(value=tag, label=tag, label_style=ft.TextStyle(size=11, color="black")) 
-                    for tag in FILTROS_TAGS
-                ],
-                spacing=2,
-            ),
-        )
-
-        def aplicar_tag(e):
-            filtro_tag_actual[0] = radio_tags.value
-            dialog_tags.open = False
-            actualizar_lista_tareas()
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tag: {filtro_tag_actual[0]}"))
-            page.snack_bar.open = True
-            page.update()
-
-        def volver_filtros(e):
-            dialog_tags.open = False
-            page.update()
-            mostrar_dialog_filtros(None)
-
-        dialog_tags = ft.AlertDialog(
-            modal=True,
-            title=ft.Row(
-                controls=[
-                    ft.Container(
-                        content=ft.Text("←", size=18, color="black", weight="bold"),
-                        on_click=volver_filtros,
-                        ink=True,
-                        border_radius=50,
-                        padding=5,
-                    ),
-                    ft.Text("Seleccionar Tag", size=14, weight=ft.FontWeight.BOLD, color="black"),
-                ],
-                spacing=10,
-            ),
-            bgcolor="white",
-            content=ft.Container(
-                width=300,
-                height=350,
-                bgcolor="white",
-                content=ft.ListView(
-                    controls=[radio_tags],
-                    spacing=5,
-                ),
-            ),
-            actions=[
-                ft.TextButton("Aplicar", on_click=aplicar_tag),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        page.overlay.append(dialog_tags)
-        dialog_tags.open = True
-        page.update()
-
-    #dialog filtro por proyecto
-    def mostrar_dialog_proyecto():
-        radio_proyecto = ft.RadioGroup(
-            value=filtro_proyecto_actual[0],
-            content=ft.Column(
-                controls=[
-                    ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(size=11, color="black")) 
-                    for proy in FILTROS_PROYECTO
-                ],
-                spacing=2,
-            ),
-        )
-
-        def aplicar_proyecto(e):
-            filtro_proyecto_actual[0] = radio_proyecto.value
-            dialog_proyecto.open = False
-            actualizar_lista_tareas()
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Proyecto: {filtro_proyecto_actual[0]}"))
-            page.snack_bar.open = True
-            page.update()
-
-        def volver_filtros(e):
-            dialog_proyecto.open = False
-            page.update()
-            mostrar_dialog_filtros(None)
-
-        dialog_proyecto = ft.AlertDialog(
-            modal=True,
-            title=ft.Row(
-                controls=[
-                    ft.Container(
-                        content=ft.Text("←", size=18, color="black", weight="bold"),
-                        on_click=volver_filtros,
-                        ink=True,
-                        border_radius=50,
-                        padding=5,
-                    ),
-                    ft.Text("Seleccionar Proyecto", size=14, weight=ft.FontWeight.BOLD, color="black"),
-                ],
-                spacing=10,
-            ),
-            bgcolor="white",
-            content=ft.Container(
-                width=300,
-                height=300,
-                bgcolor="white",
-                content=ft.ListView(
-                    controls=[radio_proyecto],
-                    spacing=5,
-                ),
-            ),
-            actions=[
-                ft.TextButton("Aplicar", on_click=aplicar_proyecto),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        page.overlay.append(dialog_proyecto)
-        dialog_proyecto.open = True
-        page.update()
-
     def crear_tarjeta_tarea(tarea):
-        """Crea una tarjeta para cada tarea pendiente con botón de completar"""
+        """Crea una tarjeta para cada tarea pendiente con botones de editar, eliminar y completar"""
         return ft.Container(
             bgcolor="white",
             border_radius=10,
@@ -614,9 +997,9 @@ def VistaTareasPendientes(page: ft.Page):
             content=ft.Column(
                 spacing=8,
                 controls=[
-                    # Fila 1: Emoji + Título + Botón Eliminar
+                    # Fila 1: Emoji + Título + Botón Editar + Botón Eliminar
                     ft.Row(
-                        spacing=8,
+                        spacing=6,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
                             ft.Text(tarea["emoji"], size=22),
@@ -629,12 +1012,23 @@ def VistaTareasPendientes(page: ft.Page):
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
+                            # BOTÓN EDITAR
+                            ft.Container(
+                                content=ft.Icon(ft.Icons.EDIT, size=16, color=COLOR_EDITAR),
+                                on_click=lambda e, t=tarea: mostrar_dialog_editar(t),
+                                ink=True,
+                                padding=ft.padding.all(6),
+                                border_radius=5,
+                                tooltip="Editar tarea",
+                            ),
+                            # BOTÓN ELIMINAR
                             ft.Container(
                                 content=ft.Text("X", size=14, color=COLOR_ELIMINAR, weight=ft.FontWeight.BOLD),
                                 on_click=lambda e, t=tarea: mostrar_confirmar_eliminar(t),
                                 ink=True,
                                 padding=ft.padding.all(6),
                                 border_radius=5,
+                                tooltip="Eliminar tarea",
                             ),
                         ]
                     ),
@@ -663,14 +1057,14 @@ def VistaTareasPendientes(page: ft.Page):
                                 ]
                             ),
                             ft.Text(
-                                f"{tarea['fecha_inicio']} - {tarea['fecha_fin']}",
+                                f"{tarea['fecha_inicio']} - {tarea['fecha_fin']}" if tarea['fecha_fin'] else f"{tarea['fecha_inicio']} - Sin fecha",
                                 size=9,
                                 color="#666666",
                             ),
                         ]
                     ),
                     ft.Divider(height=1, color="#F0F0F0"),
-                    # Fila 4: Botones de Acción (NUEVO)
+                    # Fila 4: Botones de Acción
                     ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                         controls=[
@@ -824,19 +1218,3 @@ def VistaTareasPendientes(page: ft.Page):
         alignment=ft.Alignment(0, 0), 
         content=tarjeta_blanca
     )
-
-
-def main(page: ft.Page):
-    page.title = "App Tareas - Tareas Pendientes"
-    
-    page.window.width = 1200
-    page.window.height = 800
-    page.window.min_width = 380
-    page.window.min_height = 780
-    page.padding = 0 
-    
-    vista = VistaTareasPendientes(page)
-    page.add(vista)
-
-if __name__ == "__main__":
-    ft.app(target=main)

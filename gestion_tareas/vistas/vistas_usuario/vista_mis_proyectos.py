@@ -1,5 +1,5 @@
 import flet as ft
-from modelos.crud import obtener_todos_proyectos, obtener_tareas_por_usuario
+from modelos.crud import obtener_todos_proyectos, obtener_tareas_por_usuario, obtener_todos_departamentos
 from servicios.sesion_service import obtener_id_usuario, obtener_usuario
 from datetime import datetime
 
@@ -30,12 +30,16 @@ def VistaMisProyectos(page: ft.Page):
     #variable para almacenar los proyectos procesados de la BD
     proyectos_procesados = []
 
-    #LÓGICA DE CARGA DE DATOS REALES (FILTRADO POR USUARIO)
+    #LÓGICA DE CARGA DE DATOS REALES (FILTRADO POR USUARIO Y DEPARTAMENTOS)
 
     def cargar_proyectos_reales():
         """
-        Consulta la BD para traer SOLO los proyectos donde el usuario
-        actual es responsable o tiene tareas asignadas.
+        Consulta la BD para traer SOLO los proyectos donde el usuario:
+        1. Es responsable del proyecto
+        2. Está asignado a un departamento del proyecto
+        3. Tiene tareas asignadas en el proyecto
+        
+        También muestra los departamentos reales donde está asignado el usuario.
         """
         nonlocal proyectos_procesados
         
@@ -45,66 +49,116 @@ def VistaMisProyectos(page: ft.Page):
         if not id_usuario or not usuario_actual:
             return []
 
-        #obtiene TODOS los proyectos para filtrar después
+        # Obtener todos los proyectos
         exito_p, lista_proyectos_total = obtener_todos_proyectos()
-        #obtiene TODAS las tareas asignadas específicamente a este usuario
+        # Obtener todas las tareas asignadas a este usuario
         exito_t, lista_tareas_user = obtener_tareas_por_usuario(id_usuario)
+        # Obtener todos los departamentos
+        exito_d, lista_departamentos = obtener_todos_departamentos()
 
         if not exito_p:
             return []
 
-        #crea un set con los IDs de proyectos donde el usuario tiene tareas
+        # Crear set de IDs de proyectos donde el usuario tiene tareas
         ids_proyectos_con_tareas = set()
-        if exito_t:
+        if exito_t and lista_tareas_user:
             for t in lista_tareas_user:
                 id_p = t.get("id_proyecto")
                 if id_p:
                     ids_proyectos_con_tareas.add(str(id_p))
 
+        # Analizar departamentos donde está asignado el usuario
+        # Estructura: {nombre_proyecto: [lista de nombres de departamentos]}
+        mis_departamentos_por_proyecto = {}
+        proyectos_por_departamento = set()  # Proyectos donde estoy asignado vía departamento
+        
+        if exito_d and lista_departamentos:
+            for depto in lista_departamentos:
+                nombre_proyecto = depto.get("proyecto_asignado", "")
+                miembros = depto.get("miembros", [])
+                
+                # Verificar si el usuario está en este departamento
+                usuario_en_depto = False
+                for miembro in miembros:
+                    # Comparar por id_usuario o por _id
+                    miembro_id = str(miembro.get("id_usuario", miembro.get("_id", "")))
+                    if miembro_id == str(id_usuario):
+                        usuario_en_depto = True
+                        break
+                
+                if usuario_en_depto and nombre_proyecto:
+                    proyectos_por_departamento.add(nombre_proyecto)
+                    if nombre_proyecto not in mis_departamentos_por_proyecto:
+                        mis_departamentos_por_proyecto[nombre_proyecto] = []
+                    mis_departamentos_por_proyecto[nombre_proyecto].append(depto.get("nombre", "General"))
+
         proyectos_del_usuario = []
         ahora = datetime.now()
 
-        #filtra la lista global de proyectos
+        # Filtrar proyectos
         for p in lista_proyectos_total:
             id_p_str = str(p.get("_id"))
+            nombre_proyecto = p.get("nombre", "")
             nombre_responsable = p.get("responsable", "")
             
-            # CRITERIO: El usuario lo ve si es el responsable O si tiene tareas en él
+            # CRITERIOS para ver el proyecto:
+            # 1. Es responsable del proyecto
             es_responsable = (nombre_responsable == usuario_actual.get("nombre"))
+            # 2. Está asignado a un departamento del proyecto
+            esta_en_departamento = (nombre_proyecto in proyectos_por_departamento)
+            # 3. Tiene tareas asignadas en el proyecto
             tiene_tareas = (id_p_str in ids_proyectos_con_tareas)
 
-            if es_responsable or tiene_tareas:
-                #si cumple, procesamos sus tareas para el desglose interno
+            if es_responsable or esta_en_departamento or tiene_tareas:
+                # Procesar tareas del usuario en este proyecto
                 pendientes_count = 0
                 tareas_para_ui = []
                 
-                # Filtramos tareas de este usuario que pertenecen a ESTE proyecto
-                tareas_mi_proyecto = [t for t in lista_tareas_user if str(t.get("id_proyecto")) == id_p_str]
-                
-                for t in tareas_mi_proyecto:
-                    est = t.get("estado", "pendiente")
-                    ui_est = "Pendiente"
-                    if est == "completada":
-                        ui_est = "Realizada"
-                    elif t.get("fecha_limite") and t.get("fecha_limite") < ahora:
-                        ui_est = "Atrasada"
+                if exito_t and lista_tareas_user:
+                    tareas_mi_proyecto = [t for t in lista_tareas_user if str(t.get("id_proyecto")) == id_p_str]
                     
-                    if ui_est != "Realizada":
-                        pendientes_count += 1
-                    
-                    tareas_para_ui.append({
-                        "titulo": t.get("titulo", "Sin título"),
-                        "estado": ui_est,
-                        "prioridad": t.get("prioridad", "media").capitalize()
-                    })
+                    for t in tareas_mi_proyecto:
+                        est = t.get("estado", "pendiente")
+                        ui_est = "Pendiente"
+                        if est == "completada":
+                            ui_est = "Realizada"
+                        elif t.get("fecha_limite") and t.get("fecha_limite") < ahora:
+                            ui_est = "Atrasada"
+                        
+                        if ui_est != "Realizada":
+                            pendientes_count += 1
+                        
+                        tareas_para_ui.append({
+                            "titulo": t.get("titulo", "Sin título"),
+                            "estado": ui_est,
+                            "prioridad": t.get("prioridad", "media").capitalize()
+                        })
 
-                #creamos el objeto para la interfaz
+                # Obtener los departamentos REALES donde está el usuario en este proyecto
+                departamentos_usuario = mis_departamentos_por_proyecto.get(nombre_proyecto, [])
+                
+                # Si no está en ningún departamento pero es responsable o tiene tareas
+                if not departamentos_usuario:
+                    if es_responsable:
+                        departamentos_usuario = ["Responsable"]
+                    else:
+                        departamentos_usuario = ["Colaborador"]
+
+                # Determinar rol
+                if es_responsable:
+                    rol = "Responsable"
+                elif esta_en_departamento:
+                    rol = "Miembro"
+                else:
+                    rol = "Colaborador"
+
+                # Crear objeto para la interfaz
                 proyectos_del_usuario.append({
                     "id": id_p_str,
-                    "nombre": p.get("nombre", "Sin nombre"),
+                    "nombre": nombre_proyecto,
                     "descripcion": p.get("cliente", "Proyecto corporativo"),
-                    "mis_departamentos": [usuario_actual.get("departamento", {}).get("nombre", "General")],
-                    "rol": "Responsable" if es_responsable else "Colaborador",
+                    "mis_departamentos": departamentos_usuario,
+                    "rol": rol,
                     "estado": p.get("estado", "ACTIVO"),
                     "tareas_pendientes": pendientes_count,
                     "equipo": [nombre_responsable] if nombre_responsable else ["Admin"],
@@ -256,6 +310,8 @@ def VistaMisProyectos(page: ft.Page):
         )
 
         def abrir_tareas_desde_detalle(e):
+            dialog_detalle.open = False
+            page.update()
             mostrar_tareas_del_proyecto(proyecto)
 
         def cerrar_dialog(dialog):
@@ -297,7 +353,7 @@ def VistaMisProyectos(page: ft.Page):
                         ft.Text(proyecto["descripcion"], size=12, color="black"),
                         ft.Divider(height=1, color=COLOR_BORDE),
                         
-                        #seccion mi rol
+                        #seccion mi rol y departamentos
                         ft.Text("Mi participación:", size=11, color=COLOR_LABEL, weight="bold"),
                         ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -307,11 +363,27 @@ def VistaMisProyectos(page: ft.Page):
                                     ft.Text(proyecto["rol"], size=11, color="black", weight="bold"),
                                 ]),
                                 ft.Column(spacing=2, controls=[
-                                    ft.Text("Departamentos", size=10, color="#666666"),
+                                    ft.Text("Mis Departamentos", size=10, color="#666666"),
                                     mis_deptos_chips,
                                 ]),
                             ]
                         ),
+                        ft.Divider(height=1, color=COLOR_BORDE),
+                        
+                        # Tareas pendientes
+                        ft.Row(
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            controls=[
+                                ft.Text("Tareas pendientes:", size=11, color=COLOR_LABEL, weight="bold"),
+                                ft.Container(
+                                    bgcolor="#FFF3E0" if proyecto["tareas_pendientes"] > 0 else "#E8F5E9",
+                                    padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                                    border_radius=8,
+                                    content=ft.Text(str(proyecto["tareas_pendientes"]), size=11, color="black", weight="bold")
+                                ),
+                            ]
+                        ),
+                        
                         ft.Divider(height=1, color=COLOR_BORDE),
                         
                         #seccion equipo
@@ -355,6 +427,7 @@ def VistaMisProyectos(page: ft.Page):
 
         dialog_filtros = ft.AlertDialog(
             modal=True,
+            bgcolor="white",
             title=ft.Text("Filtrar proyectos", size=16, weight=ft.FontWeight.BOLD, color="black"),
             content=ft.Container(
                 width=300, height=350,
@@ -374,6 +447,7 @@ def VistaMisProyectos(page: ft.Page):
     def crear_tarjeta_proyecto(proyecto):
         """Crea una tarjeta visual para cada proyecto real del usuario"""
         
+        # Crear chips de departamentos
         chips_deptos = ft.Row(
             wrap=True, spacing=4,
             controls=[
@@ -384,6 +458,9 @@ def VistaMisProyectos(page: ft.Page):
                 ) for dep in proyecto["mis_departamentos"]
             ]
         )
+        
+        # Color del indicador de estado
+        estado_color = "#4CAF50" if proyecto["estado"] == "ACTIVO" else ("#FFC107" if proyecto["estado"] == "PAUSADO" else "#E53935")
 
         return ft.Container(
             bgcolor="white", border_radius=12, padding=12, margin=ft.margin.only(bottom=10),
@@ -403,11 +480,14 @@ def VistaMisProyectos(page: ft.Page):
                                     ft.Text(proyecto["rol"], size=10, color="#666666"),
                                 ]
                             ),
-                            ft.Container(width=10, height=10, border_radius=5, bgcolor="#4CAF50" if proyecto["estado"] == "ACTIVO" else "#FFC107")
+                            ft.Container(width=10, height=10, border_radius=5, bgcolor=estado_color)
                         ]
                     ),
                     ft.Divider(height=1, color="#F0F0F0"),
-                    ft.Column([ft.Text("Departamento:", size=9, color=COLOR_LABEL, weight="bold"), chips_deptos]),
+                    ft.Column([
+                        ft.Text("Mis departamentos:" if len(proyecto["mis_departamentos"]) > 1 else "Mi departamento:", size=9, color=COLOR_LABEL, weight="bold"), 
+                        chips_deptos
+                    ], spacing=4),
                     ft.Row(
                         alignment="end",
                         controls=[
@@ -477,14 +557,3 @@ def VistaMisProyectos(page: ft.Page):
         alignment=ft.Alignment(0, 0), 
         content=tarjeta_blanca
     )
-
-def main(page: ft.Page):
-    page.title = "App Tareas - Mis Proyectos"
-    page.window.width = 400
-    page.window.height = 800
-    page.padding = 0 
-    vista = VistaMisProyectos(page)
-    page.add(vista)
-
-if __name__ == "__main__":
-    ft.app(target=main)

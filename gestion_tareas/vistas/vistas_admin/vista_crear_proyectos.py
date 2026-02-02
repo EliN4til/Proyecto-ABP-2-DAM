@@ -1,6 +1,6 @@
 import flet as ft
 from datetime import datetime
-from modelos.crud import crear_proyecto, obtener_todos_empleados
+from modelos.crud import crear_proyecto, crear_departamento, obtener_todos_empleados
 
 def VistaCrearProyecto(page: ft.Page):
     
@@ -11,9 +11,13 @@ def VistaCrearProyecto(page: ft.Page):
     COLOR_LABEL = "#5B9BD5"
     COLOR_BORDE = "#E0E0E0"
     COLOR_BTN_CREAR = "#4682B4"
+    COLOR_VERDE = "#4CAF50"
+    COLOR_ROJO = "#E53935"
 
     # Listas para almacenar datos reales de la BD
     empleados_db = []
+    # Lista temporal de departamentos a crear con el proyecto
+    departamentos_temp = []
 
     # --- LÓGICA DE DATOS Y FECHAS ---
 
@@ -37,12 +41,14 @@ def VistaCrearProyecto(page: ft.Page):
         if e.control.value:
             fecha_inicio_val[0] = e.control.value
             txt_fecha_inicio.value = e.control.value.strftime("%d/%m/%Y")
+            txt_fecha_inicio.color = "black"
             page.update()
 
     def on_fecha_fin_change(e):
         if e.control.value:
             fecha_fin_val[0] = e.control.value
             txt_fecha_fin.value = e.control.value.strftime("%d/%m/%Y")
+            txt_fecha_fin.color = "black"
             page.update()
 
     # Funciones para abrir los selectores de fecha
@@ -69,11 +75,311 @@ def VistaCrearProyecto(page: ft.Page):
     page.overlay.append(date_picker_fin)
 
     def btn_volver_click(e):
-        """Acción al hacer clic en el botón volver atrás - CORREGIDO A GESTIONAR PROYECTOS"""
         page.go("/gestionar_proyectos")
 
+    # ============================================
+    # GESTIÓN DE DEPARTAMENTOS TEMPORALES
+    # ============================================
+    
+    lista_deptos_visual = ft.Column(spacing=8)
+    
+    def actualizar_lista_deptos_visual():
+        """Actualiza la visualización de los departamentos añadidos"""
+        lista_deptos_visual.controls.clear()
+        
+        if not departamentos_temp:
+            lista_deptos_visual.controls.append(
+                ft.Container(
+                    padding=15,
+                    content=ft.Text("No hay departamentos añadidos", size=11, color="#999999", italic=True, text_align="center"),
+                )
+            )
+        else:
+            for i, depto in enumerate(departamentos_temp):
+                n_miembros = len(depto.get("miembros", []))
+                miembros_txt = f"{n_miembros} miembro{'s' if n_miembros != 1 else ''}"
+                
+                # Mostrar nombres de algunos miembros
+                nombres_preview = ", ".join([m.get("nombre", "") for m in depto.get("miembros", [])[:2]])
+                if n_miembros > 2:
+                    nombres_preview += f" +{n_miembros - 2}"
+                
+                lista_deptos_visual.controls.append(
+                    ft.Container(
+                        bgcolor="#F8F9FA",
+                        border_radius=8,
+                        border=ft.border.all(1, COLOR_BORDE),
+                        padding=10,
+                        content=ft.Row([
+                            ft.Column([
+                                ft.Text(depto["nombre"], size=12, color="black", weight="bold"),
+                                ft.Text(f"{miembros_txt}: {nombres_preview}" if nombres_preview else miembros_txt, 
+                                       size=10, color="#666666", max_lines=1, overflow="ellipsis"),
+                            ], spacing=2, expand=True),
+                            ft.IconButton(
+                                icon=ft.Icons.EDIT,
+                                icon_size=18,
+                                icon_color=COLOR_LABEL,
+                                tooltip="Editar departamento",
+                                on_click=lambda e, idx=i: abrir_editar_departamento(idx),
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.DELETE,
+                                icon_size=18,
+                                icon_color=COLOR_ROJO,
+                                tooltip="Eliminar departamento",
+                                on_click=lambda e, idx=i: eliminar_departamento_temp(idx),
+                            ),
+                        ]),
+                    )
+                )
+        page.update()
+    
+    def eliminar_departamento_temp(idx):
+        """Elimina un departamento de la lista temporal"""
+        if 0 <= idx < len(departamentos_temp):
+            nombre = departamentos_temp[idx]["nombre"]
+            departamentos_temp.pop(idx)
+            actualizar_lista_deptos_visual()
+            page.snack_bar = ft.SnackBar(ft.Text(f"Departamento '{nombre}' eliminado"), bgcolor=COLOR_ROJO)
+            page.snack_bar.open = True
+            page.update()
+    
+    def abrir_dialog_nuevo_departamento(e):
+        """Abre el diálogo para crear un nuevo departamento"""
+        input_nombre_depto = ft.TextField(
+            hint_text="Nombre del departamento",
+            border_color=COLOR_BORDE,
+            text_style=ft.TextStyle(size=12, color="black"),
+            height=42,
+            content_padding=ft.padding.symmetric(horizontal=10, vertical=8),
+        )
+        
+        miembros_seleccionados = []
+        
+        def crear_checkboxes_empleados():
+            chks = []
+            for emp in empleados_db:
+                nombre = emp.get('nombre', '')
+                apellidos = emp.get('apellidos', '')
+                identificador = emp.get('identificador', '')
+                label = f"{nombre} {apellidos} ({identificador})"
+                
+                def on_check(ev, empleado=emp):
+                    if ev.control.value:
+                        if empleado not in miembros_seleccionados:
+                            miembros_seleccionados.append(empleado)
+                    else:
+                        if empleado in miembros_seleccionados:
+                            miembros_seleccionados.remove(empleado)
+                
+                chks.append(ft.Checkbox(
+                    label=label,
+                    value=False,
+                    on_change=on_check,
+                    label_style=ft.TextStyle(size=10, color="black"),
+                ))
+            return chks
+        
+        lista_empleados = ft.Column(
+            controls=crear_checkboxes_empleados(),
+            spacing=2,
+            scroll=ft.ScrollMode.AUTO,
+        )
+        
+        def guardar_departamento(e):
+            if not input_nombre_depto.value or not input_nombre_depto.value.strip():
+                page.snack_bar = ft.SnackBar(ft.Text("❌ El nombre del departamento es obligatorio"), bgcolor="red")
+                page.snack_bar.open = True
+                page.update()
+                return
+            
+            # Verificar que no exista ya un departamento con ese nombre
+            for d in departamentos_temp:
+                if d["nombre"].lower() == input_nombre_depto.value.strip().lower():
+                    page.snack_bar = ft.SnackBar(ft.Text("❌ Ya existe un departamento con ese nombre"), bgcolor="red")
+                    page.snack_bar.open = True
+                    page.update()
+                    return
+            
+            departamentos_temp.append({
+                "nombre": input_nombre_depto.value.strip(),
+                "miembros": list(miembros_seleccionados)
+            })
+            
+            dialog_nuevo_depto.open = False
+            actualizar_lista_deptos_visual()
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Departamento '{input_nombre_depto.value}' añadido"), bgcolor=COLOR_VERDE)
+            page.snack_bar.open = True
+            page.update()
+        
+        def cancelar(e):
+            dialog_nuevo_depto.open = False
+            page.update()
+        
+        dialog_nuevo_depto = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Icon(ft.Icons.ADD_BUSINESS, color=COLOR_LABEL, size=22),
+                ft.Text("Nuevo Departamento", size=15, weight="bold", color="black"),
+            ], spacing=8),
+            bgcolor="white",
+            content=ft.Container(
+                width=340,
+                height=380,
+                content=ft.Column([
+                    ft.Column([
+                        ft.Row([
+                            ft.Text("Nombre del departamento", size=11, color=COLOR_LABEL, weight="bold"),
+                            ft.Text("*", size=11, color=COLOR_ROJO, weight="bold"),
+                        ], spacing=2),
+                        input_nombre_depto,
+                    ], spacing=3),
+                    ft.Container(height=8),
+                    ft.Text("Asignar miembros al departamento", size=11, color=COLOR_LABEL, weight="bold"),
+                    ft.Container(
+                        border=ft.border.all(1, COLOR_BORDE),
+                        border_radius=8,
+                        padding=10,
+                        height=250,
+                        content=lista_empleados if empleados_db else ft.Text("No hay empleados registrados", color="#999999"),
+                    ),
+                ], spacing=5, tight=True),
+            ),
+            actions=[
+                ft.TextButton("Cancelar", on_click=cancelar),
+                ft.ElevatedButton("Añadir Departamento", on_click=guardar_departamento, bgcolor=COLOR_VERDE, color="white"),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        page.overlay.append(dialog_nuevo_depto)
+        dialog_nuevo_depto.open = True
+        page.update()
+    
+    def abrir_editar_departamento(idx):
+        """Abre el diálogo para editar un departamento existente"""
+        depto = departamentos_temp[idx]
+        
+        input_nombre_depto_edit = ft.TextField(
+            value=depto["nombre"],
+            border_color=COLOR_BORDE,
+            text_style=ft.TextStyle(size=12, color="black"),
+            height=42,
+            content_padding=ft.padding.symmetric(horizontal=10, vertical=8),
+        )
+        
+        miembros_actuales = list(depto.get("miembros", []))
+        
+        def crear_checkboxes_edit():
+            chks = []
+            for emp in empleados_db:
+                nombre = emp.get('nombre', '')
+                apellidos = emp.get('apellidos', '')
+                identificador = emp.get('identificador', '')
+                label = f"{nombre} {apellidos} ({identificador})"
+                
+                # Verificar si ya está seleccionado
+                esta_sel = any(str(m.get("_id")) == str(emp.get("_id")) for m in miembros_actuales)
+                
+                def on_check(ev, empleado=emp):
+                    if ev.control.value:
+                        if not any(str(m.get("_id")) == str(empleado.get("_id")) for m in miembros_actuales):
+                            miembros_actuales.append(empleado)
+                    else:
+                        miembros_actuales[:] = [m for m in miembros_actuales if str(m.get("_id")) != str(empleado.get("_id"))]
+                
+                chks.append(ft.Checkbox(
+                    label=label,
+                    value=esta_sel,
+                    on_change=on_check,
+                    label_style=ft.TextStyle(size=10, color="black"),
+                ))
+            return chks
+        
+        lista_empleados_edit = ft.Column(
+            controls=crear_checkboxes_edit(),
+            spacing=2,
+            scroll=ft.ScrollMode.AUTO,
+        )
+        
+        def guardar_edicion(e):
+            if not input_nombre_depto_edit.value or not input_nombre_depto_edit.value.strip():
+                page.snack_bar = ft.SnackBar(ft.Text("❌ El nombre es obligatorio"), bgcolor="red")
+                page.snack_bar.open = True
+                page.update()
+                return
+            
+            # Verificar duplicados (excluyendo el actual)
+            nuevo_nombre = input_nombre_depto_edit.value.strip()
+            for i, d in enumerate(departamentos_temp):
+                if i != idx and d["nombre"].lower() == nuevo_nombre.lower():
+                    page.snack_bar = ft.SnackBar(ft.Text("❌ Ya existe otro departamento con ese nombre"), bgcolor="red")
+                    page.snack_bar.open = True
+                    page.update()
+                    return
+            
+            departamentos_temp[idx] = {
+                "nombre": nuevo_nombre,
+                "miembros": list(miembros_actuales)
+            }
+            
+            dialog_edit_depto.open = False
+            actualizar_lista_deptos_visual()
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Departamento actualizado"), bgcolor=COLOR_VERDE)
+            page.snack_bar.open = True
+            page.update()
+        
+        def cancelar(e):
+            dialog_edit_depto.open = False
+            page.update()
+        
+        dialog_edit_depto = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Icon(ft.Icons.EDIT, color=COLOR_LABEL, size=22),
+                ft.Text(f"Editar: {depto['nombre']}", size=15, weight="bold", color="black"),
+            ], spacing=8),
+            bgcolor="white",
+            content=ft.Container(
+                width=340,
+                height=380,
+                content=ft.Column([
+                    ft.Column([
+                        ft.Row([
+                            ft.Text("Nombre del departamento", size=11, color=COLOR_LABEL, weight="bold"),
+                            ft.Text("*", size=11, color=COLOR_ROJO, weight="bold"),
+                        ], spacing=2),
+                        input_nombre_depto_edit,
+                    ], spacing=3),
+                    ft.Container(height=8),
+                    ft.Text("Miembros asignados", size=11, color=COLOR_LABEL, weight="bold"),
+                    ft.Container(
+                        border=ft.border.all(1, COLOR_BORDE),
+                        border_radius=8,
+                        padding=10,
+                        height=250,
+                        content=lista_empleados_edit,
+                    ),
+                ], spacing=5, tight=True),
+            ),
+            actions=[
+                ft.TextButton("Cancelar", on_click=cancelar),
+                ft.ElevatedButton("Guardar Cambios", on_click=guardar_edicion, bgcolor=COLOR_LABEL, color="white"),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        page.overlay.append(dialog_edit_depto)
+        dialog_edit_depto.open = True
+        page.update()
+
+    # ============================================
+    # CREAR PROYECTO CON DEPARTAMENTOS
+    # ============================================
+
     def btn_crear_click(e):
-        """Valida y guarda el nuevo proyecto en la base de datos real"""
+        """Valida y guarda el nuevo proyecto con sus departamentos en la base de datos"""
         
         # 1. Validaciones
         if not input_nombre.value or not input_cliente.value:
@@ -94,8 +400,10 @@ def VistaCrearProyecto(page: ft.Page):
             presupuesto_val = input_presupuesto.value.replace("€", "").strip()
 
         # 3. Preparar datos para MongoDB
+        nombre_proyecto = input_nombre.value.strip()
+        
         nuevo_proyecto = {
-            "nombre": input_nombre.value,
+            "nombre": nombre_proyecto,
             "codigo": input_codigo.value if input_codigo.value else f"PRY-{datetime.now().strftime('%H%M')}",
             "responsable": dropdown_responsable.value if dropdown_responsable.value else "Admin",
             "cliente": input_cliente.value,
@@ -103,26 +411,62 @@ def VistaCrearProyecto(page: ft.Page):
             "estado": dropdown_estado.value if dropdown_estado.value else "ACTIVO",
             "fecha_inicio": fecha_inicio_val[0],
             "fecha_fin": fecha_fin_val[0],
-            "descripcion": input_descripcion.value if input_descripcion.value else ""
+            "descripcion": input_descripcion.value if input_descripcion.value else "",
+            "fecha_creacion": datetime.now(),
         }
 
-        # 4. Llamada al CRUD
+        # 4. Crear el proyecto
         exito, resultado = crear_proyecto(nuevo_proyecto)
 
-        if exito:
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Proyecto '{input_nombre.value}' creado correctamente"), bgcolor="green")
+        if not exito:
+            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al guardar proyecto: {resultado}"), bgcolor="red")
             page.snack_bar.open = True
-            page.go("/gestionar_proyectos")
-        else:
-            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al guardar: {resultado}"), bgcolor="red")
-            page.snack_bar.open = True
+            page.update()
+            return
+
+        # 5. Crear los departamentos asociados al proyecto
+        deptos_creados = 0
+        for depto in departamentos_temp:
+            # Formatear miembros
+            miembros_formato = []
+            for m in depto.get("miembros", []):
+                miembros_formato.append({
+                    "id_usuario": str(m.get("_id")),
+                    "nombre": m.get("nombre", ""),
+                    "apellidos": m.get("apellidos", ""),
+                    "identificador": m.get("identificador", ""),
+                })
+            
+            datos_depto = {
+                "nombre": depto["nombre"],
+                "proyecto_asignado": nombre_proyecto,
+                "miembros": miembros_formato,
+                "fecha_creacion": datetime.now(),
+            }
+            
+            exito_d, _ = crear_departamento(datos_depto)
+            if exito_d:
+                deptos_creados += 1
+
+        # 6. Mensaje de éxito
+        msg = f"✅ Proyecto '{nombre_proyecto}' creado"
+        if deptos_creados > 0:
+            msg += f" con {deptos_creados} departamento{'s' if deptos_creados > 1 else ''}"
         
+        page.snack_bar = ft.SnackBar(ft.Text(msg), bgcolor="green")
+        page.snack_bar.open = True
+        page.go("/gestionar_proyectos")
         page.update()
 
     # --- HELPERS DE INTERFAZ ---
 
-    def crear_label(texto: str):
-        return ft.Text(texto, size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500)
+    def crear_label(texto: str, obligatorio: bool = False):
+        if obligatorio:
+            return ft.Row([
+                ft.Text(texto, size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                ft.Text("*", size=11, color=COLOR_ROJO, weight=ft.FontWeight.BOLD),
+            ], spacing=2)
+        return ft.Text(texto, size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500)
 
     # Botón volver
     btn_volver = ft.Container(
@@ -182,8 +526,8 @@ def VistaCrearProyecto(page: ft.Page):
         border_color=COLOR_BORDE,
         border_radius=5,
         multiline=True,
-        min_lines=3,
-        max_lines=3,
+        min_lines=2,
+        max_lines=2,
         content_padding=ft.padding.all(10),
     )
 
@@ -218,16 +562,47 @@ def VistaCrearProyecto(page: ft.Page):
     )
 
     # Componentes visuales para las fechas
-    txt_fecha_inicio = ft.Text("Seleccionar...", size=12, color="black")
-    txt_fecha_fin = ft.Text("Seleccionar...", size=12, color="black")
+    txt_fecha_inicio = ft.Text("Seleccionar...", size=11, color="#999999")
+    txt_fecha_fin = ft.Text("Seleccionar...", size=11, color="#999999")
+
+    # Inicializar lista visual de departamentos
+    actualizar_lista_deptos_visual()
+
+    # Sección de departamentos
+    seccion_departamentos = ft.Container(
+        border=ft.border.all(1, COLOR_BORDE),
+        border_radius=8,
+        padding=10,
+        content=ft.Column([
+            ft.Row([
+                ft.Text("Departamentos del Proyecto", size=12, color="black", weight="bold"),
+                ft.Container(expand=True),
+                ft.ElevatedButton(
+                    "+ Añadir",
+                    on_click=abrir_dialog_nuevo_departamento,
+                    bgcolor=COLOR_LABEL,
+                    color="white",
+                    height=30,
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=6),
+                        text_style=ft.TextStyle(size=10),
+                    ),
+                ),
+            ], alignment="spaceBetween"),
+            ft.Container(
+                height=120,
+                content=ft.Column([lista_deptos_visual], scroll=ft.ScrollMode.AUTO),
+            ),
+        ], spacing=8),
+    )
 
     # Contenedor del formulario con Scroll
     formulario = ft.Column(
-        spacing=12,
+        spacing=10,
         scroll=ft.ScrollMode.AUTO,
         controls=[
-            ft.Column([crear_label("Nombre del Proyecto *"), input_nombre], spacing=3),
-            ft.Column([crear_label("Cliente / Empresa *"), input_cliente], spacing=3),
+            ft.Column([crear_label("Nombre del Proyecto", True), input_nombre], spacing=3),
+            ft.Column([crear_label("Cliente / Empresa", True), input_cliente], spacing=3),
             
             ft.Row([
                 ft.Column([crear_label("Código"), input_codigo], spacing=3, expand=True),
@@ -238,25 +613,43 @@ def VistaCrearProyecto(page: ft.Page):
             
             ft.Row([
                 ft.Column([
-                    crear_label("Fecha Inicio"),
+                    crear_label("Fecha Inicio", True),
                     ft.Container(
-                        content=ft.Row([ft.Icon(ft.Icons.CALENDAR_MONTH, size=16, color=COLOR_LABEL), txt_fecha_inicio]),
+                        content=ft.Row([ft.Icon(ft.Icons.CALENDAR_MONTH, size=14, color=COLOR_LABEL), txt_fecha_inicio], spacing=5),
                         on_click=abrir_picker_inicio,
-                        padding=10, border=ft.border.all(1, COLOR_BORDE), border_radius=5
+                        padding=ft.padding.symmetric(horizontal=10, vertical=8), 
+                        border=ft.border.all(1, COLOR_BORDE), 
+                        border_radius=5,
+                        height=40,
                     )
-                ], expand=True),
+                ], expand=True, spacing=3),
                 ft.Column([
-                    crear_label("Fecha Fin"),
+                    crear_label("Fecha Fin", True),
                     ft.Container(
-                        content=ft.Row([ft.Icon(ft.Icons.CALENDAR_MONTH, size=16, color=COLOR_LABEL), txt_fecha_fin]),
+                        content=ft.Row([ft.Icon(ft.Icons.CALENDAR_MONTH, size=14, color=COLOR_LABEL), txt_fecha_fin], spacing=5),
                         on_click=abrir_picker_fin,
-                        padding=10, border=ft.border.all(1, COLOR_BORDE), border_radius=5
+                        padding=ft.padding.symmetric(horizontal=10, vertical=8), 
+                        border=ft.border.all(1, COLOR_BORDE), 
+                        border_radius=5,
+                        height=40,
                     )
-                ], expand=True),
+                ], expand=True, spacing=3),
             ], spacing=10),
 
-            ft.Column([crear_label("Estado del Proyecto"), dropdown_estado], spacing=3),
+            ft.Row([
+                ft.Column([crear_label("Estado"), dropdown_estado], spacing=3, expand=True),
+            ]),
+            
             ft.Column([crear_label("Descripción"), input_descripcion], spacing=3),
+            
+            # Sección de departamentos
+            seccion_departamentos,
+            
+            # Leyenda
+            ft.Row([
+                ft.Text("*", size=10, color=COLOR_ROJO, weight="bold"),
+                ft.Text("Campos obligatorios", size=9, color="#666666", italic=True),
+            ], spacing=2),
         ]
     )
 
@@ -279,7 +672,7 @@ def VistaCrearProyecto(page: ft.Page):
         border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
+            padding=ft.padding.only(left=18, right=18, top=55, bottom=15),
             content=ft.Column(
                 spacing=10,
                 controls=[
