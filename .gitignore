@@ -1,2 +1,14 @@
 
 gestion_tareas/vistas/__pycache__/vista_tareas_realizadas.cpython-311.pyc
+
+
+#xcluir archivo de configuracion de base de datos
+utilidades/config_db.json
+
+#excluir cache de python para evitar archivos innecesarios
+__pycache__/
+*.py[cod]
+
+#excluir archivos temporales de windows
+Thumbs.db
+desktop.ini
