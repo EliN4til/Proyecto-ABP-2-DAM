@@ -1,6 +1,6 @@
 """
-Operaciones CRUD para la base de datos MongoDB
-Este archivo contiene todas las funciones necesarias para crear, leer, actualizar y eliminar
+operaciones crud para la base de datos mongodb
+este archivo contiene todas las funciones necesarias para crear, leer, actualizar y eliminar
 documentos de las diferentes colecciones de la base de datos.
 """
 
@@ -11,16 +11,30 @@ from modelos.init import db
 
 
 # ============================================
-# FUNCIONES AUXILIARES
+# FUNCIONES AUXILIARES Y AUDITORÍA
 # ============================================
 
 def es_id_valido(id_str: str) -> bool:
-    """Comprueba si un string es un ObjectId válido de MongoDB"""
+    #comprueba si un string es un objectid válido de mongodb
     try:
         ObjectId(id_str)
         return True
     except:
         return False
+
+def registrar_log(accion: str, modulo: str, descripcion: str, usuario: str = "Sistema"):
+    #guarda un registro de actividad en la coleccion de auditoria de forma automatica
+    try:
+        db.auditoria.insert_one({
+            "accion": accion,
+            "modulo": modulo,
+            "descripcion": descripcion,
+            "usuario": usuario,
+            "fecha_completa": datetime.now(),
+            "ip": "127.0.0.1"
+        })
+    except Exception as e:
+        print(f"error al registrar log: {e}")
 
 
 # ============================================
@@ -28,48 +42,47 @@ def es_id_valido(id_str: str) -> bool:
 # ============================================
 
 def crear_empleado(datos: dict) -> Tuple[bool, Any]:
-    """
-    Crea un nuevo empleado en la base de datos
-    Devuelve (True, datos) si funciona o (False, error) si falla
-    """
+    #crea un nuevo empleado en la base de datos y genera log
     try:
-        #validamos campos obligatorios
         campos_requeridos = ["identificador", "nombre", "apellidos", "email", "contrasenya"]
         for campo in campos_requeridos:
             if campo not in datos or not datos[campo]:
-                return (False, f"El campo '{campo}' es obligatorio")
+                return (False, f"el campo '{campo}' es obligatorio")
         
-        #insertamos el empleado
         resultado = db.empleados.insert_one(datos)
         datos["_id"] = str(resultado.inserted_id)
+        
+        #registro en auditoria
+        registrar_log("Crear", "Usuarios", f"usuario registrado: {datos['nombre']} {datos['apellidos']}")
+        
         return (True, datos)
     except Exception as e:
         return (False, str(e))
 
 
 def obtener_empleado(id_empleado: str) -> Tuple[bool, Any]:
-    """Obtiene un empleado por su ID"""
+    #obtiene un empleado por su id
     if not es_id_valido(id_empleado):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     empleado = db.empleados.find_one({"_id": ObjectId(id_empleado)})
     if empleado:
         empleado["_id"] = str(empleado["_id"])
         return (True, empleado)
-    return (False, "Empleado no encontrado")
+    return (False, "empleado no encontrado")
 
 
 def obtener_empleado_por_email(email: str) -> Tuple[bool, Any]:
-    """Obtiene un empleado por su email (para login)"""
+    #obtiene un empleado por su email para login
     empleado = db.empleados.find_one({"email": email})
     if empleado:
         empleado["_id"] = str(empleado["_id"])
         return (True, empleado)
-    return (False, "Empleado no encontrado")
+    return (False, "empleado no encontrado")
 
 
 def obtener_todos_empleados() -> Tuple[bool, Any]:
-    """Obtiene todos los empleados de la base de datos"""
+    #obtiene todos los empleados de la base de datos
     try:
         empleados = list(db.empleados.find())
         for emp in empleados:
@@ -80,9 +93,9 @@ def obtener_todos_empleados() -> Tuple[bool, Any]:
 
 
 def actualizar_empleado(id_empleado: str, datos: dict) -> Tuple[bool, Any]:
-    """Actualiza los datos de un empleado"""
+    #actualiza los datos de un empleado y genera log
     if not es_id_valido(id_empleado):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.empleados.update_one(
@@ -90,22 +103,28 @@ def actualizar_empleado(id_empleado: str, datos: dict) -> Tuple[bool, Any]:
             {"$set": datos}
         )
         if resultado.matched_count > 0:
-            return (True, "Empleado actualizado")
-        return (False, "No se encontró el empleado")
+            registrar_log("Editar", "Usuarios", f"datos actualizados del usuario id: {id_empleado}")
+            return (True, "empleado actualizado")
+        return (False, "no se encontró el empleado")
     except Exception as e:
         return (False, str(e))
 
 
 def eliminar_empleado(id_empleado: str) -> Tuple[bool, Any]:
-    """Elimina un empleado de la base de datos"""
+    #elimina un empleado de la base de datos y genera log
     if not es_id_valido(id_empleado):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
+        #obtenemos nombre para el log antes de borrar
+        emp = db.empleados.find_one({"_id": ObjectId(id_empleado)})
+        nom_complet = f"{emp['nombre']} {emp['apellidos']}" if emp else id_empleado
+        
         resultado = db.empleados.delete_one({"_id": ObjectId(id_empleado)})
         if resultado.deleted_count > 0:
-            return (True, "Empleado eliminado")
-        return (False, "No se encontró el empleado")
+            registrar_log("Eliminar", "Usuarios", f"usuario eliminado: {nom_complet}")
+            return (True, "empleado eliminado")
+        return (False, "no se encontró el empleado")
     except Exception as e:
         return (False, str(e))
 
@@ -115,32 +134,34 @@ def eliminar_empleado(id_empleado: str) -> Tuple[bool, Any]:
 # ============================================
 
 def crear_departamento(datos: dict) -> Tuple[bool, Any]:
-    """Crea un nuevo departamento"""
+    #crea un nuevo departamento y genera log
     try:
         if "nombre" not in datos or not datos["nombre"]:
-            return (False, "El nombre del departamento es obligatorio")
+            return (False, "el nombre del departamento es obligatorio")
         
         resultado = db.departamentos.insert_one(datos)
         datos["_id"] = str(resultado.inserted_id)
+        
+        registrar_log("Crear", "Departamentos", f"departamento creado: {datos['nombre']}")
         return (True, datos)
     except Exception as e:
         return (False, str(e))
 
 
 def obtener_departamento(id_departamento: str) -> Tuple[bool, Any]:
-    """Obtiene un departamento por su ID"""
+    #obtiene un departamento por su id
     if not es_id_valido(id_departamento):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     depto = db.departamentos.find_one({"_id": ObjectId(id_departamento)})
     if depto:
         depto["_id"] = str(depto["_id"])
         return (True, depto)
-    return (False, "Departamento no encontrado")
+    return (False, "departamento no encontrado")
 
 
 def obtener_todos_departamentos() -> Tuple[bool, Any]:
-    """Obtiene todos los departamentos"""
+    #obtiene todos los departamentos
     try:
         deptos = list(db.departamentos.find())
         for d in deptos:
@@ -151,9 +172,9 @@ def obtener_todos_departamentos() -> Tuple[bool, Any]:
 
 
 def actualizar_departamento(id_departamento: str, datos: dict) -> Tuple[bool, Any]:
-    """Actualiza un departamento"""
+    #actualiza un departamento y genera log
     if not es_id_valido(id_departamento):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.departamentos.update_one(
@@ -161,22 +182,24 @@ def actualizar_departamento(id_departamento: str, datos: dict) -> Tuple[bool, An
             {"$set": datos}
         )
         if resultado.matched_count > 0:
-            return (True, "Departamento actualizado")
-        return (False, "No se encontró el departamento")
+            registrar_log("Editar", "Departamentos", f"departamento actualizado id: {id_departamento}")
+            return (True, "departamento actualizado")
+        return (False, "no se encontró el departamento")
     except Exception as e:
         return (False, str(e))
 
 
 def eliminar_departamento(id_departamento: str) -> Tuple[bool, Any]:
-    """Elimina un departamento"""
+    #elimina un departamento y genera log
     if not es_id_valido(id_departamento):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.departamentos.delete_one({"_id": ObjectId(id_departamento)})
         if resultado.deleted_count > 0:
-            return (True, "Departamento eliminado")
-        return (False, "No se encontró el departamento")
+            registrar_log("Eliminar", "Departamentos", f"departamento borrado id: {id_departamento}")
+            return (True, "departamento eliminado")
+        return (False, "no se encontró el departamento")
     except Exception as e:
         return (False, str(e))
 
@@ -186,32 +209,34 @@ def eliminar_departamento(id_departamento: str) -> Tuple[bool, Any]:
 # ============================================
 
 def crear_equipo(datos: dict) -> Tuple[bool, Any]:
-    """Crea un nuevo equipo"""
+    #crea un nuevo equipo y genera log
     try:
         if "nombre" not in datos or not datos["nombre"]:
-            return (False, "El nombre del equipo es obligatorio")
+            return (False, "el nombre del equipo es obligatorio")
         
         resultado = db.equipos.insert_one(datos)
         datos["_id"] = str(resultado.inserted_id)
+        
+        registrar_log("Crear", "Equipos", f"nuevo equipo creado: {datos['nombre']}")
         return (True, datos)
     except Exception as e:
         return (False, str(e))
 
 
 def obtener_equipo(id_equipo: str) -> Tuple[bool, Any]:
-    """Obtiene un equipo por su ID"""
+    #obtiene un equipo por su id
     if not es_id_valido(id_equipo):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     equipo = db.equipos.find_one({"_id": ObjectId(id_equipo)})
     if equipo:
         equipo["_id"] = str(equipo["_id"])
         return (True, equipo)
-    return (False, "Equipo no encontrado")
+    return (False, "equipo no encontrado")
 
 
 def obtener_todos_equipos() -> Tuple[bool, Any]:
-    """Obtiene todos los equipos"""
+    #obtiene todos los equipos
     try:
         equipos = list(db.equipos.find())
         for e in equipos:
@@ -222,9 +247,9 @@ def obtener_todos_equipos() -> Tuple[bool, Any]:
 
 
 def actualizar_equipo(id_equipo: str, datos: dict) -> Tuple[bool, Any]:
-    """Actualiza un equipo"""
+    #actualiza un equipo y genera log
     if not es_id_valido(id_equipo):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.equipos.update_one(
@@ -232,22 +257,24 @@ def actualizar_equipo(id_equipo: str, datos: dict) -> Tuple[bool, Any]:
             {"$set": datos}
         )
         if resultado.matched_count > 0:
-            return (True, "Equipo actualizado")
-        return (False, "No se encontró el equipo")
+            registrar_log("Editar", "Equipos", f"equipo editado id: {id_equipo}")
+            return (True, "equipo actualizado")
+        return (False, "no se encontró el equipo")
     except Exception as e:
         return (False, str(e))
 
 
 def eliminar_equipo(id_equipo: str) -> Tuple[bool, Any]:
-    """Elimina un equipo"""
+    #elimina un equipo y genera log
     if not es_id_valido(id_equipo):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.equipos.delete_one({"_id": ObjectId(id_equipo)})
         if resultado.deleted_count > 0:
-            return (True, "Equipo eliminado")
-        return (False, "No se encontró el equipo")
+            registrar_log("Eliminar", "Equipos", f"equipo eliminado id: {id_equipo}")
+            return (True, "equipo eliminado")
+        return (False, "no se encontró el equipo")
     except Exception as e:
         return (False, str(e))
 
@@ -257,32 +284,34 @@ def eliminar_equipo(id_equipo: str) -> Tuple[bool, Any]:
 # ============================================
 
 def crear_proyecto(datos: dict) -> Tuple[bool, Any]:
-    """Crea un nuevo proyecto"""
+    #crea un nuevo proyecto y genera log
     try:
         if "nombre" not in datos or not datos["nombre"]:
-            return (False, "El nombre del proyecto es obligatorio")
+            return (False, "el nombre del proyecto es obligatorio")
         
         resultado = db.proyectos.insert_one(datos)
         datos["_id"] = str(resultado.inserted_id)
+        
+        registrar_log("Crear", "Proyectos", f"proyecto iniciado: {datos['nombre']}")
         return (True, datos)
     except Exception as e:
         return (False, str(e))
 
 
 def obtener_proyecto(id_proyecto: str) -> Tuple[bool, Any]:
-    """Obtiene un proyecto por su ID"""
+    #obtiene un proyecto por su id
     if not es_id_valido(id_proyecto):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     proyecto = db.proyectos.find_one({"_id": ObjectId(id_proyecto)})
     if proyecto:
         proyecto["_id"] = str(proyecto["_id"])
         return (True, proyecto)
-    return (False, "Proyecto no encontrado")
+    return (False, "proyecto no encontrado")
 
 
 def obtener_todos_proyectos() -> Tuple[bool, Any]:
-    """Obtiene todos los proyectos"""
+    #obtiene todos los proyectos
     try:
         proyectos = list(db.proyectos.find())
         for p in proyectos:
@@ -293,9 +322,9 @@ def obtener_todos_proyectos() -> Tuple[bool, Any]:
 
 
 def actualizar_proyecto(id_proyecto: str, datos: dict) -> Tuple[bool, Any]:
-    """Actualiza un proyecto"""
+    #actualiza un proyecto y genera log
     if not es_id_valido(id_proyecto):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.proyectos.update_one(
@@ -303,22 +332,24 @@ def actualizar_proyecto(id_proyecto: str, datos: dict) -> Tuple[bool, Any]:
             {"$set": datos}
         )
         if resultado.matched_count > 0:
-            return (True, "Proyecto actualizado")
-        return (False, "No se encontró el proyecto")
+            registrar_log("Editar", "Proyectos", f"proyecto actualizado id: {id_proyecto}")
+            return (True, "proyecto actualizado")
+        return (False, "no se encontró el proyecto")
     except Exception as e:
         return (False, str(e))
 
 
 def eliminar_proyecto(id_proyecto: str) -> Tuple[bool, Any]:
-    """Elimina un proyecto"""
+    #elimina un proyecto y genera log
     if not es_id_valido(id_proyecto):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.proyectos.delete_one({"_id": ObjectId(id_proyecto)})
         if resultado.deleted_count > 0:
-            return (True, "Proyecto eliminado")
-        return (False, "No se encontró el proyecto")
+            registrar_log("Eliminar", "Proyectos", f"proyecto borrado id: {id_proyecto}")
+            return (True, "proyecto eliminado")
+        return (False, "no se encontró el proyecto")
     except Exception as e:
         return (False, str(e))
 
@@ -328,12 +359,11 @@ def eliminar_proyecto(id_proyecto: str) -> Tuple[bool, Any]:
 # ============================================
 
 def crear_tarea(datos: dict) -> Tuple[bool, Any]:
-    """Crea una nueva tarea"""
+    #crea una nueva tarea y genera log
     try:
         if "titulo" not in datos or not datos["titulo"]:
-            return (False, "El título de la tarea es obligatorio")
+            return (False, "el título de la tarea es obligatorio")
         
-        #ponemos valores por defecto si no existen
         if "estado" not in datos:
             datos["estado"] = "pendiente"
         if "fecha_inicio" not in datos:
@@ -341,25 +371,27 @@ def crear_tarea(datos: dict) -> Tuple[bool, Any]:
         
         resultado = db.tareas.insert_one(datos)
         datos["_id"] = str(resultado.inserted_id)
+        
+        registrar_log("Crear", "Tareas", f"tarea creada: {datos['titulo']}")
         return (True, datos)
     except Exception as e:
         return (False, str(e))
 
 
 def obtener_tarea(id_tarea: str) -> Tuple[bool, Any]:
-    """Obtiene una tarea por su ID"""
+    #obtiene una tarea por su id
     if not es_id_valido(id_tarea):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     tarea = db.tareas.find_one({"_id": ObjectId(id_tarea)})
     if tarea:
         tarea["_id"] = str(tarea["_id"])
         return (True, tarea)
-    return (False, "Tarea no encontrada")
+    return (False, "tarea no encontrada")
 
 
 def obtener_todas_tareas() -> Tuple[bool, Any]:
-    """Obtiene todas las tareas"""
+    #obtiene todas las tareas
     try:
         tareas = list(db.tareas.find())
         for t in tareas:
@@ -370,7 +402,7 @@ def obtener_todas_tareas() -> Tuple[bool, Any]:
 
 
 def obtener_tareas_por_estado(estado: str) -> Tuple[bool, Any]:
-    """Obtiene tareas filtradas por estado (pendiente, completada, etc)"""
+    #obtiene tareas filtradas por estado
     try:
         tareas = list(db.tareas.find({"estado": estado}))
         for t in tareas:
@@ -381,7 +413,7 @@ def obtener_tareas_por_estado(estado: str) -> Tuple[bool, Any]:
 
 
 def obtener_tareas_por_usuario(id_usuario: str) -> Tuple[bool, Any]:
-    """Obtiene las tareas asignadas a un usuario específico"""
+    #obtiene las tareas asignadas a un usuario específico
     try:
         tareas = list(db.tareas.find({"asignados.id_usuario": id_usuario}))
         for t in tareas:
@@ -392,7 +424,7 @@ def obtener_tareas_por_usuario(id_usuario: str) -> Tuple[bool, Any]:
 
 
 def obtener_tareas_atrasadas() -> Tuple[bool, Any]:
-    """Obtiene las tareas que están atrasadas y NO completadas"""
+    #obtiene las tareas que están atrasadas y no completadas
     try:
         ahora = datetime.now()
         tareas = list(db.tareas.find({
@@ -407,9 +439,9 @@ def obtener_tareas_atrasadas() -> Tuple[bool, Any]:
 
 
 def actualizar_tarea(id_tarea: str, datos: dict) -> Tuple[bool, Any]:
-    """Actualiza una tarea"""
+    #actualiza una tarea y genera log
     if not es_id_valido(id_tarea):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.tareas.update_one(
@@ -417,30 +449,35 @@ def actualizar_tarea(id_tarea: str, datos: dict) -> Tuple[bool, Any]:
             {"$set": datos}
         )
         if resultado.matched_count > 0:
-            return (True, "Tarea actualizada")
-        return (False, "No se encontró la tarea")
+            registrar_log("Editar", "Tareas", f"tarea actualizada id: {id_tarea}")
+            return (True, "tarea actualizada")
+        return (False, "no se encontró la tarea")
     except Exception as e:
         return (False, str(e))
 
 
 def completar_tarea(id_tarea: str) -> Tuple[bool, Any]:
-    """Marca una tarea como completada en la BD"""
-    return actualizar_tarea(id_tarea, {
+    #marca una tarea como completada en la bd y genera log
+    exito, msg = actualizar_tarea(id_tarea, {
         "estado": "completada",
         "fecha_completado": datetime.now()
     })
+    if exito:
+        registrar_log("Editar", "Tareas", f"tarea marcada como finalizada id: {id_tarea}")
+    return exito, msg
 
 
 def eliminar_tarea(id_tarea: str) -> Tuple[bool, Any]:
-    """Elimina una tarea"""
+    #elimina una tarea y genera log
     if not es_id_valido(id_tarea):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.tareas.delete_one({"_id": ObjectId(id_tarea)})
         if resultado.deleted_count > 0:
-            return (True, "Tarea eliminada")
-        return (False, "No se encontró la tarea")
+            registrar_log("Eliminar", "Tareas", f"tarea borrada id: {id_tarea}")
+            return (True, "tarea eliminada")
+        return (False, "no se encontró la tarea")
     except Exception as e:
         return (False, str(e))
 
@@ -450,32 +487,34 @@ def eliminar_tarea(id_tarea: str) -> Tuple[bool, Any]:
 # ============================================
 
 def crear_rol(datos: dict) -> Tuple[bool, Any]:
-    """Crea un nuevo rol"""
+    #crea un nuevo rol y genera log
     try:
         if "nombre" not in datos or not datos["nombre"]:
-            return (False, "El nombre del rol es obligatorio")
+            return (False, "el nombre del rol es obligatorio")
         
         resultado = db.roles.insert_one(datos)
         datos["_id"] = str(resultado.inserted_id)
+        
+        registrar_log("Crear", "Roles", f"nuevo rol definido: {datos['nombre']}")
         return (True, datos)
     except Exception as e:
         return (False, str(e))
 
 
 def obtener_rol(id_rol: str) -> Tuple[bool, Any]:
-    """Obtiene un rol por su ID"""
+    #obtiene un rol por su id
     if not es_id_valido(id_rol):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     rol = db.roles.find_one({"_id": ObjectId(id_rol)})
     if rol:
         rol["_id"] = str(rol["_id"])
         return (True, rol)
-    return (False, "Rol no encontrado")
+    return (False, "rol no encontrado")
 
 
 def obtener_todos_roles() -> Tuple[bool, Any]:
-    """Obtiene todos los roles"""
+    #obtiene todos los roles
     try:
         roles = list(db.roles.find())
         for r in roles:
@@ -486,9 +525,9 @@ def obtener_todos_roles() -> Tuple[bool, Any]:
 
 
 def actualizar_rol(id_rol: str, datos: dict) -> Tuple[bool, Any]:
-    """Actualiza un rol"""
+    #actualiza un rol y genera log
     if not es_id_valido(id_rol):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.roles.update_one(
@@ -496,22 +535,24 @@ def actualizar_rol(id_rol: str, datos: dict) -> Tuple[bool, Any]:
             {"$set": datos}
         )
         if resultado.matched_count > 0:
-            return (True, "Rol actualizado")
-        return (False, "No se encontró el rol")
+            registrar_log("Editar", "Roles", f"rol actualizado id: {id_rol}")
+            return (True, "rol actualizado")
+        return (False, "no se encontró el rol")
     except Exception as e:
         return (False, str(e))
 
 
 def eliminar_rol(id_rol: str) -> Tuple[bool, Any]:
-    """Elimina un rol"""
+    #elimina un rol y genera log
     if not es_id_valido(id_rol):
-        return (False, "ID no válido")
+        return (False, "id no válido")
     
     try:
         resultado = db.roles.delete_one({"_id": ObjectId(id_rol)})
         if resultado.deleted_count > 0:
-            return (True, "Rol eliminado")
-        return (False, "No se encontró el rol")
+            registrar_log("Eliminar", "Roles", f"rol eliminado id: {id_rol}")
+            return (True, "rol eliminado")
+        return (False, "no se encontró el rol")
     except Exception as e:
         return (False, str(e))
 
@@ -521,34 +562,37 @@ def eliminar_rol(id_rol: str) -> Tuple[bool, Any]:
 # ============================================
 
 def validar_login(email: str, contrasenya: str) -> Tuple[bool, Any]:
-    """
-    Valida las credenciales de un usuario
-    Devuelve (True, empleado) si son correctas o (False, error) si no
-    """
+    #valida las credenciales de un usuario y genera logs
     if not email or not contrasenya:
-        return (False, "Email y contraseña son obligatorios")
+        return (False, "email y contraseña son obligatorios")
     
     empleado = db.empleados.find_one({"email": email})
     
     if not empleado:
-        return (False, "Usuario no encontrado")
+        registrar_log("Login", "Sistema", f"fallo de acceso: email {email} no existe")
+        return (False, "usuario no encontrado")
     
     if empleado["contrasenya"] != contrasenya:
-        return (False, "Contraseña incorrecta")
+        registrar_log("Login", "Sistema", f"fallo de acceso: password incorrecta para {email}")
+        return (False, "contraseña incorrecta")
     
-    #convertimos el ObjectId a string
+    # login exitoso
     empleado["_id"] = str(empleado["_id"])
+    registrar_log("Login", "Sistema", f"sesión iniciada correctamente: {email}")
     return (True, empleado)
 
 
 def cambiar_contrasenya(id_empleado: str, contrasenya_actual: str, contrasenya_nueva: str) -> Tuple[bool, Any]:
-    """Cambia la contraseña de un empleado"""
+    #cambia la contraseña de un empleado y genera log
     exito, resultado = obtener_empleado(id_empleado)
     
     if not exito:
-        return (False, "Empleado no encontrado")
+        return (False, "empleado no encontrado")
     
     if resultado["contrasenya"] != contrasenya_actual:
-        return (False, "La contraseña actual no es correcta")
+        return (False, "la contraseña actual no es correcta")
     
-    return actualizar_empleado(id_empleado, {"contrasenya": contrasenya_nueva})
+    exito_upd, msg = actualizar_empleado(id_empleado, {"contrasenya": contrasenya_nueva})
+    if exito_upd:
+        registrar_log("Editar", "Usuarios", f"contraseña cambiada para id: {id_empleado}")
+    return exito_upd, msg

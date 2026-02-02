@@ -1,6 +1,7 @@
 import flet as ft
 from datetime import datetime
 from modelos.crud import crear_tarea, obtener_todos_proyectos, obtener_todos_empleados, obtener_todos_departamentos
+from servicios.sesion_service import obtener_usuario  # AÑADIDO: importación del servicio de sesión
 
 def VistaNuevaTarea(page: ft.Page):
     
@@ -31,10 +32,14 @@ def VistaNuevaTarea(page: ft.Page):
     empleados_db = []
     departamentos_db = []
 
+    # AÑADIDO: obtener usuario de sesión para autoasignación
+    usuario_creador = obtener_usuario()
+
     tags_seleccionados = []
-    personas_seleccionadas = [] # Guardaremos objetos completos del empleado
+    # MODIFICADO: preseleccionar al usuario creador
+    personas_seleccionadas = [usuario_creador] if usuario_creador else []
     emoji_index_actual = [0]
-    proyecto_seleccionado_obj = [None] # Guardaremos el dict completo del proyecto
+    proyecto_seleccionado_obj = [None]
     departamento_seleccionado_nombre = [None]
     prioridad_seleccionada = ["Media"]
 
@@ -54,15 +59,23 @@ def VistaNuevaTarea(page: ft.Page):
     cargar_datos_iniciales()
 
     # --- COMPONENTES DE FECHA ---
-    fecha_inicio_texto = ft.Text("DD/MM/AA", size=12, color="black", weight=ft.FontWeight.W_500)
+    # MODIFICADO: fecha inicio por defecto a hoy
+    fecha_inicio_texto = ft.Text(
+        datetime.now().strftime("%d/%m/%y"), 
+        size=12, 
+        color="black", 
+        weight=ft.FontWeight.W_500
+    )
     fecha_fin_texto = ft.Text("DD/MM/AA", size=12, color="black", weight=ft.FontWeight.W_500)
 
     emoji_text = ft.Text("📋", size=35)
 
+    # MODIFICADO: mostrar nombre del usuario creador por defecto
+    nombre_usuario_creador = usuario_creador.get("nombre", "Usuario") if usuario_creador else "Usuario"
     texto_personas_seleccionadas = ft.Text(
-        "Selecciona personas...", 
+        nombre_usuario_creador, 
         size=11, 
-        color="#999999",
+        color="black",  # MODIFICADO: color negro porque hay selección
         overflow=ft.TextOverflow.ELLIPSIS,
         max_lines=1,
     )
@@ -117,32 +130,12 @@ def VistaNuevaTarea(page: ft.Page):
     page.overlay.append(date_picker_fin)
 
     # --- LÓGICA DE GUARDADO REAL ---
-    def btn_crear_click(e):
-        # 1. Validaciones
-        if not input_titulo.value:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ El título es obligatorio"), bgcolor="red")
-            page.snack_bar.open = True
-            page.update()
-            return
-        
-        if not proyecto_seleccionado_obj[0]:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ Selecciona un proyecto"), bgcolor="red")
-            page.snack_bar.open = True
-            page.update()
-            return
-
-        if not date_picker_fin.value:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ Selecciona una fecha de fin"), bgcolor="red")
-            page.snack_bar.open = True
-            page.update()
-            return
-
-        # 2. Preparar el objeto de la tarea (siguiendo el TareaModel)
-        # Convertimos la lista de personas al formato UsuarioResumen (Subset pattern)
+    def ejecutar_creacion_tarea():
+        """Función que ejecuta la creación real de la tarea"""
         asignados_formateados = []
         for p in personas_seleccionadas:
             asignados_formateados.append({
-                "id_usuario": p.get("_id"),
+                "id_usuario": str(p.get("_id")),
                 "nombre": p.get("nombre", "Usuario")
             })
 
@@ -152,16 +145,16 @@ def VistaNuevaTarea(page: ft.Page):
             "estado": "pendiente",
             "tags": tags_seleccionados,
             "icono": emoji_text.value,
-            "id_proyecto": proyecto_seleccionado_obj[0].get("_id"),
+            "id_proyecto": str(proyecto_seleccionado_obj[0].get("_id")),
             "proyecto": proyecto_seleccionado_obj[0].get("nombre"),
             "prioridad": prioridad_seleccionada[0].lower(),
             "asignados": asignados_formateados,
+            "compartido_por": nombre_usuario_creador,
             "fecha_inicio": date_picker_inicio.value if date_picker_inicio.value else datetime.now(),
-            "fecha_limite": date_picker_fin.value,
+            "fecha_limite": date_picker_fin.value,  # Puede ser None
             "atrasado": False
         }
 
-        # 3. Llamada al CRUD
         exito, resultado = crear_tarea(nueva_tarea_data)
 
         if exito:
@@ -173,6 +166,129 @@ def VistaNuevaTarea(page: ft.Page):
             page.snack_bar.open = True
         
         page.update()
+
+    def mostrar_dialog_campos_faltantes(campos_faltantes: list):
+        """Muestra popup con los campos obligatorios que faltan"""
+        lista_campos = ft.Column(
+            controls=[
+                ft.Row([
+                    ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color="#E65100", size=18),
+                    ft.Text(campo, size=13, color="black")
+                ], spacing=8)
+                for campo in campos_faltantes
+            ],
+            spacing=8
+        )
+        
+        def cerrar_dialog(e):
+            dialog_faltantes.open = False
+            page.update()
+        
+        dialog_faltantes = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Icon(ft.Icons.ERROR_OUTLINE, color="#D32F2F", size=24),
+                ft.Text("Campos obligatorios", size=16, weight=ft.FontWeight.BOLD, color="#D32F2F")
+            ], spacing=10),
+            bgcolor="white",
+            content=ft.Container(
+                width=280,
+                content=ft.Column([
+                    ft.Text("Por favor, completa los siguientes campos:", size=12, color="#666666"),
+                    ft.Container(height=10),
+                    lista_campos,
+                ], spacing=5, tight=True)
+            ),
+            actions=[
+                ft.TextButton("Entendido", on_click=cerrar_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        page.overlay.append(dialog_faltantes)
+        dialog_faltantes.open = True
+        page.update()
+
+    def mostrar_dialog_confirmar_sin_fecha():
+        """Muestra popup de confirmación cuando no hay fecha límite"""
+        def cancelar(e):
+            dialog_confirmar.open = False
+            page.update()
+        
+        def confirmar_creacion(e):
+            dialog_confirmar.open = False
+            page.update()
+            ejecutar_creacion_tarea()
+        
+        dialog_confirmar = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Icon(ft.Icons.HELP_OUTLINE, color="#FF9800", size=24),
+                ft.Text("Sin fecha límite", size=16, weight=ft.FontWeight.BOLD, color="#E65100")
+            ], spacing=10),
+            bgcolor="white",
+            content=ft.Container(
+                width=300,
+                content=ft.Column([
+                    ft.Text(
+                        "No has establecido una fecha límite para esta tarea.",
+                        size=13,
+                        color="black"
+                    ),
+                    ft.Container(height=5),
+                    ft.Text(
+                        "Las tareas sin fecha límite no aparecerán en recordatorios ni alertas de vencimiento.",
+                        size=11,
+                        color="#666666",
+                        italic=True
+                    ),
+                    ft.Container(height=10),
+                    ft.Text(
+                        "¿Deseas crear la tarea de todas formas?",
+                        size=13,
+                        color="black",
+                        weight=ft.FontWeight.W_500
+                    ),
+                ], spacing=2, tight=True)
+            ),
+            actions=[
+                ft.TextButton("Cancelar", on_click=cancelar),
+                ft.ElevatedButton(
+                    "Crear sin fecha",
+                    on_click=confirmar_creacion,
+                    bgcolor="#FF9800",
+                    color="white"
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        page.overlay.append(dialog_confirmar)
+        dialog_confirmar.open = True
+        page.update()
+
+    def btn_crear_click(e):
+        # 1. Validar campos obligatorios
+        campos_faltantes = []
+        
+        if not input_titulo.value or not input_titulo.value.strip():
+            campos_faltantes.append("Título de la tarea")
+        
+        if not proyecto_seleccionado_obj[0]:
+            campos_faltantes.append("Proyecto asignado")
+        
+        # Si hay campos faltantes, mostrar popup y salir
+        if campos_faltantes:
+            mostrar_dialog_campos_faltantes(campos_faltantes)
+            return
+        
+        # 2. Si no hay fecha límite, pedir confirmación
+        if not date_picker_fin.value:
+            mostrar_dialog_confirmar_sin_fecha()
+            return
+        
+        # 3. Si todo está completo, crear la tarea directamente
+        ejecutar_creacion_tarea()
 
     # --- FUNCIONES DE LA INTERFAZ ---
     def btn_volver_click(e):
@@ -218,6 +334,12 @@ def VistaNuevaTarea(page: ft.Page):
         )
         
         def cerrar_dialog(e):
+            # MODIFICADO: validación para evitar error con None
+            if not radio_proyecto.value:
+                dialog_proyecto.open = False
+                page.update()
+                return
+                
             # Buscamos el objeto proyecto que corresponde al nombre seleccionado
             nombre_sel = radio_proyecto.value
             for p in proyectos_db:
@@ -229,6 +351,12 @@ def VistaNuevaTarea(page: ft.Page):
             if proyecto_seleccionado_obj[0]:
                 texto_proyecto_seleccionado.value = proyecto_seleccionado_obj[0]["nombre"]
                 texto_proyecto_seleccionado.color = "black"
+                
+            # AÑADIDO: resetear departamento al cambiar de proyecto
+            departamento_seleccionado_nombre[0] = None
+            texto_departamento_seleccionado.value = "Selecciona departamento..."
+            texto_departamento_seleccionado.color = "#999999"
+            
             page.update()
         
         dialog_proyecto = ft.AlertDialog(
@@ -257,26 +385,45 @@ def VistaNuevaTarea(page: ft.Page):
         dialog.open = True
         page.update()
 
-    # Dialog seleccionar departamento
+    # Dialog seleccionar departamento - MODIFICADO: filtrado por proyecto
     def crear_dialog_departamento():
+        # AÑADIDO: filtrar departamentos por proyecto seleccionado
+        if not proyecto_seleccionado_obj[0]:
+            page.snack_bar = ft.SnackBar(ft.Text("⚠️ Selecciona un proyecto primero"), bgcolor="orange")
+            page.snack_bar.open = True
+            page.update()
+            return None
+        
+        proyecto_nombre = proyecto_seleccionado_obj[0].get("nombre")
+        departamentos_filtrados = [
+            dep for dep in departamentos_db 
+            if dep.get("proyecto_asignado") == proyecto_nombre
+        ]
+        
         radio_departamento = ft.RadioGroup(
             value=departamento_seleccionado_nombre[0],
             content=ft.Column(
                 controls=[
                     ft.Radio(value=dep["nombre"], label=dep["nombre"], label_style=ft.TextStyle(size=12, color="black")) 
-                    for dep in departamentos_db
+                    for dep in departamentos_filtrados
                 ],
                 spacing=2,
             ),
         )
         
         def cerrar_dialog(e):
-            departamento_seleccionado_nombre[0] = radio_departamento.value
-            dialog_departamento.open = False
-            if departamento_seleccionado_nombre[0]:
+            # MODIFICADO: validación para evitar error con None
+            if radio_departamento.value:
+                departamento_seleccionado_nombre[0] = radio_departamento.value
                 texto_departamento_seleccionado.value = departamento_seleccionado_nombre[0]
                 texto_departamento_seleccionado.color = "black"
+            dialog_departamento.open = False
             page.update()
+        
+        # MODIFICADO: mensaje cuando no hay departamentos vinculados
+        contenido_lista = [radio_departamento] if departamentos_filtrados else [
+            ft.Text("No hay departamentos vinculados a este proyecto", size=12, color="red")
+        ]
         
         dialog_departamento = ft.AlertDialog(
             modal=True,
@@ -287,7 +434,7 @@ def VistaNuevaTarea(page: ft.Page):
                 height=300,
                 bgcolor="white",
                 content=ft.ListView(
-                    controls=[radio_departamento] if departamentos_db else [ft.Text("No hay departamentos en la BD", color="red")],
+                    controls=contenido_lista,
                     spacing=5,
                 ),
             ),
@@ -300,13 +447,17 @@ def VistaNuevaTarea(page: ft.Page):
 
     def abrir_dialog_departamento(e):
         dialog = crear_dialog_departamento()
-        page.overlay.append(dialog)
-        dialog.open = True
-        page.update()
+        if dialog:  # AÑADIDO: verificar que el diálogo se creó correctamente
+            page.overlay.append(dialog)
+            dialog.open = True
+            page.update()
 
-    # Dialog seleccionar personas (con checkbox)
+    # Dialog seleccionar personas (con checkbox) - MODIFICADO: usuario creador no puede deseleccionarse
     def crear_dialog_personas():
         checkboxes_personas = []
+        
+        # AÑADIDO: obtener ID del usuario creador para comparación
+        id_usuario_creador = str(usuario_creador.get("_id")) if usuario_creador else ""
         
         def on_checkbox_change(e):
             persona = e.control.data
@@ -318,12 +469,25 @@ def VistaNuevaTarea(page: ft.Page):
                     personas_seleccionadas.remove(persona)
         
         for persona in empleados_db:
+            id_persona = str(persona.get("_id"))
+            es_creador = id_persona == id_usuario_creador
+            
+            # MODIFICADO: añadir indicador "(Tú)" y deshabilitar checkbox del creador
             label_text = f"{persona.get('nombre')} {persona.get('apellidos', '')}"
+            if es_creador:
+                label_text += " (Tú)"
+            
+            # Verificar si está seleccionado comparando IDs como strings
+            esta_seleccionado = any(
+                str(s.get("_id")) == id_persona for s in personas_seleccionadas
+            )
+            
             cb = ft.Checkbox(
                 label=label_text,
-                value=persona in personas_seleccionadas,
+                value=esta_seleccionado,
                 data=persona,
                 on_change=on_checkbox_change,
+                disabled=es_creador,  # AÑADIDO: creador no puede deseleccionarse
                 label_style=ft.TextStyle(size=11, color="black"),
             )
             checkboxes_personas.append(cb)
@@ -337,7 +501,8 @@ def VistaNuevaTarea(page: ft.Page):
                 texto_personas_seleccionadas.value = personas_seleccionadas[0]["nombre"]
                 texto_personas_seleccionadas.color = "black"
             else:
-                texto_personas_seleccionadas.value = f"{len(personas_seleccionadas)} seleccionados"
+                # MODIFICADO: formato mejorado para múltiples selecciones
+                texto_personas_seleccionadas.value = f"{personas_seleccionadas[0]['nombre']} (+{len(personas_seleccionadas)-1})"
                 texto_personas_seleccionadas.color = "black"
             page.update()
         
@@ -561,7 +726,10 @@ def VistaNuevaTarea(page: ft.Page):
                             spacing=3,
                             expand=True,
                             controls=[
-                                ft.Text("Título *", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                ft.Row([
+                                    ft.Text("Título", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                    ft.Text("*", size=11, color="#D32F2F", weight=ft.FontWeight.BOLD),
+                                ], spacing=2),
                                 input_titulo,
                             ]
                         ),
@@ -575,7 +743,10 @@ def VistaNuevaTarea(page: ft.Page):
                             spacing=3,
                             expand=True,
                             controls=[
-                                ft.Text("Proyecto *", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                ft.Row([
+                                    ft.Text("Proyecto", size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
+                                    ft.Text("*", size=11, color="#D32F2F", weight=ft.FontWeight.BOLD),
+                                ], spacing=2),
                                 selector_proyecto,
                             ]
                         ),
@@ -705,6 +876,15 @@ def VistaNuevaTarea(page: ft.Page):
         content=ft.Text("Crear Tarea", color="white", weight=ft.FontWeight.BOLD, size=14),
     )
 
+    # Leyenda de campos obligatorios
+    leyenda_obligatorios = ft.Container(
+        content=ft.Row([
+            ft.Text("*", size=11, color="#D32F2F", weight=ft.FontWeight.BOLD),
+            ft.Text("Campos obligatorios", size=10, color="#666666", italic=True),
+        ], spacing=3),
+        alignment=ft.Alignment(-1, 0),
+    )
+
     fila_boton = ft.Row(
         alignment=ft.MainAxisAlignment.CENTER,
         controls=[btn_crear]
@@ -747,6 +927,7 @@ def VistaNuevaTarea(page: ft.Page):
                         controls=[
                             seccion_superior,
                             seccion_requerimientos,
+                            leyenda_obligatorios,
                             fila_boton,
                         ]
                     )
@@ -765,19 +946,3 @@ def VistaNuevaTarea(page: ft.Page):
         alignment=ft.Alignment(0, 0), 
         content=tarjeta_blanca
     )
-
-
-def main(page: ft.Page):
-    page.title = "App Tareas - Nueva Tarea"
-    
-    page.window.width = 1200
-    page.window.height = 800
-    page.window.min_width = 380
-    page.window.min_height = 780
-    page.padding = 0 
-    
-    vista = VistaNuevaTarea(page)
-    page.add(vista)
-
-if __name__ == "__main__":
-    ft.app(target=main)

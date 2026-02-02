@@ -1,5 +1,5 @@
 import flet as ft
-from servicios.sesion_service import obtener_usuario
+from servicios.sesion_service import obtener_usuario, obtener_contexto
 from modelos.crud import cambiar_contrasenya
 
 def VistaMisDatos(page: ft.Page):
@@ -29,13 +29,13 @@ def VistaMisDatos(page: ft.Page):
         telefono = usuario_sesion.get("telefono", "N/A")
         ubicacion = usuario_sesion.get("ubicacion", "N/A")
         
-        # --- REDIRECCIÓN INTELIGENTE: Obtener si el usuario es administrador ---
-        es_admin = usuario_sesion.get("es_admin", False)
-        
         #el departamento es un objeto con nombre y ubicacion
         departamento = usuario_sesion.get("departamento", {})
         if departamento:
-            nombre_depto = departamento.get("nombre", "N/A")
+            if isinstance(departamento, dict):
+                nombre_depto = departamento.get("nombre", "N/A")
+            else:
+                nombre_depto = str(departamento)
         else:
             nombre_depto = "N/A"
         
@@ -67,12 +67,11 @@ def VistaMisDatos(page: ft.Page):
         nombre_depto = "N/A"
         fecha_incorporacion = "N/A"
         foto_url = None
-        es_admin = False
 
     # --- LÓGICA DE CAMBIO DE CONTRASEÑA ---
 
     def mostrar_dialog_cambio_pass(e):
-        """Muestra el diálogo para cambiar la contraseña con fondo blanco y letras negras"""
+        #muestra el diálogo para cambiar la contraseña
         
         input_actual = ft.TextField(
             label="Contraseña actual",
@@ -131,7 +130,7 @@ def VistaMisDatos(page: ft.Page):
 
         dialog_pass = ft.AlertDialog(
             modal=True,
-            bgcolor="white", # Fondo blanco para el diálogo
+            bgcolor="white", 
             title=ft.Text("Cambiar Contraseña", size=18, weight=ft.FontWeight.BOLD, color="black"),
             content=ft.Container(
                 width=300,
@@ -172,8 +171,9 @@ def VistaMisDatos(page: ft.Page):
         )
 
     def btn_volver_click(e):
-        # REDIRECCIÓN SEGÚN ROL
-        if es_admin:
+        #navegación inteligente basada en el contexto guardado
+        contexto = obtener_contexto()
+        if contexto == "admin":
             page.go("/area_admin")
         else:
             page.go("/area_personal")
@@ -217,7 +217,7 @@ def VistaMisDatos(page: ft.Page):
     tarjeta_blanca = ft.Container(
         width=340,
         bgcolor="white",
-        border_radius=20, # Redondeado aplicado a toda la tarjeta
+        border_radius=20, 
         shadow=ft.BoxShadow(spread_radius=1, blur_radius=20, color="#66000000"),
         padding=ft.padding.only(left=20, right=20, top=50, bottom=25),
         content=ft.Column(
@@ -264,22 +264,22 @@ def VistaMisDatos(page: ft.Page):
         content=ft.Text("MIS DATOS", size=18, weight=ft.FontWeight.BOLD, color="white")
     )
 
-    # Contenedor con scroll para evitar que se corte la tarjeta
+    # Contenedor con scroll
     scrollable_content = ft.Column(
         expand=True,
         scroll=ft.ScrollMode.AUTO,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         controls=[
-            ft.Container(height=40), # Espacio inicial
+            ft.Container(height=40), 
             ft.Stack(
                 controls=[
                     ft.Container(content=tarjeta_blanca, top=25),
                     ft.Container(content=header_flotante, top=0, left=70)
                 ],
                 width=340,
-                height=860, # Altura suficiente para mostrar todo
+                height=860, 
             ),
-            ft.Container(height=40), # Espacio final
+            ft.Container(height=40),
         ]
     )
 
@@ -306,14 +306,3 @@ def VistaMisDatos(page: ft.Page):
             ]
         )
     )
-
-def main(page: ft.Page):
-    page.title = "App Tareas - Mis Datos"
-    page.window.width = 420
-    page.window.height = 800
-    page.padding = 0 
-    vista = VistaMisDatos(page)
-    page.add(vista)
-
-if __name__ == "__main__":
-    ft.app(target=main)
