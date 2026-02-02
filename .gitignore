@@ -4,6 +4,7 @@ gestion_tareas/vistas/__pycache__/vista_tareas_realizadas.cpython-311.pyc
 
 #xcluir archivo de configuracion de base de datos
 utilidades/config_db.json
+utilidades/config_login.json
 
 #excluir cache de python para evitar archivos innecesarios
 __pycache__/
