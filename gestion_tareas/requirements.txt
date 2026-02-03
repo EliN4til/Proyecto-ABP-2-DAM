@@ -1,2 +1,4 @@
 flet
 pymongo
+pydantic
+pydantic[email]
