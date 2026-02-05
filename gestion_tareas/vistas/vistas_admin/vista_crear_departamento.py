@@ -1,5 +1,6 @@
 import flet as ft
 from modelos.crud import crear_departamento, obtener_todos_proyectos, obtener_todos_departamentos, obtener_todos_empleados
+from utilidades.validaciones import validar_email, validar_telefono, validar_dni
 
 def VistaCrearDepartamento(page: ft.Page):
     
@@ -62,6 +63,47 @@ def VistaCrearDepartamento(page: ft.Page):
         dropdown_proyecto.options = [ft.dropdownm2.Option(p) for p in proys_filtrados]
         dropdown_proyecto.disabled = False
         dropdown_proyecto.value = None
+        
+        # Resetear responsable cuando cambia el cliente
+        dropdown_responsable.options = []
+        dropdown_responsable.disabled = True
+        dropdown_responsable.value = None
+        page.update()
+    
+    def on_proyecto_change(e):
+        """Al seleccionar proyecto, filtramos los empleados asignados a ese proyecto"""
+        proyecto_sel = dropdown_proyecto.value
+        
+        if not proyecto_sel:
+            dropdown_responsable.options = []
+            dropdown_responsable.disabled = True
+            dropdown_responsable.value = None
+            page.update()
+            return
+        
+        # Filtramos empleados que estén asignados a este proyecto
+        empleados_filtrados = [
+            emp for emp in empleados_db 
+            if emp.get("proyecto") == proyecto_sel
+        ]
+        
+        if empleados_filtrados:
+            dropdown_responsable.options = [
+                ft.dropdownm2.Option(f"{emp['nombre']} {emp['apellidos']}") 
+                for emp in empleados_filtrados
+            ]
+            dropdown_responsable.disabled = False
+            dropdown_responsable.value = None
+        else:
+            dropdown_responsable.options = []
+            dropdown_responsable.disabled = True
+            dropdown_responsable.value = None
+            page.snack_bar = ft.SnackBar(
+                ft.Text(f"⚠️ No hay empleados asignados al proyecto '{proyecto_sel}'"), 
+                bgcolor="orange"
+            )
+            page.snack_bar.open = True
+        
         page.update()
 
     def btn_volver_click(e):
@@ -77,6 +119,24 @@ def VistaCrearDepartamento(page: ft.Page):
             page.snack_bar.open = True
             page.update()
             return
+        
+        # Validar formato de email
+        if input_email.value and input_email.value.strip():
+            es_valido, mensaje = validar_email(input_email.value)
+            if not es_valido:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ {mensaje}"), bgcolor="red")
+                page.snack_bar.open = True
+                page.update()
+                return
+        
+        # Validar formato de teléfono
+        if input_telefono.value and input_telefono.value.strip():
+            es_valido, mensaje = validar_telefono(input_telefono.value)
+            if not es_valido:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ {mensaje}"), bgcolor="red")
+                page.snack_bar.open = True
+                page.update()
+                return
         
         # Procesar presupuesto
         try:
@@ -167,9 +227,9 @@ def VistaCrearDepartamento(page: ft.Page):
 
     # Selectores dinámicos y dependientes
     dropdown_empresa = crear_dropdown([], "1º Selecciona Cliente...", on_change=on_empresa_change)
-    dropdown_proyecto = crear_dropdown([], "2º Selecciona Proyecto...", disabled=True)
+    dropdown_proyecto = crear_dropdown([], "2º Selecciona Proyecto...", disabled=True, on_change=on_proyecto_change)
     
-    dropdown_responsable = crear_dropdown([], "Selecciona responsable...")
+    dropdown_responsable = crear_dropdown([], "Selecciona responsable...", disabled=True)
     dropdown_ubicacion = crear_dropdown(UBICACIONES, "Ubicación...")
     dropdown_estado = crear_dropdown(ESTADOS, "Estado...")
 

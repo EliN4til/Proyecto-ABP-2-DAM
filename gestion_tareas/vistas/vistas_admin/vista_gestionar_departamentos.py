@@ -1,5 +1,6 @@
 import flet as ft
 from modelos.crud import obtener_todos_departamentos, eliminar_departamento, actualizar_departamento, obtener_todos_proyectos
+from utilidades.validaciones import validar_email, validar_telefono, validar_dni
 
 def VistaGestionarDepartamentos(page: ft.Page):
     
@@ -179,6 +180,24 @@ def VistaGestionarDepartamentos(page: ft.Page):
                 page.snack_bar.open = True
                 page.update()
                 return
+            
+            # Validar formato de email
+            if input_email.value and input_email.value.strip():
+                es_valido, mensaje = validar_email(input_email.value)
+                if not es_valido:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ {mensaje}"), bgcolor="red")
+                    page.snack_bar.open = True
+                    page.update()
+                    return
+            
+            # Validar formato de teléfono
+            if input_tel.value and input_tel.value.strip():
+                es_valido, mensaje = validar_telefono(input_tel.value)
+                if not es_valido:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ {mensaje}"), bgcolor="red")
+                    page.snack_bar.open = True
+                    page.update()
+                    return
 
             try:
                 p_val = float(input_pres.value.replace(",", "."))
