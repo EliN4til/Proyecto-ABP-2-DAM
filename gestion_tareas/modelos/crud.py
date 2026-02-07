@@ -1,6 +1,14 @@
 from bson import ObjectId
 from datetime import datetime
-from modelos.init import db
+from modelos.init import (
+    db, 
+    EmpleadoModel, 
+    DepartamentoModel, 
+    ProyectoModel, 
+    TareaModel, 
+    RolModel
+)
+from pydantic import ValidationError
 
 
 # ========== FUNCIONES AUXILIARES ==========
@@ -35,17 +43,17 @@ def registrar_log(accion, modulo, descripcion, usuario="Sistema"):
 def crear_empleado(datos):
     #crea un empleado nuevo
     try:
-        #comprobamos que esten los campos obligatorios
-        campos = ["identificador", "nombre", "apellidos", "email", "contrasenya"]
-        for campo in campos:
-            if campo not in datos or not datos[campo]:
-                return (False, "falta el campo " + campo)
+        # Validacion con Pydantic
+        empleado = EmpleadoModel(**datos)
         
-        resultado = db.empleados.insert_one(datos)
+        # Insertar usando el dump del modelo
+        resultado = db.empleados.insert_one(empleado.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Usuarios", "usuario registrado: " + datos["nombre"])
         return (True, datos)
+    except ValidationError as e:
+        return (False, str(e))
     except Exception as e:
         return (False, str(e))
 
@@ -127,14 +135,16 @@ def eliminar_empleado(id_empleado):
 def crear_departamento(datos):
     #crea un departamento
     try:
-        if "nombre" not in datos or not datos["nombre"]:
-            return (False, "el nombre del departamento es obligatorio")
+        # Validacion con Pydantic
+        depto = DepartamentoModel(**datos)
         
-        resultado = db.departamentos.insert_one(datos)
+        resultado = db.departamentos.insert_one(depto.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Departamentos", f"departamento creado: {datos['nombre']}")
         return (True, datos)
+    except ValidationError as e:
+        return (False, str(e))
     except Exception as e:
         return (False, str(e))
 
@@ -273,14 +283,16 @@ def eliminar_equipo(id_equipo):
 def crear_proyecto(datos):
     #crea un proyecto nuevo
     try:
-        if "nombre" not in datos or not datos["nombre"]:
-            return (False, "el nombre es obligatorio")
+        # Validacion con Pydantic
+        proyecto = ProyectoModel(**datos)
         
-        resultado = db.proyectos.insert_one(datos)
+        resultado = db.proyectos.insert_one(proyecto.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Proyectos", f"proyecto iniciado: {datos['nombre']}")
         return (True, datos)
+    except ValidationError as e:
+        return (False, str(e))
     except Exception as e:
         return (False, str(e))
 
@@ -346,20 +358,16 @@ def eliminar_proyecto(id_proyecto):
 def crear_tarea(datos):
     #crea una tarea nueva
     try:
-        if "titulo" not in datos or not datos["titulo"]:
-            return (False, "el titulo es obligatorio")
+        # Validacion con Pydantic
+        tarea = TareaModel(**datos)
         
-        #ponemos valores por defecto si el usuario no los pone
-        if "estado" not in datos:
-            datos["estado"] = "pendiente"
-        if "fecha_inicio" not in datos:
-            datos["fecha_inicio"] = datetime.now()
-        
-        resultado = db.tareas.insert_one(datos)
+        resultado = db.tareas.insert_one(tarea.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Tareas", "tarea creada: " + datos["titulo"])
         return (True, datos)
+    except ValidationError as e:
+        return (False, str(e))
     except Exception as e:
         return (False, str(e))
 
@@ -503,14 +511,16 @@ def eliminar_tarea(id_tarea):
 def crear_rol(datos):
     #crea un rol nuevo
     try:
-        if "nombre" not in datos or not datos["nombre"]:
-            return (False, "el nombre es obligatorio")
+        # Validacion con Pydantic
+        rol = RolModel(**datos)
         
-        resultado = db.roles.insert_one(datos)
+        resultado = db.roles.insert_one(rol.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Roles", "rol creado: " + datos["nombre"])
         return (True, datos)
+    except ValidationError as e:
+        return (False, str(e))
     except Exception as e:
         return (False, str(e))
 

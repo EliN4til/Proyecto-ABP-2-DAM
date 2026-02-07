@@ -5,7 +5,7 @@ from datetime import datetime
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
-client = MongoClient("mongodb+srv://ayoze:9978@gestiontareas1.mgzio0n.mongodb.net/?appName=GestionTareas1")
+client = MongoClient("mongodb+srv://[USUARIO]:[CONTRASEÑA]@gestiontareas1.mgzio0n.mongodb.net/?appName=GestionTareas1")
 db = client["tareas_db"]
 
 class InfoDepartamento(BaseModel):
