@@ -882,6 +882,7 @@ def VistaGestionarProyectos(page):
         width=380,
         bgcolor="white",
         border_radius=25,
+        clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         shadow=ft.BoxShadow(
             spread_radius=0,
             blur_radius=15,
@@ -896,7 +897,7 @@ def VistaGestionarProyectos(page):
                     ft.Row([input_busqueda, btn_filtrar, btn_buscar], spacing=8),
                     texto_contador,
                     ft.Container(
-                        height=390,
+                        height=360,
                         content=lista_proyectos,
                     ),
                     ft.Row(

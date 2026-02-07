@@ -214,46 +214,53 @@ def VistaMisDatos(page):
     )
 
     # --- TARJETA BLANCA ---
+    #contenido scrollable dentro de la tarjeta
+    contenido_datos = ft.Column(
+        spacing=15,
+        scroll=ft.ScrollMode.AUTO,
+        controls=[
+            seccion_superior,
+            ft.Divider(height=1, color="#E0E0E0"),
+            crear_campo("Identificador", identificador),
+            crear_campo("Empresa", empresa),
+            crear_campo("Departamento", nombre_depto),
+            crear_campo("Equipo", equipo),
+            crear_campo("Cargo", cargo),
+            crear_campo("ID Empleado", id_empleado),
+            crear_campo("Correo corporativo", correo),
+            crear_campo("Teléfono", telefono),
+            crear_campo("Ubicación", ubicacion),
+            crear_campo("Fecha de Incorporación", fecha_incorporacion),
+        ]
+    )
+    
     tarjeta_blanca = ft.Container(
         width=340,
         bgcolor="white",
-        border_radius=20, 
-        shadow=ft.BoxShadow(spread_radius=1, blur_radius=20, color="#66000000"),
-        padding=ft.padding.only(left=20, right=20, top=50, bottom=25),
-        content=ft.Column(
-            spacing=15,
-            tight=True,
-            controls=[
-                seccion_superior,
-                ft.Divider(height=1, color="#E0E0E0"),
-                crear_campo("Identificador", identificador),
-                crear_campo("Empresa", empresa),
-                crear_campo("Departamento", nombre_depto),
-                crear_campo("Equipo", equipo),
-                crear_campo("Cargo", cargo),
-                crear_campo("ID Empleado", id_empleado),
-                crear_campo("Correo corporativo", correo),
-                crear_campo("Teléfono", telefono),
-                crear_campo("Ubicación", ubicacion),
-                crear_campo("Fecha de Incorporación", fecha_incorporacion),
-                
-                ft.Divider(height=10, color="transparent"),
-                
-                # BOTÓN CAMBIAR CONTRASEÑA
-                ft.Container(
-                    alignment=ft.Alignment(0, 0),
-                    content=ft.ElevatedButton(
-                        content=ft.Row([
-                            ft.Icon(ft.Icons.LOCK_OUTLINED, size=18, color="white"),
-                            ft.Text("Cambiar Contraseña", weight=ft.FontWeight.BOLD, color="white")
-                        ], alignment=ft.MainAxisAlignment.CENTER, tight=True),
-                        bgcolor=COLOR_BTN_PASS,
-                        height=45,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                        on_click=mostrar_dialog_cambio_pass
+        border_radius=25,
+        shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color="#40000000", offset=ft.Offset(0, 5)),
+        content=ft.Container(
+            padding=ft.padding.only(left=20, right=20, top=55, bottom=20),
+            content=ft.Column(
+                spacing=10,
+                controls=[
+                    ft.Container(height=420, content=contenido_datos),
+                    # BOTÓN CAMBIAR CONTRASEÑA
+                    ft.Container(
+                        alignment=ft.Alignment(0, 0),
+                        content=ft.ElevatedButton(
+                            content=ft.Row([
+                                ft.Icon(ft.Icons.LOCK_OUTLINED, size=18, color="white"),
+                                ft.Text("Cambiar Contraseña", weight=ft.FontWeight.BOLD, color="white")
+                            ], alignment=ft.MainAxisAlignment.CENTER, tight=True),
+                            bgcolor=COLOR_BTN_PASS,
+                            height=45,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                            on_click=mostrar_dialog_cambio_pass
+                        )
                     )
-                )
-            ]
+                ]
+            )
         )
     )
 
@@ -264,23 +271,13 @@ def VistaMisDatos(page):
         content=ft.Text("MIS DATOS", size=18, weight=ft.FontWeight.BOLD, color="white")
     )
 
-    # Contenedor con scroll
-    scrollable_content = ft.Column(
-        expand=True,
-        scroll=ft.ScrollMode.AUTO,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        controls=[
-            ft.Container(height=40), 
-            ft.Stack(
-                controls=[
-                    ft.Container(content=tarjeta_blanca, top=25),
-                    ft.Container(content=header_flotante, top=0, left=70)
-                ],
-                width=340,
-                height=860, 
-            ),
-            ft.Container(height=40),
-        ]
+    #contenedor superpuesto como en gestionar_trabajadores
+    contenido_superpuesto = ft.Container(
+        width=340, height=620,
+        content=ft.Stack([
+            ft.Container(content=tarjeta_blanca, top=30),
+            ft.Container(content=header_flotante, top=0, left=70)
+        ])
     )
 
     return ft.Container(
@@ -296,7 +293,7 @@ def VistaMisDatos(page):
                 ft.Container(
                     expand=True,
                     alignment=ft.Alignment(0, 0),
-                    content=scrollable_content
+                    content=contenido_superpuesto
                 ),
                 ft.Container(
                     content=btn_volver,

@@ -156,7 +156,7 @@ def VistaConfiguracion(page):
             ft.Container(expand=True, alignment=ft.Alignment(0, 0), content=ft.Stack([
                 ft.Container(content=tarjeta_blanca, top=30),
                 ft.Container(content=header_flotante, top=0, left=80)
-            ], width=380, height=550)),
+            ], width=380, height=620)),
             btn_volver
         ])
     )

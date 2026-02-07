@@ -480,13 +480,14 @@ def VistaGestionarTrabajadores(page):
 
     tarjeta_blanca = ft.Container(
         width=380, bgcolor="white", border_radius=25,
+        clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
             padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
             content=ft.Column([
                 ft.Row([input_busqueda, btn_buscar], spacing=8),
                 contador_trabajadores,
-                ft.Container(height=380, content=lista_trabajadores),
+                ft.Container(height=360, content=lista_trabajadores),
                 ft.Row([btn_crear, btn_roles], alignment="center", spacing=10),
             ], spacing=10)
         )
