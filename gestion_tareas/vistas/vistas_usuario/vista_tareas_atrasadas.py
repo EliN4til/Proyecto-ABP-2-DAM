@@ -1,6 +1,5 @@
 import flet as ft
-from modelos.crud import obtener_tareas_atrasadas, completar_tarea
-from modelos.consultas import filtrar_y_ordenar
+from modelos.crud import obtener_tareas_atrasadas, completar_tarea, filtrar_y_ordenar
 from datetime import datetime
 
 def VistaTareasAtrasadas(page: ft.Page):

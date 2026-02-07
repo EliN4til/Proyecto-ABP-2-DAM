@@ -1,6 +1,5 @@
 import flet as ft
-from modelos.crud import obtener_tareas_por_estado
-from modelos.consultas import filtrar_y_ordenar
+from modelos.crud import obtener_tareas_por_estado, filtrar_y_ordenar
 
 def VistaTareasRealizadas(page: ft.Page):
     
