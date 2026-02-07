@@ -9,7 +9,7 @@ from vistas.vistas_admin.vista_gestionar_trabajadores import VistaGestionarTraba
 from vistas.vistas_admin.vista_gestionar_roles import VistaGestionarRoles
 from vistas.vistas_admin.vista_crear_trabajador import VistaCrearTrabajador
 from vistas.vistas_admin.vista_crear_departamento import VistaCrearDepartamento
-from vistas.vistas_admin.vista_crear_equipo import VistaCrearEquipo
+
 from vistas.vistas_admin.vista_crear_proyectos import VistaCrearProyecto
 from vistas.vistas_admin.vista_gestionar_proyectos import VistaGestionarProyectos
 from vistas.vistas_admin.vista_gestionar_departamentos import VistaGestionarDepartamentos
@@ -67,10 +67,10 @@ def main(page: ft.Page):
         "/gestionar_roles": lambda: VistaGestionarRoles(page),
         "/crear_trabajador": lambda: VistaCrearTrabajador(page),
         "/crear_departamento": lambda: VistaCrearDepartamento(page),
-        "/crear_equipo": lambda: VistaCrearEquipo(page),
+
         "/crear_proyecto": lambda: VistaCrearProyecto(page),
         "/gestionar_proyectos": lambda: VistaGestionarProyectos(page),
-        "/gestionar_departamentos": lambda: VistaGestionarDepartamentos(page),  #archivo con guiones
+        "/gestionar_departamentos": lambda: VistaGestionarDepartamentos(page),
     }
     
     def cambiar_ruta(e):
