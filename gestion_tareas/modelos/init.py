@@ -22,6 +22,12 @@ class UsuarioResumen(BaseModel):
     nombre: str
     foto: Optional[str] = None
 
+class MiembroDepartamento(BaseModel):
+    id_usuario: PyObjectId
+    nombre: str
+    apellidos: str
+    identificador: str
+
 
 class EmpleadoModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
@@ -38,7 +44,7 @@ class EmpleadoModel(BaseModel):
     departamento: InfoDepartamento 
     cargo: str
     id_empleado: str
-    telefono: str
+    telefono: Optional[str] = None
     ubicacion: str
     fecha_incorporacion: datetime
     fecha_alta: Optional[datetime] = None
@@ -47,15 +53,18 @@ class EmpleadoModel(BaseModel):
 class DepartamentoModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     nombre: str
-    codigo: Optional[str] = None
+    codigo: str
     empresa: str
-    responsable: Optional[str] = None
+    responsable: str
     descripcion: Optional[str] = None
-    ubicacion: str
-    email: Optional[str] = None
-    telefono: Optional[str] = None
+    ubicacion: Optional[str] = None
+    email: str
+    telefono: str
     presupuesto: Optional[float] = None
     estado: Literal["ACTIVO", "INACTIVO"] = "ACTIVO"
+    miembros: List[MiembroDepartamento] = []
+    proyecto_asignado: Optional[str] = None
+    fecha_creacion: Optional[datetime] = None
 
 class EquipoModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
@@ -73,18 +82,20 @@ class EquipoModel(BaseModel):
 class ProyectoModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     nombre: str
-    codigo: Optional[str] = None
-    responsable: Optional[str] = None
+    codigo: str
+    responsable: str
     cliente: str
     presupuesto: str
     estado: Literal["ACTIVO", "PAUSADO"] = "ACTIVO"
     fecha_inicio: datetime
-    fecha_fin: datetime
+    fecha_fin: Optional[datetime] = None
+    descripcion: Optional[str] = ""
+    fecha_creacion: Optional[datetime] = None
 
 class TareaModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     titulo: str
-    requisitos: str
+    requisitos: Optional[str] = None
     estado: Literal["pendiente", "en_proceso", "completado"] = "pendiente"
     tags: List[str] = []
     icono: str
@@ -94,17 +105,18 @@ class TareaModel(BaseModel):
     asignados: List[UsuarioResumen] = []
     compartido_por: Optional[str] = None
     atrasado: bool = False
-    fecha_inicio: Optional[datetime] = None
+    fecha_inicio: datetime
     fecha_limite: Optional[datetime] = None
     fecha_completado: Optional[datetime] = None
+    fecha_modificacion: Optional[datetime] = None
 
 class RolModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     nombre: str
     codigo: str
-    descripcion: str
+    descripcion: Optional[str] = None
     usuarios: int = 0
-    color: str = "#4682B4"
+    color: Optional[str] = "#4682B4"
     permisos: dict = {}
 
 def cargar_datos_prueba():
@@ -150,7 +162,8 @@ def cargar_datos_prueba():
         icono="📋",
         id_proyecto=str(resumen_proyecto.inserted_id),
         prioridad="alta",
-        asignados=[resumen_laura]
+        asignados=[resumen_laura],
+        fecha_inicio=datetime.now()
     )
     db.tareas.insert_one(tarea.model_dump(by_alias=True, exclude=["id"]))
     
