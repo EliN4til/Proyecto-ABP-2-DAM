@@ -2,7 +2,7 @@ import flet as ft
 from datetime import datetime
 from modelos.crud import obtener_todas_tareas, obtener_todos_empleados, obtener_todos_equipos, obtener_todos_departamentos
 
-def VistaEstadisticas(page: ft.Page):
+def VistaEstadisticas(page):
     # configuracion de colores del tema
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

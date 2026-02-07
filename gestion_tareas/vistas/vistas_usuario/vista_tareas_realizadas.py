@@ -1,7 +1,7 @@
 import flet as ft
 from modelos.crud import obtener_tareas_por_estado, filtrar_y_ordenar
 
-def VistaTareasRealizadas(page: ft.Page):
+def VistaTareasRealizadas(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -667,7 +667,7 @@ def VistaTareasRealizadas(page: ft.Page):
     )
 
 
-def main(page: ft.Page):
+def main(page):
     page.title = "App Tareas - Tareas Realizadas"
     
     page.window.width = 1200

@@ -1,6 +1,6 @@
 import flet as ft
 
-def VistaDetalleTarea(page: ft.Page):
+def VistaDetalleTarea(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -153,7 +153,7 @@ def VistaDetalleTarea(page: ft.Page):
     )
 
     #lista de requerimientos
-    def crear_requisito(texto: str):
+    def crear_requisito(texto):
         return ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.START,
             controls=[
@@ -292,7 +292,7 @@ def VistaDetalleTarea(page: ft.Page):
     )
 
 
-def main(page: ft.Page):
+def main(page):
     page.title = "App Tareas - Detalle Tarea"
     
     page.window.width = 1200

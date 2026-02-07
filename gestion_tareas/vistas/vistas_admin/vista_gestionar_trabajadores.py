@@ -1,7 +1,7 @@
 import flet as ft
 from modelos.crud import obtener_todos_empleados, eliminar_empleado, actualizar_empleado, obtener_todos_proyectos, obtener_todos_departamentos
 
-def VistaGestionarTrabajadores(page: ft.Page):
+def VistaGestionarTrabajadores(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

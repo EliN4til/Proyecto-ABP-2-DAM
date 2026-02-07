@@ -1,7 +1,7 @@
 import flet as ft
 from modelos.crud import obtener_todos_roles, crear_rol, actualizar_rol, eliminar_rol
 
-def VistaGestionarRoles(page: ft.Page):
+def VistaGestionarRoles(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -60,7 +60,7 @@ def VistaGestionarRoles(page: ft.Page):
     def mostrar_detalle_rol(rol):
         """Muestra el diálogo con el detalle del rol y sus permisos reales"""
         
-        def crear_fila_permisos(modulo: str, permisos_activos: list):
+        def crear_fila_permisos(modulo, permisos_activos: list):
             """Crea una fila mostrando los permisos de un módulo"""
             permisos_chips = []
             for accion in ACCIONES:
@@ -146,7 +146,7 @@ def VistaGestionarRoles(page: ft.Page):
         # Diccionario para rastrear los checkboxes de permisos
         permisos_checkboxes = {}
         
-        def crear_seccion_modulo(modulo: str):
+        def crear_seccion_modulo(modulo):
             # Obtenemos permisos actuales del rol para este módulo
             permisos_actuales = rol.get("permisos", {}).get(modulo, [])
             checkboxes = []
@@ -292,7 +292,7 @@ def VistaGestionarRoles(page: ft.Page):
         
         permisos_checkboxes = {}
         
-        def crear_seccion_modulo(modulo: str):
+        def crear_seccion_modulo(modulo):
             checkboxes = []
             for accion in ACCIONES:
                 cb = ft.Checkbox(
@@ -578,7 +578,7 @@ def VistaGestionarRoles(page: ft.Page):
 
 
 #para probar directamente
-def main(page: ft.Page):
+def main(page):
     page.title = "App Tareas - Gestionar Roles"
     
     page.window.width = 1200

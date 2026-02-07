@@ -5,7 +5,7 @@ import os
 import json
 import time
 
-def VistaLogin(page: ft.Page):
+def VistaLogin(page):
     # configuracion de colores del tema
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

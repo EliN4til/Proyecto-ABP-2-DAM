@@ -2,7 +2,7 @@ import flet as ft
 from datetime import datetime
 from modelos.crud import crear_proyecto, crear_departamento, obtener_todos_empleados
 
-def VistaCrearProyecto(page: ft.Page):
+def VistaCrearProyecto(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -460,7 +460,7 @@ def VistaCrearProyecto(page: ft.Page):
 
     # --- HELPERS DE INTERFAZ ---
 
-    def crear_label(texto: str, obligatorio: bool = False):
+    def crear_label(texto, obligatorio: bool = False):
         if obligatorio:
             return ft.Row([
                 ft.Text(texto, size=11, color=COLOR_LABEL, weight=ft.FontWeight.W_500),
@@ -733,7 +733,7 @@ def VistaCrearProyecto(page: ft.Page):
     )
 
 # Para probar directamente
-def main(page: ft.Page):
+def main(page):
     page.title = "App Tareas - Crear Proyecto"
     page.window.width = 420
     page.window.height = 800

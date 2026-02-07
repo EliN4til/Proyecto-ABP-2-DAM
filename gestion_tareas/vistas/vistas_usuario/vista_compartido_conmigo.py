@@ -3,7 +3,7 @@ from modelos.crud import obtener_tareas_por_usuario, obtener_todos_proyectos, fi
 from servicios.sesion_service import obtener_id_usuario
 from datetime import datetime
 
-def VistaCompartidoConmigo(page: ft.Page):
+def VistaCompartidoConmigo(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -694,7 +694,7 @@ def VistaCompartidoConmigo(page: ft.Page):
     )
 
 
-def main(page: ft.Page):
+def main(page):
     page.title = "App Tareas - Compartido Conmigo"
     
     page.window.width = 1200

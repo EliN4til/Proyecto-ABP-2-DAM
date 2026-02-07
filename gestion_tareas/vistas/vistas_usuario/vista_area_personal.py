@@ -1,7 +1,7 @@
 import flet as ft
 from servicios.sesion_service import establecer_contexto
 
-def VistaAreaPersonal(page: ft.Page):
+def VistaAreaPersonal(page):
     #marcamos que estamos en el area personal
     establecer_contexto("personal")
     
@@ -12,7 +12,7 @@ def VistaAreaPersonal(page: ft.Page):
     COLOR_BOTON_BG = "#EEF2FF"
     COLOR_BOTON_BORDE = "#D0D8E8"
 
-    def crear_boton_menu(emoji: str, texto: str, on_click=None):
+    def crear_boton_menu(emoji, texto, on_click=None):
         return ft.Container(
             width=95,
             height=95,

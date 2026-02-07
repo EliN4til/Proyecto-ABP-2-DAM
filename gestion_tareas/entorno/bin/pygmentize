@@ -1,10 +1,8 @@
 #!/bin/sh
-'''exec' "/home/joel/Documentos/AED/Proyecto ABP/Proyecto-ABP-2-DAM/gestion_tareas/entorno/bin/python3.11" "$0" "$@"
+'''exec' "/home/joel/Documentos/Projectos Unity/DAM SURVIVORS 2025-11-23_18-19-08/Proyecto-ABP-2-DAM/gestion_tareas/entorno/bin/python" "$0" "$@"
 ' '''
-# -*- coding: utf-8 -*-
-import re
 import sys
 from pygments.cmdline import main
 if __name__ == '__main__':
-    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
     sys.exit(main())

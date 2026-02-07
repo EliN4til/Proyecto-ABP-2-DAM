@@ -2,7 +2,7 @@ import flet as ft
 from modelos.crud import obtener_todos_departamentos, eliminar_departamento, actualizar_departamento, obtener_todos_proyectos
 from utilidades.validaciones import validar_email, validar_telefono, validar_dni
 
-def VistaGestionarDepartamentos(page: ft.Page):
+def VistaGestionarDepartamentos(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -430,7 +430,7 @@ def VistaGestionarDepartamentos(page: ft.Page):
     )
 
 # Para probar directamente
-def main(page: ft.Page):
+def main(page):
     page.title = "App Tareas - Gestionar Departamentos"
     page.window.width = 1200
     page.window.height = 800

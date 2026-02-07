@@ -2,7 +2,7 @@ import flet as ft
 import os
 import json
 
-def VistaConfiguracion(page: ft.Page):
+def VistaConfiguracion(page):
     #configuracion de colores del tema
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

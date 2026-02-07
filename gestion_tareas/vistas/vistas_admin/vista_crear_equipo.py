@@ -1,6 +1,6 @@
 import flet as ft
 
-def VistaCrearEquipo(page: ft.Page):
+def VistaCrearEquipo(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -56,7 +56,7 @@ def VistaCrearEquipo(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    def crear_campo_texto(hint: str, expand: bool = False, multiline: bool = False, min_lines: int = 1):
+    def crear_campo_texto(hint, expand: bool = False, multiline: bool = False, min_lines: int = 1):
         """Crea un campo de texto estándar"""
         return ft.TextField(
             hint_text=hint,
@@ -72,7 +72,7 @@ def VistaCrearEquipo(page: ft.Page):
             content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
         )
 
-    def crear_dropdown(opciones: list, hint: str):
+    def crear_dropdown(opciones, hint: str):
         """Crea un dropdown con las opciones dadas"""
         return ft.DropdownM2(
             hint_text=hint,
@@ -88,7 +88,7 @@ def VistaCrearEquipo(page: ft.Page):
             options=[ft.dropdownm2.Option(opcion) for opcion in opciones],
         )
 
-    def crear_label(texto: str):
+    def crear_label(texto):
         """Crea una etiqueta de campo"""
         return ft.Text(texto, size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500)
 
@@ -368,7 +368,7 @@ def VistaCrearEquipo(page: ft.Page):
 
 
 #para probar directamente
-def main(page: ft.Page):
+def main(page):
     page.title = "App Tareas - Crear Equipo"
     
     page.window.width = 1200

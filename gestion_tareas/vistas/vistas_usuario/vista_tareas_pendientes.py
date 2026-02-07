@@ -3,7 +3,7 @@ from datetime import datetime
 from modelos.crud import obtener_tareas_por_estado, eliminar_tarea, completar_tarea, actualizar_tarea, obtener_todos_proyectos, obtener_todos_empleados, obtener_todos_departamentos, obtener_tareas_pendientes_usuario, filtrar_y_ordenar
 from servicios.sesion_service import obtener_usuario
 
-def VistaTareasPendientes(page: ft.Page):
+def VistaTareasPendientes(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

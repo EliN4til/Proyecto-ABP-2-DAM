@@ -2,7 +2,7 @@ import flet as ft
 from datetime import datetime
 from modelos.init import db
 
-def VistaAuditoria(page: ft.Page):
+def VistaAuditoria(page):
     # configuracion de colores
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -105,7 +105,7 @@ def VistaAuditoria(page: ft.Page):
     def btn_buscar_click(e):
         actualizar_lista_ui()
 
-    def get_color_accion(accion: str) -> str:
+    def get_color_accion(accion):
         colores = {
             "Crear": COLOR_CREAR,
             "Editar": COLOR_EDITAR,
@@ -115,7 +115,7 @@ def VistaAuditoria(page: ft.Page):
         }
         return colores.get(accion, COLOR_LABEL)
 
-    def get_icono_accion(accion: str) -> str:
+    def get_icono_accion(accion):
         iconos = {
             "Crear": "➕",
             "Editar": "✏️",

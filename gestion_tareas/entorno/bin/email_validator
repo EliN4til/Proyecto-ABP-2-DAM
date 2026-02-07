@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/home/joel/Documentos/AED/Proyecto ABP/Proyecto-ABP-2-DAM/gestion_tareas/entorno/bin/python3.11" "$0" "$@"
+'''exec' "/home/joel/Documentos/Projectos Unity/DAM SURVIVORS 2025-11-23_18-19-08/Proyecto-ABP-2-DAM/gestion_tareas/entorno/bin/python" "$0" "$@"
 ' '''
 import sys
 from email_validator.__main__ import main

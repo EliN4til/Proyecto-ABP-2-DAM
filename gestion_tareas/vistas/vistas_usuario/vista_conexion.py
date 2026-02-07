@@ -3,7 +3,7 @@ from servicios.db_manager import realizar_conexion
 import os
 import json
 
-def VistaConexion(page: ft.Page):
+def VistaConexion(page):
     #configuracion de colores
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

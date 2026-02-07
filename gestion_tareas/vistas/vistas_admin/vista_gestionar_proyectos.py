@@ -2,7 +2,7 @@ import flet as ft
 from modelos.crud import obtener_todos_proyectos, eliminar_proyecto, actualizar_proyecto, obtener_todos_empleados, obtener_todos_departamentos, crear_departamento, actualizar_departamento, eliminar_departamento
 from datetime import datetime
 
-def VistaGestionarProyectos(page: ft.Page):
+def VistaGestionarProyectos(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

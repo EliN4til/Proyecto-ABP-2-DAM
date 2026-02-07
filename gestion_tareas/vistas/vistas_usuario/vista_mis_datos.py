@@ -2,7 +2,7 @@ import flet as ft
 from servicios.sesion_service import obtener_usuario, obtener_contexto
 from modelos.crud import cambiar_contrasenya
 
-def VistaMisDatos(page: ft.Page):
+def VistaMisDatos(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -161,7 +161,7 @@ def VistaMisDatos(page: ft.Page):
 
     # --- ELEMENTOS DE UI ---
 
-    def crear_campo(label: str, valor: str):
+    def crear_campo(label, valor: str):
         return ft.Column(
             spacing=2,
             controls=[

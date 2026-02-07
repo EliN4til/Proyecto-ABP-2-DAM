@@ -2,7 +2,7 @@ import flet as ft
 from modelos.crud import obtener_tareas_atrasadas, completar_tarea, filtrar_y_ordenar
 from datetime import datetime
 
-def VistaTareasAtrasadas(page: ft.Page):
+def VistaTareasAtrasadas(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

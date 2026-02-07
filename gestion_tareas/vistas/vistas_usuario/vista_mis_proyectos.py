@@ -3,7 +3,7 @@ from modelos.crud import obtener_todos_proyectos, obtener_tareas_por_usuario, ob
 from servicios.sesion_service import obtener_id_usuario, obtener_usuario
 from datetime import datetime
 
-def VistaMisProyectos(page: ft.Page):
+def VistaMisProyectos(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      

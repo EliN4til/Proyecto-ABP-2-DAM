@@ -3,7 +3,7 @@ from datetime import datetime
 from modelos.crud import crear_tarea, obtener_todos_proyectos, obtener_todos_empleados, obtener_todos_departamentos
 from servicios.sesion_service import obtener_usuario  # AÑADIDO: importación del servicio de sesión
 
-def VistaNuevaTarea(page: ft.Page):
+def VistaNuevaTarea(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -167,7 +167,7 @@ def VistaNuevaTarea(page: ft.Page):
         
         page.update()
 
-    def mostrar_dialog_campos_faltantes(campos_faltantes: list):
+    def mostrar_dialog_campos_faltantes(campos_faltantes):
         """Muestra popup con los campos obligatorios que faltan"""
         lista_campos = ft.Column(
             controls=[

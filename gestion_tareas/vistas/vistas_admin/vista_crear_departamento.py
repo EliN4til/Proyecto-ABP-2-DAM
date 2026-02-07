@@ -2,7 +2,7 @@ import flet as ft
 from modelos.crud import crear_departamento, obtener_todos_proyectos, obtener_todos_departamentos, obtener_todos_empleados
 from utilidades.validaciones import validar_email, validar_telefono, validar_dni
 
-def VistaCrearDepartamento(page: ft.Page):
+def VistaCrearDepartamento(page):
     
     COLOR_FONDO_TOP = "#152060"      
     COLOR_FONDO_BOT = "#4FC3F7"      
@@ -177,7 +177,7 @@ def VistaCrearDepartamento(page: ft.Page):
 
     # --- HELPERS DE INTERFAZ ---
 
-    def crear_campo_texto(hint: str, multiline=False, min_lines=1):
+    def crear_campo_texto(hint, multiline=False, min_lines=1):
         return ft.TextField(
             hint_text=hint,
             hint_style=ft.TextStyle(size=11, color="#999999"),
@@ -190,7 +190,7 @@ def VistaCrearDepartamento(page: ft.Page):
             content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
         )
 
-    def crear_dropdown(opciones: list, hint: str, on_change=None, disabled=False):
+    def crear_dropdown(opciones, hint, on_change=None, disabled=False):
         return ft.DropdownM2(
             hint_text=hint,
             hint_style=ft.TextStyle(size=11, color="#999999"),
@@ -206,7 +206,7 @@ def VistaCrearDepartamento(page: ft.Page):
             on_change=on_change
         )
 
-    def crear_label(texto: str):
+    def crear_label(texto):
         return ft.Text(texto, size=12, color=COLOR_LABEL, weight=ft.FontWeight.W_500)
 
     # Botón volver
@@ -332,7 +332,7 @@ def VistaCrearDepartamento(page: ft.Page):
 
 
 #para probar directamente
-def main(page: ft.Page):
+def main(page):
     page.title = "App Tareas - Crear Departamento"
     page.window.width = 420
     page.window.height = 800
