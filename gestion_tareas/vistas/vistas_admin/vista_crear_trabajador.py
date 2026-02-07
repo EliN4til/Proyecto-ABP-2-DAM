@@ -1,6 +1,6 @@
 import flet as ft
 from datetime import datetime
-from modelos.crud import crear_empleado, obtener_todos_proyectos, obtener_todos_departamentos, obtener_todos_equipos
+from modelos.crud import crear_empleado, obtener_todos_proyectos, obtener_todos_departamentos
 
 def VistaCrearTrabajador(page):
     
@@ -15,7 +15,7 @@ def VistaCrearTrabajador(page):
     # Listas maestras (datos brutos de la BD)
     proyectos_maestros = []
     departamentos_maestros = []
-    equipos_maestros = []
+
     empresas_dinamicas = []
 
     # Opciones estáticas
@@ -35,9 +35,6 @@ def VistaCrearTrabajador(page):
         
         exito_d, deptos = obtener_todos_departamentos()
         if exito_d: departamentos_maestros = deptos
-
-        exito_e, eqs = obtener_todos_equipos()
-        if exito_e: equipos_maestros = eqs
 
         # 2. Extraer empresas únicas (de Departamentos y Proyectos)
         set_empresas = set()
@@ -78,12 +75,6 @@ def VistaCrearTrabajador(page):
         dropdown_departamento.options = [ft.dropdownm2.Option(d) for d in deptos_filtrados]
         dropdown_departamento.disabled = False
         dropdown_departamento.value = None
-
-        # 3. Filtrar Equipos (donde la empresa coincide)
-        eqs_filtrados = [eq["nombre"] for eq in equipos_maestros if eq.get("empresa") == empresa_sel]
-        dropdown_equipo.options = [ft.dropdownm2.Option(eq) for eq in eqs_filtrados]
-        dropdown_equipo.disabled = False
-        dropdown_equipo.value = None
         
         page.update()
 
@@ -100,6 +91,12 @@ def VistaCrearTrabajador(page):
             page.update()
             return
 
+        if not input_identificador.value:
+            page.snack_bar = ft.SnackBar(ft.Text("❌ El DNI/NIE es obligatorio"), bgcolor="red")
+            page.snack_bar.open = True
+            page.update()
+            return
+
         # Buscamos datos del departamento seleccionado para el modelo
         depto_info = {"nombre": dropdown_departamento.value if dropdown_departamento.value else "General", "ubicacion": "N/A"}
         for d in departamentos_maestros:
@@ -108,14 +105,14 @@ def VistaCrearTrabajador(page):
                 break
 
         nuevo_trabajador = {
-            "identificador": input_identificador.value if input_identificador.value else "N/A",
+            "identificador": input_identificador.value,
             "nombre": input_nombre.value,
             "apellidos": input_apellidos.value,
             "email": input_correo.value,
             "contrasenya": "1234",
             "estado": dropdown_estado.value if dropdown_estado.value else "ACTIVO",
             "empresa": dropdown_empresa.value,
-            "equipo": dropdown_equipo.value if dropdown_equipo.value else "Sin equipo",
+            "equipo": input_equipo.value if input_equipo.value else "Sin equipo",
             "proyecto": dropdown_proyecto.value if dropdown_proyecto.value else "Sin proyecto",
             "departamento": depto_info,
             "cargo": dropdown_cargo.value if dropdown_cargo.value else "Empleado",
@@ -190,7 +187,7 @@ def VistaCrearTrabajador(page):
     dropdown_empresa = crear_dropdown([], "1º Selecciona Empresa...", on_change=on_empresa_change)
     dropdown_proyecto = crear_dropdown([], "2º Proyecto (Selecciona empresa)", disabled=True)
     dropdown_departamento = crear_dropdown([], "3º Departamento (Selecciona empresa)", disabled=True)
-    dropdown_equipo = crear_dropdown([], "4º Equipo (Selecciona empresa)", disabled=True)
+    input_equipo = crear_campo_texto("Nombre del equipo")
     
     dropdown_cargo = crear_dropdown(CARGOS, "Selecciona cargo...")
     dropdown_ubicacion = crear_dropdown(UBICACIONES, "Ubicación física...")
@@ -216,12 +213,12 @@ def VistaCrearTrabajador(page):
             ], spacing=10),
 
             ft.Row([
-                ft.Column([crear_label("Equipo"), dropdown_equipo], spacing=3, expand=True),
+                ft.Column([crear_label("Equipo"), input_equipo], spacing=3, expand=True),
                 ft.Column([crear_label("Cargo"), dropdown_cargo], spacing=3, expand=True),
             ], spacing=10),
 
             ft.Row([
-                ft.Column([crear_label("Identificador (DNI)"), input_identificador], spacing=3, expand=True),
+                ft.Column([crear_label("Identificador (DNI) *"), input_identificador], spacing=3, expand=True),
                 ft.Column([crear_label("ID Interno"), input_id_empleado], spacing=3, expand=True),
             ], spacing=10),
 

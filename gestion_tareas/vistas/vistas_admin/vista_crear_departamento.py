@@ -120,6 +120,18 @@ def VistaCrearDepartamento(page):
             page.update()
             return
         
+        if not input_email.value:
+            page.snack_bar = ft.SnackBar(ft.Text("❌ El email es obligatorio"), bgcolor="red")
+            page.snack_bar.open = True
+            page.update()
+            return
+
+        if not input_telefono.value:
+            page.snack_bar = ft.SnackBar(ft.Text("❌ El teléfono es obligatorio"), bgcolor="red")
+            page.snack_bar.open = True
+            page.update()
+            return
+        
         # Validar formato de email
         if input_email.value and input_email.value.strip():
             es_valido, mensaje = validar_email(input_email.value)

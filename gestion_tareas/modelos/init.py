@@ -66,18 +66,6 @@ class DepartamentoModel(BaseModel):
     proyecto_asignado: Optional[str] = None
     fecha_creacion: Optional[datetime] = None
 
-class EquipoModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    nombre: str
-    codigo: Optional[str] = None
-    empresa: str
-    departamento: str
-    lider: Optional[str] = None
-    miembros: List[str] = []
-    descripcion: Optional[str] = None
-    metodologia: Optional[str] = None
-    capacidad: Optional[int] = None
-    estado: bool = False
 
 class ProyectoModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
