@@ -106,11 +106,11 @@ def VistaCrearDepartamento(page):
         
         page.update()
 
-    def btn_volver_click(e):
+    async def btn_volver_click(e):
         """Vuelve a la gestión de departamentos"""
-        page.go("/gestionar_departamentos")
+        await page.push_route("/gestionar_departamentos")
 
-    def btn_crear_click(e):
+    async def btn_crear_click(e):
         """Recopila datos y guarda el departamento real en MongoDB"""
         
         # Validaciones obligatorias
@@ -174,16 +174,49 @@ def VistaCrearDepartamento(page):
             "estado": dropdown_estado.value if dropdown_estado.value else "ACTIVO"
         }
 
+        # Limpiar errores previos
+        input_nombre.error_text = None
+        input_codigo.error_text = None
+        input_email.error_text = None
+        input_telefono.error_text = None
+        input_presupuesto.error_text = None
+        dropdown_empresa.error_text = None
+        page.update()
+
         # Guardar en BD
         exito, resultado = crear_departamento(datos_depto)
 
         if exito:
             page.snack_bar = ft.SnackBar(ft.Text(f"✅ Departamento '{input_nombre.value}' creado"), bgcolor="green")
             page.snack_bar.open = True
-            page.go("/gestionar_departamentos")
+            await page.push_route("/gestionar_departamentos")
         else:
-            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
-            page.snack_bar.open = True
+            if isinstance(resultado, list):
+                # Errores de validación Pydantic
+                errores_texto = []
+                for err in resultado:
+                    campo = err["loc"][0]
+                    msg = err["msg"]
+                    
+                    if campo == "nombre": input_nombre.error_text = msg
+                    elif campo == "codigo": input_codigo.error_text = msg
+                    elif campo == "email": input_email.error_text = msg
+                    elif campo == "telefono": input_telefono.error_text = msg
+                    elif campo == "presupuesto": input_presupuesto.error_text = msg
+                    elif campo == "empresa": dropdown_empresa.error_text = msg
+                    elif campo == "responsable": dropdown_responsable.error_text = msg
+                    else:
+                        errores_texto.append(f"{campo}: {msg}")
+                
+                page.update()
+                
+                if errores_texto:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {', '.join(errores_texto)}"), bgcolor="red")
+                    page.snack_bar.open = True
+            else:
+                # Error general
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
+                page.snack_bar.open = True
         
         page.update()
 
@@ -199,7 +232,7 @@ def VistaCrearDepartamento(page):
             height=40 if not multiline else None,
             multiline=multiline,
             min_lines=min_lines if multiline else None,
-            content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+            content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         )
 
     def crear_dropdown(opciones, hint, on_change=None, disabled=False):
@@ -213,7 +246,7 @@ def VistaCrearDepartamento(page):
             height=40,
             expand=True,
             disabled=disabled,
-            content_padding=ft.padding.only(left=10, right=10),
+            content_padding=ft.Padding(left=10, right=10),
             options=[ft.dropdownm2.Option(op) for op in opciones],
             on_change=on_change
         )
@@ -294,7 +327,7 @@ def VistaCrearDepartamento(page):
         border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=20, right=20, top=55, bottom=25),
+            padding=ft.Padding(left=20, right=20, top=55, bottom=25),
             content=ft.Column(
                 spacing=15,
                 tight=True,

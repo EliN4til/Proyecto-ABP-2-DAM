@@ -197,8 +197,8 @@ def VistaTareasPendientes(page):
         else:
             return COLOR_PRIORIDAD_BAJA
 
-    def btn_volver_click(e):
-        page.go("/area_personal")
+    async def btn_volver_click(e):
+        await page.push_route("/area_personal")
 
     def btn_buscar_click(e):
         #aplicamos el filtro de búsqueda
@@ -207,8 +207,8 @@ def VistaTareasPendientes(page):
         page.snack_bar.open = True
         page.update()
 
-    def btn_anadir_click(e):
-        page.go("/nueva_tarea")
+    async def btn_anadir_click(e):
+        await page.push_route("/nueva_tarea")
 
     # ============================================
     # DIÁLOGO DE EDICIÓN DE TAREA
@@ -247,7 +247,7 @@ def VistaTareasPendientes(page):
             border_color=COLOR_BORDE,
             text_style=ft.TextStyle(size=12, color="black"),
             height=40,
-            content_padding=ft.padding.symmetric(horizontal=10, vertical=8),
+            content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         )
         
         input_requisitos_edit = ft.TextField(
@@ -258,7 +258,7 @@ def VistaTareasPendientes(page):
             multiline=True,
             min_lines=3,
             max_lines=5,
-            content_padding=ft.padding.all(10),
+            content_padding=10,
         )
         
         # Textos de visualización
@@ -356,7 +356,7 @@ def VistaTareasPendientes(page):
             height=40,
             text_style=ft.TextStyle(size=11, color="black"),
             border_color=COLOR_BORDE,
-            content_padding=ft.padding.only(left=10),
+            content_padding=ft.Padding(left=10),
             on_change=on_prioridad_change,
         )
         
@@ -591,9 +591,9 @@ def VistaTareasPendientes(page):
                             ], spacing=2),
                             ft.Container(
                                 content=txt_proyecto_edit,
-                                border=ft.border.all(1, COLOR_BORDE),
+                                border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                                 border_radius=5,
-                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                padding=ft.Padding(left=10, right=10, top=8, bottom=8),
                                 height=38,
                                 on_click=abrir_sel_proyecto_edit,
                                 ink=True,
@@ -603,9 +603,9 @@ def VistaTareasPendientes(page):
                             ft.Text("Departamento", size=10, color=COLOR_LABEL, weight="bold"),
                             ft.Container(
                                 content=txt_departamento_edit,
-                                border=ft.border.all(1, COLOR_BORDE),
+                                border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                                 border_radius=5,
-                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                padding=ft.Padding(left=10, right=10, top=8, bottom=8),
                                 height=38,
                                 on_click=abrir_sel_departamento_edit,
                                 ink=True,
@@ -618,9 +618,9 @@ def VistaTareasPendientes(page):
                         ft.Text("Asignar a", size=10, color=COLOR_LABEL, weight="bold"),
                         ft.Container(
                             content=txt_personas_edit,
-                            border=ft.border.all(1, COLOR_BORDE),
+                            border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                             border_radius=5,
-                            padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                            padding=ft.Padding(left=10, right=10, top=8, bottom=8),
                             height=38,
                             on_click=abrir_sel_personas_edit,
                             ink=True,
@@ -633,9 +633,9 @@ def VistaTareasPendientes(page):
                             ft.Text("Tags", size=10, color=COLOR_LABEL, weight="bold"),
                             ft.Container(
                                 content=txt_tags_edit,
-                                border=ft.border.all(1, COLOR_BORDE),
+                                border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                                 border_radius=5,
-                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                padding=ft.Padding(left=10, right=10, top=8, bottom=8),
                                 height=38,
                                 width=120,
                                 on_click=abrir_sel_tags_edit,
@@ -654,9 +654,9 @@ def VistaTareasPendientes(page):
                             ft.Text("Fecha Inicio", size=10, color=COLOR_LABEL, weight="bold"),
                             ft.Container(
                                 content=txt_fecha_inicio,
-                                border=ft.border.all(1, COLOR_BORDE),
+                                border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                                 border_radius=5,
-                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                padding=ft.Padding(left=10, right=10, top=8, bottom=8),
                                 height=38,
                                 on_click=lambda _: setattr(dp_inicio, "open", True) or page.update(),
                                 ink=True,
@@ -666,9 +666,9 @@ def VistaTareasPendientes(page):
                             ft.Text("Fecha Límite", size=10, color=COLOR_LABEL, weight="bold"),
                             ft.Container(
                                 content=txt_fecha_fin,
-                                border=ft.border.all(1, COLOR_BORDE),
+                                border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                                 border_radius=5,
-                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                padding=ft.Padding(left=10, right=10, top=8, bottom=8),
                                 height=38,
                                 on_click=lambda _: setattr(dp_fin, "open", True) or page.update(),
                                 ink=True,
@@ -701,7 +701,7 @@ def VistaTareasPendientes(page):
             content=contenido_edicion,
             actions=[
                 ft.TextButton("Cancelar", on_click=cancelar_edicion),
-                ft.ElevatedButton(
+                ft.FilledButton(
                     "Guardar",
                     on_click=guardar_edicion,
                     bgcolor=COLOR_EDITAR,
@@ -755,7 +755,7 @@ def VistaTareasPendientes(page):
                                 ft.Container(
                                     bgcolor=get_color_prioridad(tarea["prioridad"]),
                                     border_radius=10,
-                                    padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                                    padding=ft.Padding(left=8, right=8, top=2, bottom=2),
                                     content=ft.Text(tarea["prioridad"], size=10, color="white", weight=ft.FontWeight.BOLD),
                                 ),
                                 ft.Row(
@@ -985,8 +985,8 @@ def VistaTareasPendientes(page):
         return ft.Container(
             bgcolor="white",
             border_radius=10,
-            padding=ft.padding.all(12),
-            margin=ft.margin.only(bottom=10),
+            padding=12,
+            margin=ft.Margin(bottom=10),
             shadow=ft.BoxShadow(
                 spread_radius=0,
                 blur_radius=5,
@@ -1016,7 +1016,7 @@ def VistaTareasPendientes(page):
                                 content=ft.Icon(ft.Icons.EDIT, size=16, color=COLOR_EDITAR),
                                 on_click=lambda e, t=tarea: mostrar_dialog_editar(t),
                                 ink=True,
-                                padding=ft.padding.all(6),
+                                padding=6,
                                 border_radius=5,
                                 tooltip="Editar tarea",
                             ),
@@ -1025,7 +1025,7 @@ def VistaTareasPendientes(page):
                                 content=ft.Text("X", size=14, color=COLOR_ELIMINAR, weight=ft.FontWeight.BOLD),
                                 on_click=lambda e, t=tarea: mostrar_confirmar_eliminar(t),
                                 ink=True,
-                                padding=ft.padding.all(6),
+                                padding=6,
                                 border_radius=5,
                                 tooltip="Eliminar tarea",
                             ),
@@ -1039,7 +1039,7 @@ def VistaTareasPendientes(page):
                             ft.Container(
                                 bgcolor=get_color_prioridad(tarea["prioridad"]),
                                 border_radius=8,
-                                padding=ft.padding.only(left=6, right=6, top=1, bottom=1),
+                                padding=ft.Padding(left=6, right=6, top=1, bottom=1),
                                 content=ft.Text(tarea["prioridad"], size=9, color="white", weight=ft.FontWeight.BOLD),
                             ),
                         ]
@@ -1073,7 +1073,7 @@ def VistaTareasPendientes(page):
                                 on_click=lambda e, t=tarea: mostrar_detalle_tarea(t),
                                 style=ft.ButtonStyle(color=COLOR_LABEL, text_style=ft.TextStyle(size=10))
                             ),
-                            ft.ElevatedButton(
+                            ft.FilledButton(
                                 "Marcar completada",
                                 icon=ft.Icons.CHECK_CIRCLE,
                                 bgcolor=COLOR_COMPLETADO,
@@ -1100,16 +1100,18 @@ def VistaTareasPendientes(page):
         border_radius=5,
         height=38,
         expand=True,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
     )
 
     #botón filtrar
     btn_filtrar = ft.Container(
         content=ft.Text("Filtrar", size=11, color="black"),
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
-        border_radius=5,
-        padding=ft.padding.only(left=12, right=12, top=8, bottom=8),
+        border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+        ),
+        padding=ft.Padding(left=12, right=12, top=8, bottom=8),
         on_click=mostrar_dialog_filtros,
         ink=True,
     )
@@ -1119,7 +1121,7 @@ def VistaTareasPendientes(page):
         content=ft.Icon(ft.Icons.SEARCH, size=20, color="white"),
         bgcolor=COLOR_LABEL,
         border_radius=5,
-        padding=ft.padding.all(8),
+        padding=8,
         on_click=btn_buscar_click,
         ink=True,
     )
@@ -1165,7 +1167,7 @@ def VistaTareasPendientes(page):
             controls=[
                 #flecha de retroceso
                 ft.Container(
-                    padding=ft.padding.only(left=15, top=10, bottom=5),
+                    padding=ft.Padding(left=15, top=10, bottom=5),
                     alignment=ft.Alignment(-1, 0),
                     content=ft.Container(
                         content=ft.Text("←", size=26, color="black", weight="bold"),
@@ -1187,7 +1189,7 @@ def VistaTareasPendientes(page):
                 
                 #contenido
                 ft.Container(
-                    padding=ft.padding.only(left=18, right=18, top=15, bottom=15),
+                    padding=ft.Padding(left=18, right=18, top=15, bottom=15),
                     expand=True,
                     content=ft.Column(
                         spacing=12,

@@ -1,7 +1,7 @@
 import flet as ft
 from datetime import datetime
 from modelos.crud import crear_tarea, obtener_todos_proyectos, obtener_todos_empleados, obtener_todos_departamentos
-from servicios.sesion_service import obtener_usuario  # AÑADIDO: importación del servicio de sesión
+from servicios.sesion_service import obtener_usuario
 
 def VistaNuevaTarea(page):
     
@@ -160,7 +160,7 @@ def VistaNuevaTarea(page):
         if exito:
             page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tarea creada correctamente"), bgcolor="green")
             page.snack_bar.open = True
-            page.go("/tareas_pendientes")
+            page.push_route("/tareas_pendientes")
         else:
             page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
             page.snack_bar.open = True
@@ -253,7 +253,7 @@ def VistaNuevaTarea(page):
             ),
             actions=[
                 ft.TextButton("Cancelar", on_click=cancelar),
-                ft.ElevatedButton(
+                 ft.FilledButton(
                     "Crear sin fecha",
                     on_click=confirmar_creacion,
                     bgcolor="#FF9800",
@@ -291,8 +291,8 @@ def VistaNuevaTarea(page):
         ejecutar_creacion_tarea()
 
     # --- FUNCIONES DE LA INTERFAZ ---
-    def btn_volver_click(e):
-        page.go("/area_personal")
+    async def btn_volver_click(e):
+        await page.push_route("/area_personal")
 
     def abrir_fecha_inicio(e):
         date_picker_inicio.open = True
@@ -606,9 +606,9 @@ def VistaNuevaTarea(page):
             ],
         ),
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
         border_radius=5,
-        padding=ft.padding.only(left=10, right=5, top=8, bottom=8),
+        padding=ft.Padding(left=10, right=5, top=8, bottom=8),
         on_click=abrir_dialog_proyecto,
         ink=True,
     )
@@ -624,9 +624,9 @@ def VistaNuevaTarea(page):
             ],
         ),
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
         border_radius=5,
-        padding=ft.padding.only(left=10, right=5, top=8, bottom=8),
+        padding=ft.Padding(left=10, right=5, top=8, bottom=8),
         on_click=abrir_dialog_departamento,
         ink=True,
     )
@@ -642,9 +642,9 @@ def VistaNuevaTarea(page):
             ],
         ),
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
         border_radius=5,
-        padding=ft.padding.only(left=10, right=5, top=8, bottom=8),
+        padding=ft.Padding(left=10, right=5, top=8, bottom=8),
         expand=True,
         on_click=abrir_dialog_personas,
         ink=True,
@@ -660,9 +660,9 @@ def VistaNuevaTarea(page):
             ],
         ),
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
         border_radius=5,
-        padding=ft.padding.only(left=10, right=5, top=8, bottom=8),
+        padding=ft.Padding(left=10, right=5, top=8, bottom=8),
         width=120,
         on_click=abrir_dialog_tags,
         ink=True,
@@ -678,7 +678,7 @@ def VistaNuevaTarea(page):
         border_radius=5,
         height=38,
         width=100,
-        content_padding=ft.padding.only(left=10, right=5),
+        content_padding=ft.Padding(left=10, right=5),
         options=[
             ft.dropdownm2.Option("Alta"),
             ft.dropdownm2.Option("Media"),
@@ -694,14 +694,14 @@ def VistaNuevaTarea(page):
         border_color=COLOR_BORDE,
         border_radius=5,
         height=38,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
     )
 
     seccion_superior = ft.Container(
         bgcolor="white",
         border_radius=10,
-        padding=ft.padding.all(12),
-        border=ft.border.all(1, COLOR_BORDE),
+        padding=12,
+        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
         shadow=ft.BoxShadow(
             spread_radius=0,
             blur_radius=8,
@@ -718,7 +718,7 @@ def VistaNuevaTarea(page):
                     controls=[
                         emoji_container := ft.Container(
                             content=emoji_text,
-                            padding=ft.padding.only(top=12),
+                            padding=ft.Padding(top=12),
                             on_click=cambiar_emoji,
                             tooltip="Click para cambiar emoji",
                         ),
@@ -835,14 +835,17 @@ def VistaNuevaTarea(page):
         min_lines=6,
         max_lines=6,
         expand=True,
-        content_padding=ft.padding.all(12),
+        content_padding=10,
     )
 
     seccion_requerimientos = ft.Container(
         bgcolor="white",
         border_radius=10,
-        padding=ft.padding.all(12),
-        border=ft.border.all(1, COLOR_BORDE),
+        padding=12,
+        border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+        ),
         shadow=ft.BoxShadow(
             spread_radius=0,
             blur_radius=8,
@@ -900,7 +903,7 @@ def VistaNuevaTarea(page):
             tight=True,
             controls=[
                 ft.Container(
-                    padding=ft.padding.only(left=15, top=10, bottom=5),
+                    padding=ft.Padding(left=15, top=10, bottom=5),
                     alignment=ft.Alignment(-1, 0),
                     content=ft.Container(
                         content=ft.Text("←", size=26, color="black", weight="bold"),
@@ -920,7 +923,7 @@ def VistaNuevaTarea(page):
                 ),
                 
                 ft.Container(
-                    padding=ft.padding.only(left=18, right=18, top=15, bottom=20),
+                    padding=ft.Padding(left=18, right=18, top=15, bottom=20),
                     content=ft.Column(
                         spacing=12,
                         tight=True,

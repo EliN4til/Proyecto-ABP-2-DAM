@@ -69,7 +69,7 @@ def VistaCrearEquipo(page):
             multiline=multiline,
             min_lines=min_lines if multiline else None,
             max_lines=min_lines if multiline else None,
-            content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+            content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         )
 
     def crear_dropdown(opciones, hint: str):
@@ -84,7 +84,7 @@ def VistaCrearEquipo(page):
             border_radius=5,
             height=40,
             expand=True,
-            content_padding=ft.padding.only(left=10, right=10),
+            content_padding=ft.Padding(left=10, right=10),
             options=[ft.dropdownm2.Option(opcion) for opcion in opciones],
         )
 
@@ -172,9 +172,14 @@ def VistaCrearEquipo(page):
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         ),
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), 
+            bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), 
+            right=ft.BorderSide(1, COLOR_BORDE)
+        ),
         border_radius=5,
-        padding=ft.padding.only(left=10, right=5, top=10, bottom=10),
+        padding=ft.Padding(left=10, right=5, top=10, bottom=10),
         on_click=mostrar_dialog_miembros,
         ink=True,
     )
@@ -290,7 +295,7 @@ def VistaCrearEquipo(page):
             offset=ft.Offset(0, 5),
         ),
         content=ft.Container(
-            padding=ft.padding.only(left=20, right=20, top=55, bottom=25),
+            padding=ft.Padding(left=20, right=20, top=55, bottom=25),
             content=ft.Column(
                 spacing=15,
                 tight=True,

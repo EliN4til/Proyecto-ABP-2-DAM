@@ -19,10 +19,10 @@ def VistaAreaAdmin(page):
             height=95,
             bgcolor=COLOR_BOTON_BG,
             border_radius=12,
-            border=ft.border.all(1, COLOR_BOTON_BORDE),
+            border=ft.Border(top=ft.BorderSide(1, COLOR_BOTON_BORDE), bottom=ft.BorderSide(1, COLOR_BOTON_BORDE), left=ft.BorderSide(1, COLOR_BOTON_BORDE), right=ft.BorderSide(1, COLOR_BOTON_BORDE)),
             ink=True,
             on_click=on_click,
-            padding=ft.padding.only(top=12, bottom=8, left=5, right=5),
+            padding=ft.Padding(top=12, bottom=8, left=5, right=5),
             content=ft.Column(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -41,32 +41,32 @@ def VistaAreaAdmin(page):
             )
         )
 
-    def click_mis_datos(e):
-        page.go("/mis_datos")
+    async def click_mis_datos(e):
+        await page.push_route("/mis_datos")
 
-    def click_gestionar_trabajadores(e):
-        page.go("/gestionar_trabajadores")
+    async def click_gestionar_trabajadores(e):
+        await page.push_route("/gestionar_trabajadores")
 
-    def click_gestionar_departamentos(e):
-        page.go("/gestionar_departamentos")
+    async def click_gestionar_departamentos(e):
+        await page.push_route("/gestionar_departamentos")
 
-    def click_gestionar_proyectos(e):
-        page.go("/gestionar_proyectos")
+    async def click_gestionar_proyectos(e):
+        await page.push_route("/gestionar_proyectos")
 
-    def click_ver_estadisticas(e):
-        page.go("/estadisticas")
+    async def click_ver_estadisticas(e):
+        await page.push_route("/estadisticas")
 
-    def click_configuracion(e):
-        page.go("/configuracion")
+    async def click_configuracion(e):
+        await page.push_route("/configuracion")
 
-    def click_auditoria(e):
-        page.go("/auditoria")
+    async def click_auditoria(e):
+        await page.push_route("/auditoria")
     
-    def click_ir_area_personal(e):
-        page.go("/area_personal")
+    async def click_ir_area_personal(e):
+        await page.push_route("/area_personal")
     
-    def click_logout(e):
-        page.go("/login")
+    async def click_logout(e):
+        await page.push_route("/login")
 
     tarjeta_blanca = ft.Container(
         width=340,
@@ -74,7 +74,7 @@ def VistaAreaAdmin(page):
         border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color="#40000000", offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=20, right=20, top=45, bottom=25),
+            padding=ft.Padding(left=20, right=20, top=45, bottom=25),
             content=ft.Column(
                 spacing=12,
                 tight=True,

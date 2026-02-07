@@ -135,8 +135,8 @@ def VistaCompartidoConmigo(page):
         else:
             return COLOR_PRIORIDAD_BAJA
 
-    def btn_volver_click(e):
-        page.go("/area_personal")
+    async def btn_volver_click(e):
+        await page.push_route("/area_personal")
 
     def btn_buscar_click(e):
         actualizar_lista_tareas()
@@ -182,7 +182,7 @@ def VistaCompartidoConmigo(page):
                                 ft.Container(
                                     bgcolor=get_color_prioridad(tarea["prioridad"]),
                                     border_radius=10,
-                                    padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                                    padding=ft.Padding(left=8, right=8, top=2, bottom=2),
                                     content=ft.Text(tarea["prioridad"], size=10, color="white", weight=ft.FontWeight.BOLD),
                                 ),
                                 ft.Row(
@@ -199,7 +199,7 @@ def VistaCompartidoConmigo(page):
                             visible=tarea["atrasado"],
                             bgcolor="#FFF3F3",
                             border_radius=8,
-                            padding=ft.padding.all(8),
+                            padding=8,
                             content=ft.Row(
                                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                 controls=[
@@ -346,7 +346,7 @@ def VistaCompartidoConmigo(page):
                             ),
                             on_click=abrir_filtro_tags,
                             ink=True,
-                            padding=ft.padding.all(8),
+                            padding=8,
                             border_radius=5,
                             bgcolor="#F5F5F5",
                         ),
@@ -360,7 +360,7 @@ def VistaCompartidoConmigo(page):
                             ),
                             on_click=abrir_filtro_proyecto,
                             ink=True,
-                            padding=ft.padding.all(8),
+                            padding=8,
                             border_radius=5,
                             bgcolor="#F5F5F5",
                         ),
@@ -505,9 +505,12 @@ def VistaCompartidoConmigo(page):
         return ft.Container(
             bgcolor="white",
             border_radius=10,
-            padding=ft.padding.all(10),
-            margin=ft.margin.only(bottom=8),
-            border=ft.border.all(1, "#FFCDD2") if tarea["atrasado"] else None,
+            padding=10,
+            margin=ft.Margin(bottom=8, top=0, left=0, right=0),
+            border=ft.Border(
+                    top=ft.BorderSide(1, "#FFCDD2"), bottom=ft.BorderSide(1, "#FFCDD2"), 
+                    left=ft.BorderSide(1, "#FFCDD2"), right=ft.BorderSide(1, "#FFCDD2")
+            ) if tarea["atrasado"] else None,
             shadow=ft.BoxShadow(
                 spread_radius=0,
                 blur_radius=5,
@@ -535,7 +538,7 @@ def VistaCompartidoConmigo(page):
                             ft.Container(
                                 bgcolor=get_color_prioridad(tarea["prioridad"]),
                                 border_radius=8,
-                                padding=ft.padding.only(left=6, right=6, top=1, bottom=1),
+                                padding=ft.Padding(left=6, right=6, top=1, bottom=1),
                                 content=ft.Text(tarea["prioridad"], size=9, color="white", weight=ft.FontWeight.BOLD),
                             ),
                         ]
@@ -588,7 +591,7 @@ def VistaCompartidoConmigo(page):
         border_radius=5,
         height=38,
         expand=True,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         on_submit=btn_buscar_click
     )
 
@@ -596,9 +599,12 @@ def VistaCompartidoConmigo(page):
     btn_filtrar = ft.Container(
         content=ft.Text("Filtrar", size=11, color="black"),
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+        ),
         border_radius=5,
-        padding=ft.padding.only(left=12, right=12, top=8, bottom=8),
+        padding=ft.Padding(left=12, right=12, top=8, bottom=8),
         on_click=mostrar_dialog_filtros,
         ink=True,
     )
@@ -608,7 +614,7 @@ def VistaCompartidoConmigo(page):
         content=ft.Icon(ft.Icons.SEARCH, size=20, color="white"),
         bgcolor=COLOR_LABEL,
         border_radius=5,
-        padding=ft.padding.all(8),
+        padding=8,
         on_click=btn_buscar_click,
         ink=True,
     )
@@ -641,7 +647,7 @@ def VistaCompartidoConmigo(page):
             controls=[
                 #flecha de retroceso
                 ft.Container(
-                    padding=ft.padding.only(left=15, top=10, bottom=5),
+                    padding=ft.Padding(left=15, top=10, bottom=5),
                     alignment=ft.Alignment(-1, 0),
                     content=ft.Container(
                         content=ft.Text("←", size=26, color="black", weight="bold"),
@@ -663,7 +669,7 @@ def VistaCompartidoConmigo(page):
                 
                 #contenido
                 ft.Container(
-                    padding=ft.padding.only(left=18, right=18, top=15, bottom=15),
+                    padding=ft.Padding(left=18, right=18, top=15, bottom=15),
                     expand=True,
                     content=ft.Column(
                         spacing=12,

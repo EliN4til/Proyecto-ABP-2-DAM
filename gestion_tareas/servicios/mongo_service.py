@@ -13,7 +13,7 @@ class ServiceMongo:
             
             self.cliente.admin.command('ping')
             
-            self.base_datos = self.cliente["GestionTareas"]
+            self.base_datos = self.cliente["tareas_db"]
             return True
         except Exception as e:
             print(f"Error de conexión en Mongo: {e}")

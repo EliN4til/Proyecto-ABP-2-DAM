@@ -61,7 +61,7 @@ def VistaLogin(page):
     )
 
     # manejador del click de login manual
-    def btn_login_click(e):
+    async def btn_login_click(e):
         txt_error.value = ""
         overlay_carga.visible = True
         page.update()
@@ -80,9 +80,9 @@ def VistaLogin(page):
             
             # redireccion segun el rol del trabajador
             if resultado.get("es_admin", False):
-                page.go("/area_admin")
+                await page.push_route("/area_admin")
             else:
-                page.go("/area_personal")
+                await page.push_route("/area_personal")
         else:
             # ocultamos carga y mostramos el error
             overlay_carga.visible = False
@@ -103,7 +103,7 @@ def VistaLogin(page):
             border_radius=10
         )
 
-        def ejecutar_login_rapido(e):
+        async def ejecutar_login_rapido(e):
             overlay_carga.visible = True
             dialog_p.open = False
             page.update()
@@ -112,9 +112,9 @@ def VistaLogin(page):
             if exito:
                 guardar_usuario(resultado)
                 if resultado.get("es_admin", False):
-                    page.go("/area_admin")
+                    await page.push_route("/area_admin")
                 else:
-                    page.go("/area_personal")
+                    await page.push_route("/area_personal")
             else:
                 overlay_carga.visible = False
                 page.snack_bar = ft.SnackBar(ft.Text("❌ Contraseña de usuario incorrecta"), bgcolor="red")
@@ -130,7 +130,7 @@ def VistaLogin(page):
             ], tight=True),
             actions=[
                 ft.TextButton("Cancelar", on_click=lambda _: setattr(dialog_p, "open", False) or page.update()),
-                ft.ElevatedButton("Entrar", on_click=ejecutar_login_rapido, bgcolor=COLOR_BTN_BG, color="white")
+                ft.FilledButton("Entrar", on_click=ejecutar_login_rapido, bgcolor=COLOR_BTN_BG, color="white")
             ]
         )
         page.overlay.append(dialog_p)
@@ -152,10 +152,10 @@ def VistaLogin(page):
     # widget condicional de cuenta guardada
     if email_guardado:
         seccion_cuenta = ft.Container(
-            padding=ft.padding.only(bottom=15),
+            padding=ft.Padding(bottom=15),
             content=ft.Column([
                 ft.Text("Se ha detectado tu cuenta", size=10, color="grey", italic=True),
-                ft.ElevatedButton(
+                ft.FilledButton(
                     content=ft.Row([
                         ft.Icon(ft.Icons.ACCOUNT_CIRCLE, color="white", size=18),
                         ft.Text(f"Login como {email_guardado.split('@')[0]}", size=12)
@@ -166,13 +166,13 @@ def VistaLogin(page):
         )
     else:
         seccion_cuenta = ft.Container(
-            padding=ft.padding.only(bottom=15),
+            padding=ft.Padding(bottom=15),
             content=ft.Text("No tienes ninguna cuenta guardada", size=11, color="grey", italic=True),
             alignment=ft.Alignment(0, 0)
         )
 
-    def btn_back_click(e):
-        page.go("/")
+    async def btn_back_click(e):
+        await page.push_route("/")
 
     # helper para crear inputs
     def crear_input(es_password=False):
@@ -193,7 +193,7 @@ def VistaLogin(page):
     txt_email = crear_input()
     txt_pass = crear_input(es_password=True)
 
-    btn_iniciar = ft.ElevatedButton(
+    btn_iniciar = ft.FilledButton(
         content=ft.Text("Iniciar Sesión", color="white", weight=ft.FontWeight.BOLD),
         bgcolor=COLOR_BTN_BG,
         width=180,
@@ -214,7 +214,7 @@ def VistaLogin(page):
             tight=True,
             controls=[
                 ft.Container(
-                    padding=ft.padding.only(left=20, top=15, bottom=10),
+                    padding=ft.Padding(left=20, top=15, bottom=10),
                     alignment=ft.Alignment(-1, 0),
                     content=ft.Container(
                         content=ft.Text("←", size=30, color="black", weight="bold"),
@@ -234,7 +234,7 @@ def VistaLogin(page):
                 ),
                 
                 ft.Container(
-                    padding=ft.padding.only(left=30, right=30, top=20, bottom=40),
+                    padding=ft.Padding(left=30, right=30, top=20, bottom=40),
                     content=ft.Column(
                         spacing=5,
                         tight=True,
@@ -242,12 +242,12 @@ def VistaLogin(page):
                             seccion_cuenta,
                             ft.Divider(height=20, color="#EEEEEE"),
                             ft.Text("Correo Electrónico", weight=ft.FontWeight.BOLD, color="black", size=14),
-                            ft.Container(content=txt_email, margin=ft.margin.only(bottom=15)),
+                            ft.Container(content=txt_email, margin=ft.Margin(bottom=15, left=0, right=0, top=0)),
                             
                             ft.Text("Contraseña", weight=ft.FontWeight.BOLD, color="black", size=14),
-                            ft.Container(content=txt_pass, margin=ft.margin.only(bottom=15)),
+                            ft.Container(content=txt_pass, margin=ft.Margin(bottom=15, left=0, right=0, top=0)),
                             
-                            ft.Container(content=txt_error, margin=ft.margin.only(bottom=10)),
+                            ft.Container(content=txt_error, margin=ft.Margin(bottom=10, left=0, right=0, top=0)),
 
                             ft.Container(content=btn_iniciar, alignment=ft.Alignment(0, 0))
                         ]

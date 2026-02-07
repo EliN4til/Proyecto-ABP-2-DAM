@@ -41,7 +41,9 @@ def VistaGestionarDepartamentos(page):
         nonlocal departamentos_db, proyectos_db
         
         exito_d, list_d = obtener_todos_departamentos()
-        if exito_d: departamentos_db = list_d
+        if exito_d:
+            departamentos_db = list_d
+
         
         exito_p, list_p = obtener_todos_proyectos()
         if exito_p: proyectos_db = list_p
@@ -60,6 +62,8 @@ def VistaGestionarDepartamentos(page):
             if filtro_estado_actual[0] != "Todos" and d.get("estado") != filtro_estado_actual[0]:
                 continue
             filtrados.append(d)
+        
+
 
         # Ordenación
         if filtro_orden_actual[0] == "Nombre A-Z":
@@ -84,9 +88,9 @@ def VistaGestionarDepartamentos(page):
         cargar_datos_maestros()
         actualizar_lista_ui()
 
-    def btn_volver_click(e):
+    async def btn_volver_click(e):
         """Acción al hacer clic en el botón volver atrás - CORREGIDO A ADMIN"""
-        page.go("/area_admin")
+        await page.push_route("/area_admin")
 
     def btn_buscar_click(e):
         """Acción al hacer clic en el botón buscar"""
@@ -95,9 +99,9 @@ def VistaGestionarDepartamentos(page):
         page.snack_bar.open = True
         page.update()
 
-    def btn_crear_departamento_click(e):
+    async def btn_crear_departamento_click(e):
         """Navega a la vista de creación"""
-        page.go("/crear_departamento")
+        await page.push_route("/crear_departamento")
 
     # --- DIÁLOGOS DE GESTIÓN ---
 
@@ -121,7 +125,7 @@ def VistaGestionarDepartamentos(page):
                             alignment="spaceBetween",
                             controls=[
                                 ft.Text(f"Código: {depto.get('codigo', 'N/A')}", size=12, color=COLOR_LABEL),
-                                ft.Container(bgcolor=estado_color, border_radius=10, padding=ft.padding.symmetric(horizontal=10, vertical=3), content=ft.Text(estado, size=10, color="white", weight="bold")),
+                                ft.Container(bgcolor=estado_color, border_radius=10, padding=ft.Padding(left=10, right=10, top=3, bottom=3), content=ft.Text(estado, size=10, color="white", weight="bold")),
                             ]
                         ),
                         ft.Divider(height=1, color=COLOR_BORDE),
@@ -245,7 +249,7 @@ def VistaGestionarDepartamentos(page):
                     content=ft.Text("Cancelar", color="black"), 
                     on_click=lambda e: setattr(dialog_editar, 'open', False) or page.update()
                 ),
-                ft.ElevatedButton(
+                ft.FilledButton(
                     content=ft.Text("Guardar Cambios", color="white", weight="bold"), 
                     bgcolor=COLOR_BTN_CREAR, 
                     on_click=guardar_cambios_click
@@ -287,7 +291,7 @@ def VistaGestionarDepartamentos(page):
                     content=ft.Text("Cancelar", color="black"), 
                     on_click=lambda e: setattr(dialog_confirmar, 'open', False) or page.update()
                 ),
-                ft.ElevatedButton(
+                ft.FilledButton(
                     content=ft.Text("Eliminar", color="white", weight="bold"), 
                     bgcolor=COLOR_ELIMINAR, 
                     on_click=confirmar_eliminar
@@ -326,7 +330,7 @@ def VistaGestionarDepartamentos(page):
             ], scroll="auto")),
             actions=[
                 ft.TextButton(content=ft.Text("Limpiar", color="black"), on_click=lambda e: refrescar_pantalla_completa() or (dialog_filtros.__setattr__('open', False) or page.update())),
-                ft.TextButton(content=ft.Text("Aplicar", color=COLOR_LABEL), on_click=aplicar_filtros),
+                ft.FilledButton(content=ft.Text("Aplicar", color=COLOR_LABEL), on_click=aplicar_filtros),
             ],
         )
         page.overlay.append(dialog_filtros)
@@ -340,7 +344,7 @@ def VistaGestionarDepartamentos(page):
         estado_color = COLOR_ACTIVO if estado == "ACTIVO" else (COLOR_INACTIVO if estado == "INACTIVO" else COLOR_EN_CREACION)
         
         return ft.Container(
-            bgcolor="white", border_radius=10, padding=10, margin=ft.margin.only(bottom=8),
+            bgcolor="white", border_radius=10, padding=10, margin=ft.Margin(bottom=8, left=0, right=0, top=0),
             shadow=ft.BoxShadow(spread_radius=0, blur_radius=4, color=COLOR_SOMBRA_TARJETAS, offset=ft.Offset(0, 2)),
             content=ft.Row(
                 spacing=8,
@@ -370,8 +374,8 @@ def VistaGestionarDepartamentos(page):
 
     btn_filtrar = ft.Container(
         content=ft.Text("Filtrar", size=11, color="black"),
-        bgcolor="white", border=ft.border.all(1, COLOR_BORDE), border_radius=5,
-        padding=ft.padding.symmetric(horizontal=12, vertical=8),
+        bgcolor="white", border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)), border_radius=5,
+        padding=ft.Padding(left=12, right=12, top=8, bottom=8),
         on_click=mostrar_dialog_filtros, ink=True,
     )
 
@@ -395,7 +399,7 @@ def VistaGestionarDepartamentos(page):
         clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
+            padding=ft.Padding(left=18, right=18, top=55, bottom=20),
             content=ft.Column([
                 ft.Row([input_busqueda, btn_filtrar, btn_buscar], spacing=8),
                 texto_contador,

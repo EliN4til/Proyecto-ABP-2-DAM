@@ -74,8 +74,8 @@ def VistaCrearProyecto(page):
     page.overlay.append(date_picker_inicio)
     page.overlay.append(date_picker_fin)
 
-    def btn_volver_click(e):
-        page.go("/gestionar_proyectos")
+    async def btn_volver_click(e):
+        await page.push_route("/gestionar_proyectos")
 
     # ============================================
     # GESTIÓN DE DEPARTAMENTOS TEMPORALES
@@ -108,7 +108,7 @@ def VistaCrearProyecto(page):
                     ft.Container(
                         bgcolor="#F8F9FA",
                         border_radius=8,
-                        border=ft.border.all(1, COLOR_BORDE),
+                        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                         padding=10,
                         content=ft.Row([
                             ft.Column([
@@ -152,7 +152,7 @@ def VistaCrearProyecto(page):
             border_color=COLOR_BORDE,
             text_style=ft.TextStyle(size=12, color="black"),
             height=42,
-            content_padding=ft.padding.symmetric(horizontal=10, vertical=8),
+            content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         )
         
         miembros_seleccionados = []
@@ -238,7 +238,7 @@ def VistaCrearProyecto(page):
                     ft.Container(height=8),
                     ft.Text("Asignar miembros al departamento", size=11, color=COLOR_LABEL, weight="bold"),
                     ft.Container(
-                        border=ft.border.all(1, COLOR_BORDE),
+                        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                         border_radius=8,
                         padding=10,
                         height=250,
@@ -248,7 +248,7 @@ def VistaCrearProyecto(page):
             ),
             actions=[
                 ft.TextButton("Cancelar", on_click=cancelar),
-                ft.ElevatedButton("Añadir Departamento", on_click=guardar_departamento, bgcolor=COLOR_VERDE, color="white"),
+                ft.FilledButton("Añadir Departamento", on_click=guardar_departamento, bgcolor=COLOR_VERDE, color="white"),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -266,7 +266,7 @@ def VistaCrearProyecto(page):
             border_color=COLOR_BORDE,
             text_style=ft.TextStyle(size=12, color="black"),
             height=42,
-            content_padding=ft.padding.symmetric(horizontal=10, vertical=8),
+            content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         )
         
         miembros_actuales = list(depto.get("miembros", []))
@@ -355,7 +355,7 @@ def VistaCrearProyecto(page):
                     ft.Container(height=8),
                     ft.Text("Miembros asignados", size=11, color=COLOR_LABEL, weight="bold"),
                     ft.Container(
-                        border=ft.border.all(1, COLOR_BORDE),
+                        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                         border_radius=8,
                         padding=10,
                         height=250,
@@ -365,7 +365,7 @@ def VistaCrearProyecto(page):
             ),
             actions=[
                 ft.TextButton("Cancelar", on_click=cancelar),
-                ft.ElevatedButton("Guardar Cambios", on_click=guardar_edicion, bgcolor=COLOR_LABEL, color="white"),
+                ft.FilledButton("Guardar Cambios", on_click=guardar_edicion, bgcolor=COLOR_LABEL, color="white"),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -378,7 +378,7 @@ def VistaCrearProyecto(page):
     # CREAR PROYECTO CON DEPARTAMENTOS
     # ============================================
 
-    def btn_crear_click(e):
+    async def btn_crear_click(e):
         """Valida y guarda el nuevo proyecto con sus departamentos en la base de datos"""
         
         # 1. Validaciones
@@ -415,13 +415,40 @@ def VistaCrearProyecto(page):
             "fecha_creacion": datetime.now(),
         }
 
+        # Limpiar errores previos
+        input_nombre.error_text = None
+        input_codigo.error_text = None
+        input_cliente.error_text = None
+        input_presupuesto.error_text = None
+        page.update()
+
         # 4. Crear el proyecto
         exito, resultado = crear_proyecto(nuevo_proyecto)
 
         if not exito:
-            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al guardar proyecto: {resultado}"), bgcolor="red")
-            page.snack_bar.open = True
-            page.update()
+            if isinstance(resultado, list):
+                errores_texto = []
+                for err in resultado:
+                    campo = err["loc"][0]
+                    msg = err["msg"]
+                    
+                    if campo == "nombre": input_nombre.error_text = msg
+                    elif campo == "codigo": input_codigo.error_text = msg
+                    elif campo == "cliente": input_cliente.error_text = msg
+                    elif campo == "presupuesto": input_presupuesto.error_text = msg
+                    else:
+                        errores_texto.append(f"{campo}: {msg}")
+                
+                page.update()
+                
+                if errores_texto:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {', '.join(errores_texto)}"), bgcolor="red")
+                    page.snack_bar.open = True
+                    page.update()
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al guardar proyecto: {resultado}"), bgcolor="red")
+                page.snack_bar.open = True
+                page.update()
             return
 
         # 5. Crear los departamentos asociados al proyecto
@@ -455,7 +482,7 @@ def VistaCrearProyecto(page):
         
         page.snack_bar = ft.SnackBar(ft.Text(msg), bgcolor="green")
         page.snack_bar.open = True
-        page.go("/gestionar_proyectos")
+        await page.push_route("/gestionar_proyectos")
         page.update()
 
     # --- HELPERS DE INTERFAZ ---
@@ -484,7 +511,7 @@ def VistaCrearProyecto(page):
         border_color=COLOR_BORDE,
         border_radius=5,
         height=40,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
     )
 
     input_codigo = ft.TextField(
@@ -494,7 +521,7 @@ def VistaCrearProyecto(page):
         border_color=COLOR_BORDE,
         border_radius=5,
         height=40,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
     )
 
     input_cliente = ft.TextField(
@@ -504,7 +531,7 @@ def VistaCrearProyecto(page):
         border_color=COLOR_BORDE,
         border_radius=5,
         height=40,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
     )
 
     input_presupuesto = ft.TextField(
@@ -514,7 +541,7 @@ def VistaCrearProyecto(page):
         border_color=COLOR_BORDE,
         border_radius=5,
         height=40,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         suffix=ft.Text("€", color=COLOR_LABEL),
         keyboard_type=ft.KeyboardType.NUMBER
     )
@@ -528,7 +555,7 @@ def VistaCrearProyecto(page):
         multiline=True,
         min_lines=2,
         max_lines=2,
-        content_padding=ft.padding.all(10),
+        content_padding=10,
     )
 
     dropdown_responsable = ft.DropdownM2(
@@ -540,7 +567,7 @@ def VistaCrearProyecto(page):
         border_radius=5,
         height=40,
         expand=True,
-        content_padding=ft.padding.only(left=10, right=10),
+        content_padding=ft.Padding(left=10, right=10),
         options=[]
     )
 
@@ -553,7 +580,7 @@ def VistaCrearProyecto(page):
         border_radius=5,
         height=40,
         expand=True,
-        content_padding=ft.padding.only(left=10, right=10),
+        content_padding=ft.Padding(left=10, right=10),
         options=[
             ft.dropdownm2.Option("ACTIVO"),
             ft.dropdownm2.Option("PAUSADO"),
@@ -570,14 +597,14 @@ def VistaCrearProyecto(page):
 
     # Sección de departamentos
     seccion_departamentos = ft.Container(
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
         border_radius=8,
         padding=10,
         content=ft.Column([
             ft.Row([
                 ft.Text("Departamentos del Proyecto", size=12, color="black", weight="bold"),
                 ft.Container(expand=True),
-                ft.ElevatedButton(
+                ft.FilledButton(
                     "+ Añadir",
                     on_click=abrir_dialog_nuevo_departamento,
                     bgcolor=COLOR_LABEL,
@@ -617,8 +644,8 @@ def VistaCrearProyecto(page):
                     ft.Container(
                         content=ft.Row([ft.Icon(ft.Icons.CALENDAR_MONTH, size=14, color=COLOR_LABEL), txt_fecha_inicio], spacing=5),
                         on_click=abrir_picker_inicio,
-                        padding=ft.padding.symmetric(horizontal=10, vertical=8), 
-                        border=ft.border.all(1, COLOR_BORDE), 
+                        padding=ft.Padding(left=10, right=10, top=8, bottom=8), 
+                        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)), 
                         border_radius=5,
                         height=40,
                     )
@@ -628,8 +655,8 @@ def VistaCrearProyecto(page):
                     ft.Container(
                         content=ft.Row([ft.Icon(ft.Icons.CALENDAR_MONTH, size=14, color=COLOR_LABEL), txt_fecha_fin], spacing=5),
                         on_click=abrir_picker_fin,
-                        padding=ft.padding.symmetric(horizontal=10, vertical=8), 
-                        border=ft.border.all(1, COLOR_BORDE), 
+                        padding=ft.Padding(left=10, right=10, top=8, bottom=8), 
+                        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)), 
                         border_radius=5,
                         height=40,
                     )
@@ -672,7 +699,7 @@ def VistaCrearProyecto(page):
         border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=18, right=18, top=55, bottom=15),
+            padding=ft.Padding(left=18, right=18, top=55, bottom=15),
             content=ft.Column(
                 spacing=10,
                 controls=[

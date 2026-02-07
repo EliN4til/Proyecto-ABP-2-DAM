@@ -46,8 +46,8 @@ def VistaDetalleTarea(page):
         else:
             return COLOR_PRIORIDAD_BAJA
 
-    def btn_volver_click(e):
-        page.go("/area_personal")
+    async def btn_volver_click(e):
+        await page.push_route("/area_personal")
 
     def btn_editar_click(e):
         page.snack_bar = ft.SnackBar(ft.Text(f"Editando tarea: {tarea['titulo']}"))
@@ -82,14 +82,17 @@ def VistaDetalleTarea(page):
             ft.Container(
                 bgcolor=get_color_prioridad(tarea["prioridad"]),
                 border_radius=15,
-                padding=ft.padding.symmetric(horizontal=10, vertical=4),
+                padding=ft.Padding(left=10, right=10, top=4, bottom=4),
                 content=ft.Text(f"Prioridad {tarea['prioridad']}", size=11, color="white", weight=ft.FontWeight.BOLD),
             ),
             ft.Container(
                 bgcolor="#F0F4F8",
                 border_radius=15,
-                padding=ft.padding.symmetric(horizontal=10, vertical=4),
-                border=ft.border.all(1, COLOR_BORDE),
+                padding=ft.Padding(left=10, right=10, top=4, bottom=4),
+                border=ft.Border(
+                    top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+                    left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+                ),
                 content=ft.Row(
                     spacing=5,
                     controls=[
@@ -104,7 +107,10 @@ def VistaDetalleTarea(page):
     #bloque de informacion (proyecto, depto, asignados, fechas)
     bloque_info = ft.Container(
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+        ),
         border_radius=10,
         padding=12,
         content=ft.Column(
@@ -166,7 +172,10 @@ def VistaDetalleTarea(page):
         bgcolor="#FAFAFA", 
         border_radius=10,
         padding=12,
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+        ),
         expand=True, 
         content=ft.Column(
             controls=[
@@ -186,7 +195,10 @@ def VistaDetalleTarea(page):
         expand=True,
         height=42,
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BTN_EDITAR),
+        border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BTN_EDITAR), bottom=ft.BorderSide(1, COLOR_BTN_EDITAR), 
+            left=ft.BorderSide(1, COLOR_BTN_EDITAR), right=ft.BorderSide(1, COLOR_BTN_EDITAR)
+        ),
         border_radius=21,
         alignment=ft.Alignment(0, 0),
         ink=True,
@@ -221,7 +233,7 @@ def VistaDetalleTarea(page):
     )
 
     fila_botones = ft.Container(
-        padding=ft.padding.only(top=10),
+        padding=ft.Padding(top=10),
         content=ft.Row(
             spacing=15,
             controls=[btn_editar, btn_completar]
@@ -240,7 +252,7 @@ def VistaDetalleTarea(page):
             controls=[
                 #flecha de retroceso
                 ft.Container(
-                    padding=ft.padding.only(left=15, top=10, bottom=5),
+                    padding=ft.Padding(left=15, top=10, bottom=5),
                     alignment=ft.Alignment(-1, 0),
                     content=ft.Container(
                         content=ft.Text("←", size=26, color="black", weight="bold"),
@@ -262,7 +274,7 @@ def VistaDetalleTarea(page):
                 
                 #contenido scrollable
                 ft.Container(
-                    padding=ft.padding.only(left=20, right=20, top=20, bottom=25),
+                    padding=ft.Padding(left=20, right=20, top=20, bottom=25),
                     height=600,
                     content=ft.Column(
                         spacing=15,

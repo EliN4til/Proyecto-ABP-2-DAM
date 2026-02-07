@@ -61,7 +61,7 @@ def VistaConexion(page):
     )
 
     #manejador boton conectarse
-    def btn_conectar_click(e):
+    async def btn_conectar_click(e):
         txt_error.value = ""
         overlay_carga.visible = True
         page.update()
@@ -72,7 +72,7 @@ def VistaConexion(page):
         if exito:
             #guardamos en archivo json fisico
             guardar_datos_fisicos(txt_uri.value, txt_usuario.value)
-            page.go("/login")
+            await page.push_route("/login")
         else:
             overlay_carga.visible = False
             txt_error.value = "❌ Error de conexión. Revisa los datos."
@@ -91,14 +91,14 @@ def VistaConexion(page):
             color="black"
         )
 
-        def login_rapido_final(e):
+        async def login_rapido_final(e):
             overlay_carga.visible = True
             dialog_p.open = False
             page.update()
             
             exito = realizar_conexion(uri_persistente, user_persistente, txt_p_rapida.value)
             if exito:
-                page.go("/login")
+                await page.push_route("/login")
             else:
                 overlay_carga.visible = False
                 page.snack_bar = ft.SnackBar(ft.Text("❌ Password incorrecta"), bgcolor="red")
@@ -114,7 +114,7 @@ def VistaConexion(page):
             ], tight=True),
             actions=[
                 ft.TextButton("Cancelar", on_click=lambda _: setattr(dialog_p, "open", False) or page.update()),
-                ft.ElevatedButton("Conectar", on_click=login_rapido_final, bgcolor=COLOR_BTN_BG, color="white")
+                ft.FilledButton("Conectar", on_click=login_rapido_final, bgcolor=COLOR_BTN_BG, color="white")
             ]
         )
         page.overlay.append(dialog_p)
@@ -137,10 +137,10 @@ def VistaConexion(page):
     if uri_persistente and user_persistente:
         #mostramos boton si hay archivo fisico
         seccion_persistente = ft.Container(
-            padding=ft.padding.only(bottom=15),
+            padding=ft.Padding(bottom=15),
             content=ft.Column([
                 ft.Text("Se ha detectado una configuración", size=10, color="grey", italic=True),
-                ft.ElevatedButton(
+                ft.FilledButton(
                     content=ft.Row([
                         ft.Icon(ft.Icons.CLOUD_DONE, color="amber", size=18),
                         ft.Text(f"Entrar como {user_persistente}", size=12)
@@ -152,7 +152,7 @@ def VistaConexion(page):
     else:
         #mostramos texto si no existe el archivo
         seccion_persistente = ft.Container(
-            padding=ft.padding.only(bottom=15),
+            padding=ft.Padding(bottom=15),
             content=ft.Text("No tienes ninguna conexión guardada", size=11, color="grey", italic=True),
             alignment=ft.Alignment(0, 0)
         )
@@ -174,7 +174,7 @@ def VistaConexion(page):
     txt_usuario = crear_input()
     txt_pass = crear_input(es_pass=True)
 
-    btn_conectar = ft.ElevatedButton(
+    btn_conectar = ft.FilledButton(
         content=ft.Text("Conectarse", color="white", weight=ft.FontWeight.BOLD),
         bgcolor=COLOR_BTN_BG,
         width=200,
@@ -195,12 +195,12 @@ def VistaConexion(page):
             controls=[
                 ft.Container(
                     height=60, width=320, bgcolor=COLOR_HEADER_BG,
-                    border_radius=ft.border_radius.only(top_left=20, top_right=20),
+                    border_radius=ft.BorderRadius(top_left=20, top_right=20, bottom_left=0, bottom_right=0),
                     alignment=ft.Alignment(0, 0),
                     content=ft.Text("CONEXIÓN BD", size=18, weight="bold", color="white")
                 ),
                 ft.Container(
-                    padding=ft.padding.all(30),
+                    padding=30,
                     content=ft.Column(
                         spacing=5,
                         controls=[
@@ -212,7 +212,7 @@ def VistaConexion(page):
                             txt_usuario,
                             ft.Text("Contraseña", weight="bold", color="black", size=13),
                             txt_pass,
-                            ft.Container(content=txt_error, margin=ft.margin.only(top=10, bottom=10), alignment=ft.Alignment(0,0)),
+                            ft.Container(content=txt_error, margin=ft.Margin(top=10, bottom=10, left=0, right=0), alignment=ft.Alignment(0,0)),
                             ft.Container(content=btn_conectar, alignment=ft.Alignment(0, 0))
                         ]
                     )

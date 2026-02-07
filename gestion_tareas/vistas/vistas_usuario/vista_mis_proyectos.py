@@ -206,8 +206,8 @@ def VistaMisProyectos(page):
 
     #EVENTOS
 
-    def btn_volver_click(e):
-        page.go("/area_personal")
+    async def btn_volver_click(e):
+        await page.push_route("/area_personal")
 
     def btn_buscar_click(e):
         actualizar_lista_ui()
@@ -235,7 +235,7 @@ def VistaMisProyectos(page):
             for tarea in proyecto["lista_tareas"]:
                 item = ft.Container(
                     padding=10,
-                    border=ft.border.only(bottom=ft.border.BorderSide(1, "#F0F0F0")),
+                    border=ft.Border(bottom=ft.BorderSide(1, "#F0F0F0")),
                     content=ft.Row(
                         controls=[
                             ft.Icon(get_icon(tarea["estado"]), size=18, color=get_icon_color(tarea["estado"])),
@@ -287,7 +287,10 @@ def VistaMisProyectos(page):
             controls=[
                 ft.Container(
                     width=30, height=30, bgcolor="#BBDEFB", border_radius=15,
-                    border=ft.border.all(2, "white"),
+                    border=ft.Border(
+                        top=ft.BorderSide(2, "white"), bottom=ft.BorderSide(2, "white"), 
+                        left=ft.BorderSide(2, "white"), right=ft.BorderSide(2, "white")
+                    ),
                     alignment=ft.Alignment(0,0),
                     content=ft.Text(miembro[0], size=12, color="black", weight="bold"),
                     tooltip=miembro
@@ -303,7 +306,7 @@ def VistaMisProyectos(page):
                 ft.Container(
                     bgcolor=COLOR_BADGE_DEP,
                     border_radius=15,
-                    padding=ft.padding.symmetric(horizontal=10, vertical=4),
+                    padding=ft.Padding(left=10, right=10, top=4, bottom=4),
                     content=ft.Text(dep, size=10, color=COLOR_TEXT_DEP, weight=ft.FontWeight.W_500),
                 ) for dep in proyecto["mis_departamentos"]
             ]
@@ -342,7 +345,7 @@ def VistaMisProyectos(page):
                             controls=[
                                 ft.Container(
                                     bgcolor="#E8F5E9" if proyecto["estado"] == "ACTIVO" else "#FFF3E0",
-                                    padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                                    padding=ft.Padding(left=8, right=8, top=4, bottom=4),
                                     border_radius=8,
                                     content=ft.Text(proyecto["estado"], size=10, color="black", weight="bold")
                                 ),
@@ -377,7 +380,7 @@ def VistaMisProyectos(page):
                                 ft.Text("Tareas pendientes:", size=11, color=COLOR_LABEL, weight="bold"),
                                 ft.Container(
                                     bgcolor="#FFF3E0" if proyecto["tareas_pendientes"] > 0 else "#E8F5E9",
-                                    padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                                    padding=ft.Padding(left=8, right=8, top=4, bottom=4),
                                     border_radius=8,
                                     content=ft.Text(str(proyecto["tareas_pendientes"]), size=11, color="black", weight="bold")
                                 ),
@@ -453,7 +456,7 @@ def VistaMisProyectos(page):
             controls=[
                 ft.Container(
                     bgcolor=COLOR_BADGE_DEP, border_radius=10,
-                    padding=ft.padding.symmetric(horizontal=6, vertical=2),
+                    padding=ft.Padding(left=6, right=6, top=2, bottom=2),
                     content=ft.Text(dep, size=9, color=COLOR_TEXT_DEP, weight=ft.FontWeight.BOLD),
                 ) for dep in proyecto["mis_departamentos"]
             ]
@@ -463,7 +466,7 @@ def VistaMisProyectos(page):
         estado_color = "#4CAF50" if proyecto["estado"] == "ACTIVO" else ("#FFC107" if proyecto["estado"] == "PAUSADO" else "#E53935")
 
         return ft.Container(
-            bgcolor="white", border_radius=12, padding=12, margin=ft.margin.only(bottom=10),
+            bgcolor="white", border_radius=12, padding=12, margin=ft.Margin(bottom=10),
             shadow=ft.BoxShadow(spread_radius=0, blur_radius=6, color=COLOR_SOMBRA_TARJETAS, offset=ft.Offset(0, 2)),
             content=ft.Column(
                 spacing=6,
@@ -492,7 +495,7 @@ def VistaMisProyectos(page):
                         alignment="end",
                         controls=[
                             ft.Container(
-                                padding=ft.padding.symmetric(horizontal=8, vertical=4), bgcolor="#F5F5F8", border_radius=12,
+                                padding=ft.Padding(left=8, right=8, top=4, bottom=4), bgcolor="#F5F5F8", border_radius=12,
                                 content=ft.Row([
                                     ft.Icon(ft.Icons.LIST_ALT, size=12, color=COLOR_LABEL),
                                     ft.Text(f"{proyecto['tareas_pendientes']} pendientes", size=10, color=COLOR_LABEL, weight="bold"),
@@ -518,8 +521,11 @@ def VistaMisProyectos(page):
 
     btn_filtrar = ft.Container(
         content=ft.Text("Filtrar", size=11, color="black"),
-        bgcolor="white", border=ft.border.all(1, COLOR_BORDE), border_radius=5,
-        padding=ft.padding.only(left=12, right=12, top=8, bottom=8),
+        bgcolor="white", border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+        ), border_radius=5,
+        padding=ft.Padding(left=12, right=12, top=8, bottom=8),
         on_click=mostrar_dialog_filtros, ink=True,
     )
 
@@ -529,7 +535,7 @@ def VistaMisProyectos(page):
         on_click=btn_buscar_click, ink=True,
     )
 
-    lista_proyectos = ft.ListView(spacing=0, expand=True, padding=ft.padding.only(bottom=20))
+    lista_proyectos = ft.ListView(spacing=0, expand=True, padding=ft.Padding(bottom=20))
 
     tarjeta_blanca = ft.Container(
         width=400, height=720, bgcolor="white", border_radius=25,
@@ -537,7 +543,7 @@ def VistaMisProyectos(page):
         content=ft.Column(
             spacing=0,
             controls=[
-                ft.Container(padding=ft.padding.only(left=15, top=10, bottom=5), content=ft.Container(content=ft.Text("←", size=26, color="black", weight="bold"), on_click=btn_volver_click, ink=True, border_radius=50, padding=3)),
+                ft.Container(padding=ft.Padding(left=15, top=10, bottom=5), content=ft.Container(content=ft.Text("←", size=26, color="black", weight="bold"), on_click=btn_volver_click, ink=True, border_radius=50, padding=3)),
                 ft.Container(height=55, width=400, bgcolor=COLOR_HEADER_BG, alignment=ft.Alignment(0, 0), content=ft.Text("MIS PROYECTOS", size=18, weight="bold", color="white")),
                 ft.Container(
                     padding=18, expand=True,

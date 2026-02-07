@@ -1,7 +1,7 @@
 import flet as ft
 
-def VistaError404(page):
-    #vista de error 404 - pagina no encontrada
+def VistaError404(page: ft.Page):
+    """Vista de error 404 - página no encontrada"""
     
     #colores del tema
     COLOR_FONDO_TOP = "#152060"      
@@ -10,9 +10,9 @@ def VistaError404(page):
     COLOR_BTN_BG = "#4682B4"         
     COLOR_SOMBRA = "#66000000"       
     
-    def btn_volver_click(e):
-        #volvemos a la pantalla de conexion
-        page.go("/")
+    async def btn_volver_click(e):
+        """Volvemos a la pantalla de conexion"""
+        await page.push_route("/")
     
     #tarjeta principal con el mensaje de error
     tarjeta_error = ft.Container(

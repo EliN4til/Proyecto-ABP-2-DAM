@@ -37,7 +37,7 @@ class EmpleadoModel(BaseModel):
     email: EmailStr
     contrasenya: str
     foto: Optional[str] = None
-    estado: Literal["ACTIVO", "INACTIVO"] = "ACTIVO"
+    estado: Literal["ACTIVO", "INACTIVO", "PENDIENTE"] = "ACTIVO"
     empresa: str
     equipo: str
     proyecto: Optional[str] = None
@@ -61,7 +61,7 @@ class DepartamentoModel(BaseModel):
     email: str
     telefono: str
     presupuesto: Optional[float] = None
-    estado: Literal["ACTIVO", "INACTIVO"] = "ACTIVO"
+    estado: Literal["ACTIVO", "INACTIVO", "EN CREACIÓN"] = "ACTIVO"
     miembros: List[MiembroDepartamento] = []
     proyecto_asignado: Optional[str] = None
     fecha_creacion: Optional[datetime] = None
@@ -74,7 +74,7 @@ class ProyectoModel(BaseModel):
     responsable: str
     cliente: str
     presupuesto: str
-    estado: Literal["ACTIVO", "PAUSADO"] = "ACTIVO"
+    estado: Literal["ACTIVO", "PAUSADO", "INACTIVO"] = "ACTIVO"
     fecha_inicio: datetime
     fecha_fin: Optional[datetime] = None
     descripcion: Optional[str] = ""

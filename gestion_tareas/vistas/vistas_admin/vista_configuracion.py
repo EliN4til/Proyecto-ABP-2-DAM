@@ -40,8 +40,8 @@ def VistaConfiguracion(page):
     sesion_valor = config_actual["sesion"] if config_actual else "1 hora"
 
     #manejadores de eventos
-    def btn_volver_click(e):
-        page.go("/area_admin")
+    async def btn_volver_click(e):
+        await page.push_route("/area_admin")
 
     def btn_guardar_click(e):
         #guardamos los cambios en el archivo json
@@ -100,13 +100,13 @@ def VistaConfiguracion(page):
     seccion_peligrosa = ft.Container(
         bgcolor="#FFF5F5",
         border_radius=10,
-        border=ft.border.all(1, COLOR_PELIGRO),
+        border=ft.Border(top=ft.BorderSide(1, COLOR_PELIGRO), bottom=ft.BorderSide(1, COLOR_PELIGRO), left=ft.BorderSide(1, COLOR_PELIGRO), right=ft.BorderSide(1, COLOR_PELIGRO)),
         padding=12,
         content=ft.Column([
             ft.Row([ft.Text("⚠️", size=16), ft.Text("Zona Crítica", size=13, color=COLOR_PELIGRO, weight="bold")], spacing=8),
             ft.Row([
                 ft.Text("Restablecer ajustes", size=11, color="black"),
-                ft.ElevatedButton("Reset", color="white", bgcolor=COLOR_PELIGRO, on_click=btn_restablecer_click, height=30)
+                ft.FilledButton("Reset", color="white", bgcolor=COLOR_PELIGRO, on_click=btn_restablecer_click, height=30)
             ], alignment="spaceBetween")
         ], spacing=10)
     )
@@ -123,7 +123,7 @@ def VistaConfiguracion(page):
         width=380, bgcolor="white", border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=20, right=20, top=55, bottom=25),
+            padding=ft.Padding(left=20, right=20, top=55, bottom=25),
             content=ft.Column([
                 ft.Container(height=400, content=ft.Column([
                     seccion_general,

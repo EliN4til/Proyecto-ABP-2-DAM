@@ -146,7 +146,7 @@ def VistaMisDatos(page):
                     content=ft.Text("Cancelar", color="black"), 
                     on_click=lambda e: setattr(dialog_pass, 'open', False) or page.update()
                 ),
-                ft.ElevatedButton(
+                ft.FilledButton(
                     content=ft.Text("Guardar Cambios", color="white", weight=ft.FontWeight.BOLD),
                     bgcolor=COLOR_BTN_PASS,
                     on_click=ejecutar_cambio
@@ -170,13 +170,13 @@ def VistaMisDatos(page):
             ]
         )
 
-    def btn_volver_click(e):
+    async def btn_volver_click(e):
         #navegación inteligente basada en el contexto guardado
         contexto = obtener_contexto()
         if contexto == "admin":
-            page.go("/area_admin")
+            await page.push_route("/area_admin")
         else:
-            page.go("/area_personal")
+            await page.push_route("/area_personal")
 
     btn_volver = ft.Container(
         content=ft.Text("←", size=24, color="white", weight=ft.FontWeight.BOLD),
@@ -240,7 +240,7 @@ def VistaMisDatos(page):
         border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color="#40000000", offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=20, right=20, top=55, bottom=20),
+            padding=ft.Padding(left=20, right=20, top=55, bottom=20),
             content=ft.Column(
                 spacing=10,
                 controls=[
@@ -248,7 +248,7 @@ def VistaMisDatos(page):
                     # BOTÓN CAMBIAR CONTRASEÑA
                     ft.Container(
                         alignment=ft.Alignment(0, 0),
-                        content=ft.ElevatedButton(
+                        content=ft.FilledButton(
                             content=ft.Row([
                                 ft.Icon(ft.Icons.LOCK_OUTLINED, size=18, color="white"),
                                 ft.Text("Cambiar Contraseña", weight=ft.FontWeight.BOLD, color="white")

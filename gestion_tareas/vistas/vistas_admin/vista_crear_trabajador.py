@@ -27,7 +27,7 @@ def VistaCrearTrabajador(page):
 
     def cargar_datos_maestros():
         """Carga datos de la BD y extrae nombres de empresas únicas"""
-        nonlocal proyectos_maestros, departamentos_maestros, equipos_maestros, empresas_dinamicas
+        nonlocal proyectos_maestros, departamentos_maestros, empresas_dinamicas
         
         # 1. Obtener datos de las colecciones
         exito_p, proys = obtener_todos_proyectos()
@@ -78,11 +78,11 @@ def VistaCrearTrabajador(page):
         
         page.update()
 
-    def btn_volver_click(e):
+    async def btn_volver_click(e):
         """Acción al hacer clic en el botón volver atrás"""
-        page.go("/gestionar_trabajadores")
+        await page.push_route("/gestionar_trabajadores")
 
-    def btn_crear_click(e):
+    async def btn_crear_click(e):
         """Valida y guarda el trabajador con la lógica de cascada aplicada"""
         
         if not input_nombre.value or not input_apellidos.value or not dropdown_empresa.value:
@@ -123,15 +123,43 @@ def VistaCrearTrabajador(page):
             "es_admin": False
         }
 
+        # Limpiar errores previos
+        input_nombre.error_text = None
+        input_apellidos.error_text = None
+        input_identificador.error_text = None
+        input_correo.error_text = None
+        input_telefono.error_text = None
+        page.update()
+
         exito, resultado = crear_empleado(nuevo_trabajador)
 
         if exito:
             page.snack_bar = ft.SnackBar(ft.Text(f"✅ {input_nombre.value} registrado correctamente"), bgcolor="green")
             page.snack_bar.open = True
-            page.go("/gestionar_trabajadores")
+            await page.push_route("/gestionar_trabajadores")
         else:
-            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
-            page.snack_bar.open = True
+            if isinstance(resultado, list):
+                errores_texto = []
+                for err in resultado:
+                    campo = err["loc"][0]
+                    msg = err["msg"]
+                    
+                    if campo == "nombre": input_nombre.error_text = msg
+                    elif campo == "apellidos": input_apellidos.error_text = msg
+                    elif campo == "identificador": input_identificador.error_text = msg
+                    elif campo == "email": input_correo.error_text = msg
+                    elif campo == "telefono": input_telefono.error_text = msg
+                    else:
+                        errores_texto.append(f"{campo}: {msg}")
+                
+                page.update()
+                
+                if errores_texto:
+                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {', '.join(errores_texto)}"), bgcolor="red")
+                    page.snack_bar.open = True
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
+                page.snack_bar.open = True
         
         page.update()
 
@@ -145,7 +173,7 @@ def VistaCrearTrabajador(page):
             border_color=COLOR_BORDE,
             border_radius=5,
             height=40,
-            content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+            content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         )
 
     def crear_dropdown(opciones, hint, on_change=None, disabled=False):
@@ -159,7 +187,7 @@ def VistaCrearTrabajador(page):
             height=40,
             expand=True,
             disabled=disabled,
-            content_padding=ft.padding.only(left=10, right=10),
+            content_padding=ft.Padding(left=10, right=10),
             options=[ft.dropdownm2.Option(op) for op in opciones],
             on_change=on_change
         )
@@ -238,7 +266,7 @@ def VistaCrearTrabajador(page):
         border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color="#40000000", offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=20, right=20, top=55, bottom=25),
+            padding=ft.Padding(left=20, right=20, top=55, bottom=25),
             content=ft.Column(
                 spacing=15,
                 controls=[

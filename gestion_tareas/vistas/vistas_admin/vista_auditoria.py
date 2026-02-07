@@ -1,6 +1,6 @@
 import flet as ft
 from datetime import datetime
-from modelos.init import db
+from servicios.db_manager import instancia_db
 
 def VistaAuditoria(page):
     # configuracion de colores
@@ -36,7 +36,7 @@ def VistaAuditoria(page):
         nonlocal registros_reales
         try:
             # consultamos la coleccion auditoria ordenada por lo mas reciente
-            cursor = db.auditoria.find().sort("_id", -1).limit(100)
+            cursor = instancia_db.obtener_instancia().auditoria.find().sort("_id", -1).limit(100)
             lista_raw = list(cursor)
             
             procesados = []
@@ -99,8 +99,8 @@ def VistaAuditoria(page):
     # ejecucion de carga inicial
     cargar_datos_auditoria()
 
-    def btn_volver_click(e):
-        page.go("/area_admin")
+    async def btn_volver_click(e):
+        await page.push_route("/area_admin")
 
     def btn_buscar_click(e):
         actualizar_lista_ui()
@@ -136,7 +136,7 @@ def VistaAuditoria(page):
                 ft.Text(icono_accion, size=20),
                 ft.Container(
                     bgcolor=color_accion, border_radius=8,
-                    padding=ft.padding.symmetric(horizontal=8, vertical=2),
+                    padding=ft.Padding(left=8, right=8, top=2, bottom=2),
                     content=ft.Text(registro["accion"], size=11, color="white", weight="bold"),
                 ),
                 ft.Text(registro["modulo"], size=14, color=COLOR_LABEL),
@@ -203,13 +203,13 @@ def VistaAuditoria(page):
     def crear_tarjeta_registro(reg):
         color_acc = get_color_accion(reg["accion"])
         return ft.Container(
-            bgcolor="white", border_radius=10, padding=10, margin=ft.margin.only(bottom=8),
+            bgcolor="white", border_radius=10, padding=10, margin=ft.Margin(bottom=8, top=0, left=0, right=0),
             shadow=ft.BoxShadow(spread_radius=0, blur_radius=4, color=COLOR_SOMBRA_TARJETAS, offset=ft.Offset(0, 2)),
             on_click=lambda e: mostrar_detalle_registro(reg), ink=True,
             content=ft.Row([
                 ft.Column([
                     ft.Text(get_icono_accion(reg["accion"]), size=18),
-                    ft.Container(bgcolor=color_acc, border_radius=6, padding=ft.padding.symmetric(horizontal=5, vertical=1),
+                    ft.Container(bgcolor=color_acc, border_radius=6, padding=ft.Padding(left=5, right=5, top=1, bottom=1),
                                 content=ft.Text(reg["accion"][:4].upper(), size=8, color="white", weight="bold")),
                 ], horizontal_alignment="center", spacing=3),
                 ft.Column([
@@ -225,13 +225,18 @@ def VistaAuditoria(page):
     # elementos de ui
     input_busqueda = ft.TextField(
         hint_text="Buscar en auditoría...", border_color=COLOR_BORDE, border_radius=5, height=38, expand=True,
-        text_size=12, content_padding=ft.padding.symmetric(horizontal=10), on_submit=btn_buscar_click
+        text_size=12, content_padding=ft.Padding(left=10, right=10), on_submit=btn_buscar_click
     )
 
     btn_filtrar = ft.Container(
         content=ft.Text("Filtrar", size=11, color="black"),
-        bgcolor="white", border=ft.border.all(1, COLOR_BORDE), border_radius=5,
-        padding=ft.padding.symmetric(horizontal=12, vertical=8), on_click=mostrar_dialog_filtros, ink=True
+        bgcolor="white", border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), 
+            bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), 
+            right=ft.BorderSide(1, COLOR_BORDE)
+        ), border_radius=5,
+        padding=ft.Padding(left=12, right=12, top=8, bottom=8), on_click=mostrar_dialog_filtros, ink=True
     )
 
     btn_buscar = ft.Container(
@@ -247,7 +252,7 @@ def VistaAuditoria(page):
         width=380, bgcolor="white", border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
+            padding=ft.Padding(left=18, right=18, top=55, bottom=20),
             content=ft.Column([
                 ft.Row([input_busqueda, btn_filtrar, btn_buscar], spacing=8),
                 contador_registros,

@@ -50,9 +50,9 @@ def VistaGestionarRoles(page):
         texto_contador.value = f"{len(roles_db)} roles configurados"
         page.update()
 
-    def btn_volver_click(e):
+    async def btn_volver_click(e):
         """Acción al hacer clic en el botón volver atrás - CORREGIDO A ADMIN"""
-        page.go("/area_admin")
+        await page.push_route("/area_admin")
 
     # --- DIÁLOGOS CRUD ---
 
@@ -69,7 +69,7 @@ def VistaGestionarRoles(page):
                         ft.Container(
                             bgcolor="#E8F5E9",
                             border_radius=8,
-                            padding=ft.padding.only(left=6, right=6, top=2, bottom=2),
+                            padding=ft.Padding(left=6, right=6, top=2, bottom=2),
                             content=ft.Text(accion, size=9, color="#4CAF50"),
                         )
                     )
@@ -80,8 +80,8 @@ def VistaGestionarRoles(page):
                 )
             
             return ft.Container(
-                padding=ft.padding.only(top=5, bottom=5),
-                border=ft.border.only(bottom=ft.BorderSide(1, COLOR_BORDE)),
+                padding=ft.Padding(top=5, bottom=5),
+                border=ft.Border(bottom=ft.BorderSide(1, COLOR_BORDE)),
                 content=ft.Column(
                     spacing=3,
                     controls=[
@@ -161,7 +161,7 @@ def VistaGestionarRoles(page):
                 permisos_checkboxes[f"{modulo}_{accion}"] = cb
             
             return ft.Container(
-                padding=ft.padding.only(top=5, bottom=5),
+                padding=ft.Padding(top=5, bottom=5),
                 content=ft.Column(
                     spacing=3,
                     controls=[
@@ -224,7 +224,7 @@ def VistaGestionarRoles(page):
             ),
             actions=[
                 ft.TextButton("Cancelar", on_click=lambda e: cerrar_dialog(dialog_editar)),
-                ft.ElevatedButton("Guardar", bgcolor=COLOR_BTN_CREAR, color="white", on_click=guardar_cambios_click),
+                ft.FilledButton("Guardar", bgcolor=COLOR_BTN_CREAR, color="white", on_click=guardar_cambios_click),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -304,7 +304,7 @@ def VistaGestionarRoles(page):
                 permisos_checkboxes[f"{modulo}_{accion}"] = cb
             
             return ft.Container(
-                padding=ft.padding.only(top=5, bottom=5),
+                padding=ft.Padding(top=5, bottom=5),
                 content=ft.Column(
                     spacing=3,
                     controls=[
@@ -375,7 +375,7 @@ def VistaGestionarRoles(page):
             ),
             actions=[
                 ft.TextButton("Cancelar", on_click=lambda e: cerrar_dialog(dialog_crear)),
-                ft.ElevatedButton("Crear", bgcolor=COLOR_BTN_CREAR, color="white", on_click=crear_rol_confirmar),
+                ft.FilledButton("Crear", bgcolor=COLOR_BTN_CREAR, color="white", on_click=crear_rol_confirmar),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -395,8 +395,8 @@ def VistaGestionarRoles(page):
         return ft.Container(
             bgcolor="white",
             border_radius=10,
-            padding=ft.padding.all(12),
-            margin=ft.margin.only(bottom=10),
+            padding=12,
+            margin=ft.Margin(bottom=10, left=0, right=0, top=0),
             shadow=ft.BoxShadow(
                 spread_radius=0,
                 blur_radius=4,
@@ -427,7 +427,7 @@ def VistaGestionarRoles(page):
                                         ft.Container(
                                             bgcolor=COLOR_LABEL,
                                             border_radius=8,
-                                            padding=ft.padding.only(left=8, right=8, top=2, bottom=2),
+                                            padding=ft.Padding(left=8, right=8, top=2, bottom=2),
                                             content=ft.Text(rol.get("codigo", "ROL"), size=9, color="white"),
                                         ),
                                     ]
@@ -444,14 +444,14 @@ def VistaGestionarRoles(page):
                         content=ft.Icon(ft.Icons.EDIT, size=18, color=COLOR_EDITAR),
                         on_click=lambda e, r=rol: mostrar_editar_rol(r),
                         ink=True,
-                        padding=ft.padding.all(5),
+                        padding=5,
                         border_radius=5,
                     ),
                     ft.Container(
                         content=ft.Icon(ft.Icons.DELETE, size=18, color=COLOR_ELIMINAR),
                         on_click=lambda e, r=rol: mostrar_confirmar_eliminar(r),
                         ink=True,
-                        padding=ft.padding.all(5),
+                        padding=5,
                         border_radius=5,
                     ),
                 ]
@@ -497,7 +497,7 @@ def VistaGestionarRoles(page):
             offset=ft.Offset(0, 5),
         ),
         content=ft.Container(
-            padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
+            padding=ft.Padding(left=18, right=18, top=55, bottom=20),
             content=ft.Column(
                 spacing=12,
                 controls=[

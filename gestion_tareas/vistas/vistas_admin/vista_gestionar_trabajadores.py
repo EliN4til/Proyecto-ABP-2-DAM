@@ -105,9 +105,9 @@ def VistaGestionarTrabajadores(page):
         cargar_datos_maestros()
         actualizar_lista_ui()
 
-    def btn_volver_click(e):
+    async def btn_volver_click(e):
         """Vuelve al Dashboard de Admin"""
-        page.go("/area_admin")
+        await page.push_route("/area_admin")
 
     def btn_buscar_click(e):
         """Acción al hacer clic en el botón buscar"""
@@ -116,13 +116,13 @@ def VistaGestionarTrabajadores(page):
         page.snack_bar.open = True
         page.update()
 
-    def btn_crear_trabajador_click(e):
+    async def btn_crear_trabajador_click(e):
         """Navega a la vista de creación"""
-        page.go("/crear_trabajador")
+        await page.push_route("/crear_trabajador")
 
-    def btn_gestionar_roles_click(e):
+    async def btn_gestionar_roles_click(e):
         """Navega a la vista de roles"""
-        page.go("/gestionar_roles")
+        await page.push_route("/gestionar_roles")
 
     # --- DIÁLOGOS DE GESTIÓN (DETALLE / EDITAR / ELIMINAR) ---
 
@@ -161,7 +161,7 @@ def VistaGestionarTrabajadores(page):
                                 ft.Container(
                                     bgcolor=estado_color,
                                     border_radius=10,
-                                    padding=ft.padding.only(left=10, right=10, top=3, bottom=3),
+                                    padding=ft.Padding(left=10, right=10, top=3, bottom=3),
                                     content=ft.Text(estado, size=10, color="white", weight=ft.FontWeight.BOLD),
                                 ),
                             ]
@@ -324,7 +324,7 @@ def VistaGestionarTrabajadores(page):
             ),
             actions=[
                 ft.TextButton(content=ft.Text("Cancelar", color="black"), on_click=lambda e: cerrar_dialog(dialog_editar)),
-                ft.ElevatedButton(content=ft.Text("Guardar", color="white"), bgcolor=COLOR_BTN_CREAR, on_click=guardar_cambios),
+                ft.FilledButton(content=ft.Text("Guardar", color="white"), bgcolor=COLOR_BTN_CREAR, on_click=guardar_cambios),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -374,7 +374,7 @@ def VistaGestionarTrabajadores(page):
             ),
             actions=[
                 ft.TextButton(content=ft.Text("Cancelar", color="black"), on_click=lambda e: cerrar_dialog(dialog_confirmar)),
-                ft.ElevatedButton(content=ft.Text("Eliminar", color="white"), bgcolor=COLOR_ELIMINAR, on_click=confirmar_eliminar),
+                ft.FilledButton(content=ft.Text("Eliminar", color="white"), bgcolor=COLOR_ELIMINAR, on_click=confirmar_eliminar),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -404,8 +404,8 @@ def VistaGestionarTrabajadores(page):
         return ft.Container(
             bgcolor="white",
             border_radius=10,
-            padding=ft.padding.all(10),
-            margin=ft.margin.only(bottom=8),
+            padding=10,
+            margin=ft.Margin(bottom=8, left=0, right=0, top=0),
             shadow=ft.BoxShadow(spread_radius=0, blur_radius=4, color=COLOR_SOMBRA_TARJETAS, offset=ft.Offset(0, 2)),
             content=ft.Row(
                 spacing=8,
@@ -453,7 +453,7 @@ def VistaGestionarTrabajadores(page):
         border_radius=5,
         height=38,
         expand=True,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         on_submit=lambda e: actualizar_lista_ui()
     )
 
@@ -483,7 +483,7 @@ def VistaGestionarTrabajadores(page):
         clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
+            padding=ft.Padding(left=18, right=18, top=55, bottom=20),
             content=ft.Column([
                 ft.Row([input_busqueda, btn_buscar], spacing=8),
                 contador_trabajadores,

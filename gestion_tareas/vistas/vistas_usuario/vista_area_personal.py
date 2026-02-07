@@ -18,10 +18,10 @@ def VistaAreaPersonal(page):
             height=95,
             bgcolor=COLOR_BOTON_BG,
             border_radius=12,
-            border=ft.border.all(1, COLOR_BOTON_BORDE),
+            border=ft.Border(top=ft.BorderSide(1, COLOR_BOTON_BORDE), bottom=ft.BorderSide(1, COLOR_BOTON_BORDE), left=ft.BorderSide(1, COLOR_BOTON_BORDE), right=ft.BorderSide(1, COLOR_BOTON_BORDE)),
             ink=True,
             on_click=on_click,
-            padding=ft.padding.only(top=12, bottom=8, left=5, right=5),
+            padding=ft.Padding(top=12, bottom=8, left=5, right=5),
             content=ft.Column(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -33,26 +33,26 @@ def VistaAreaPersonal(page):
             )
         )
 
-    def click_mis_datos(e):
-        page.go("/mis_datos")
+    async def click_mis_datos(e):
+        await page.push_route("/mis_datos")
 
-    def click_tareas_pendientes(e):
-        page.go("/tareas_pendientes")
+    async def click_tareas_pendientes(e):
+        await page.push_route("/tareas_pendientes")
 
-    def click_tareas_realizadas(e):
-        page.go("/tareas_realizadas")
+    async def click_tareas_realizadas(e):
+        await page.push_route("/tareas_realizadas")
 
-    def click_crear_tarea(e):
-        page.go("/nueva_tarea")
+    async def click_crear_tarea(e):
+        await page.push_route("/nueva_tarea")
 
-    def click_tareas_compartidas(e):
-        page.go("/compartido_conmigo")
+    async def click_tareas_compartidas(e):
+        await page.push_route("/compartido_conmigo")
 
-    def click_tareas_atrasadas(e):
-        page.go("/tareas_atrasadas")
+    async def click_tareas_atrasadas(e):
+        await page.push_route("/tareas_atrasadas")
 
-    def click_mis_proyectos(e):
-        page.go("/mis_proyectos")
+    async def click_mis_proyectos(e):
+        await page.push_route("/mis_proyectos")
 
     tarjeta_blanca = ft.Container(
         width=340,
@@ -60,7 +60,7 @@ def VistaAreaPersonal(page):
         border_radius=20,
         shadow=ft.BoxShadow(spread_radius=1, blur_radius=20, color=COLOR_SOMBRA),
         content=ft.Container(
-            padding=ft.padding.only(left=20, right=20, top=45, bottom=25),
+            padding=ft.Padding(left=20, right=20, top=45, bottom=25),
             content=ft.Column(
                 spacing=12,
                 tight=True,

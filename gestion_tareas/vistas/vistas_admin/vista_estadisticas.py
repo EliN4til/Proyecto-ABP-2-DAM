@@ -1,6 +1,6 @@
 import flet as ft
 from datetime import datetime
-from modelos.crud import obtener_todas_tareas, obtener_todos_empleados, obtener_todos_equipos, obtener_todos_departamentos
+from modelos.crud import obtener_todas_tareas, obtener_todos_empleados, obtener_todos_departamentos
 
 def VistaEstadisticas(page):
     # configuracion de colores del tema
@@ -17,7 +17,7 @@ def VistaEstadisticas(page):
     COLOR_PENDIENTES = "#FF9800"
     COLOR_COMPLETADAS = "#8BC34A"
     COLOR_ATRASADAS = "#F44336"
-    COLOR_EQUIPOS = "#9C27B0"
+    COLOR_DEPARTAMENTOS = "#9C27B0"
 
     # variables de estado para datos reales
     datos_db = {
@@ -26,7 +26,6 @@ def VistaEstadisticas(page):
         "tareas_pendientes": [],
         "tareas_completadas": [],
         "tareas_atrasadas": [],
-        "equipos": [],
         "departamentos": [],
         "ranking": [],
         "productividad": 0,
@@ -41,11 +40,9 @@ def VistaEstadisticas(page):
         # obtenemos colecciones
         exito_u, lista_u = obtener_todos_empleados()
         exito_t, lista_t = obtener_todas_tareas()
-        exito_e, lista_e = obtener_todos_equipos()
         exito_d, lista_d = obtener_todos_departamentos()
 
         if exito_u: datos_db["usuarios"] = lista_u
-        if exito_e: datos_db["equipos"] = lista_e
         if exito_d: datos_db["departamentos"] = lista_d
 
         if exito_t:
@@ -97,9 +94,9 @@ def VistaEstadisticas(page):
     # carga inicial de datos
     procesar_datos_reales()
 
-    def btn_volver_click(e):
+    async def btn_volver_click(e):
         # navegacion al dashboard
-        page.go("/area_admin")
+        await page.push_route("/area_admin")
 
     # dialogos de detalle
     def mostrar_dialog_usuarios(e):
@@ -107,8 +104,8 @@ def VistaEstadisticas(page):
         for u in datos_db["usuarios"]:
             if not isinstance(u, dict): continue
             item = ft.Container(
-                padding=ft.padding.all(8),
-                border=ft.border.only(bottom=ft.BorderSide(1, COLOR_BORDE)),
+                padding=8,
+                border=ft.Border(bottom=ft.BorderSide(1, COLOR_BORDE)),
                 content=ft.Row([
                     ft.Row([
                         ft.Text("👤", size=16),
@@ -128,8 +125,8 @@ def VistaEstadisticas(page):
         for t in datos_db["tareas"]:
             if not isinstance(t, dict): continue
             item = ft.Container(
-                padding=ft.padding.all(8),
-                border=ft.border.only(bottom=ft.BorderSide(1, COLOR_BORDE)),
+                padding=8,
+                border=ft.Border(bottom=ft.BorderSide(1, COLOR_BORDE)),
                 content=ft.Row([
                     ft.Column([
                         ft.Text(t.get("titulo", "Sin título"), size=11, color="black", weight="bold", max_lines=1),
@@ -137,7 +134,7 @@ def VistaEstadisticas(page):
                     ], expand=True, spacing=0),
                     ft.Container(
                         bgcolor=COLOR_COMPLETADAS if t.get("estado")=="completada" else COLOR_PENDIENTES,
-                        border_radius=8, padding=ft.padding.symmetric(horizontal=6, vertical=2),
+                        border_radius=8, padding=ft.Padding(left=6, right=6, top=2, bottom=2),
                         content=ft.Text(t.get("estado", "pendiente"), size=9, color="white")
                     )
                 ], alignment="spaceBetween")
@@ -156,8 +153,8 @@ def VistaEstadisticas(page):
                     nombre_asig = asigs[0].get("nombre", "N/A")
 
             item = ft.Container(
-                padding=ft.padding.all(8),
-                border=ft.border.only(bottom=ft.BorderSide(1, COLOR_BORDE)),
+                padding=8,
+                border=ft.Border(bottom=ft.BorderSide(1, COLOR_BORDE)),
                 content=ft.Column([
                     ft.Text(t.get("titulo", "Tarea"), size=11, color="black", weight="bold"),
                     ft.Row([
@@ -173,8 +170,8 @@ def VistaEstadisticas(page):
         lista_items = []
         for t in datos_db["tareas_completadas"]:
             item = ft.Container(
-                padding=ft.padding.all(8),
-                border=ft.border.only(bottom=ft.BorderSide(1, COLOR_BORDE)),
+                padding=8,
+                border=ft.Border(bottom=ft.BorderSide(1, COLOR_BORDE)),
                 content=ft.Column([
                     ft.Text(t.get("titulo", "Tarea"), size=11, color="black", weight="bold"),
                     ft.Row([
@@ -190,8 +187,8 @@ def VistaEstadisticas(page):
         lista_items = []
         for t in datos_db["tareas_atrasadas"]:
             item = ft.Container(
-                padding=ft.padding.all(8),
-                border=ft.border.only(bottom=ft.BorderSide(1, COLOR_BORDE)),
+                padding=8,
+                border=ft.Border(bottom=ft.BorderSide(1, COLOR_BORDE)),
                 content=ft.Column([
                     ft.Text(t.get("titulo", "Tarea"), size=11, color="black", weight="bold"),
                     ft.Row([
@@ -203,23 +200,23 @@ def VistaEstadisticas(page):
             lista_items.append(item)
         abrir_modal("⚠️ Tareas Atrasadas", lista_items)
 
-    def mostrar_dialog_equipos(e):
+    def mostrar_dialog_departamentos_tarjeta(e):
         lista_items = []
-        for eq in datos_db["equipos"]:
+        for d in datos_db["departamentos"]:
             item = ft.Container(
-                padding=ft.padding.all(8),
-                border=ft.border.only(bottom=ft.BorderSide(1, COLOR_BORDE)),
+                padding=8,
+                border=ft.Border(bottom=ft.BorderSide(1, COLOR_BORDE)),
                 content=ft.Row([
                     ft.Column([
-                        ft.Text(eq.get("nombre", "Equipo"), size=12, color="black", weight="bold"),
-                        ft.Text(f"Líder: {eq.get('lider', 'No asignado')}", size=10, color=COLOR_LABEL),
+                        ft.Text(d.get("nombre", "Departamento"), size=12, color="black", weight="bold"),
+                        ft.Text(f"Responsable: {d.get('responsable', 'No asignado')}", size=10, color=COLOR_LABEL),
                     ], spacing=0),
-                    ft.Container(bgcolor=COLOR_EQUIPOS, border_radius=10, padding=ft.padding.symmetric(horizontal=8, vertical=2),
-                                content=ft.Text(f"{len(eq.get('miembros', []))} 👥", size=10, color="white"))
+                    ft.Container(bgcolor=COLOR_DEPARTAMENTOS, border_radius=10, padding=ft.Padding(left=8, right=8, top=2, bottom=2),
+                                content=ft.Text(f"{len(d.get('miembros', []))} 👥", size=10, color="white"))
                 ], alignment="spaceBetween")
             )
             lista_items.append(item)
-        abrir_modal("🏢 Equipos Activos", lista_items)
+        abrir_modal("🏢 Departamentos Activos", lista_items)
 
     def abrir_modal(titulo, items):
         dialog = ft.AlertDialog(
@@ -241,8 +238,11 @@ def VistaEstadisticas(page):
     # constructores de componentes graficos
     def crear_tarjeta_metrica(titulo, valor, icono, color, subtitulo, on_click):
         return ft.Container(
-            width=155, height=90, bgcolor="white", border_radius=12, border=ft.border.all(1, COLOR_BORDE),
-            padding=ft.padding.all(12), ink=True, on_click=on_click,
+            width=155, height=90, bgcolor="white", border_radius=12, border=ft.Border(
+                top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+                left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+            ),
+            padding=12, ink=True, on_click=on_click,
             content=ft.Column([
                 ft.Row([ft.Text(icono, size=24), ft.Text(valor, size=22, color=color, weight="bold")], alignment="spaceBetween"),
                 ft.Text(titulo, size=11, color="black", weight="bold"),
@@ -259,7 +259,7 @@ def VistaEstadisticas(page):
 
     def crear_item_ranking(pos, nombre, tareas):
         return ft.Container(
-            padding=ft.padding.symmetric(vertical=5),
+            padding=ft.Padding(top=5, bottom=5),
             content=ft.Row([
                 ft.Row([
                     ft.Container(width=24, height=24, border_radius=12, bgcolor=COLOR_LABEL if pos <= 3 else "#E0E0E0",
@@ -267,7 +267,7 @@ def VistaEstadisticas(page):
                     ft.Text("👩‍💻" if pos%2==0 else "👨‍💻", size=16),
                     ft.Text(nombre, size=12, color="black"),
                 ], spacing=10),
-                ft.Container(bgcolor=COLOR_COMPLETADAS, border_radius=10, padding=ft.padding.symmetric(horizontal=8, vertical=2),
+                ft.Container(bgcolor=COLOR_COMPLETADAS, border_radius=10, padding=ft.Padding(left=8, right=8, top=2, bottom=2),
                             content=ft.Text(f"{tareas} tareas", size=10, color="white", weight="bold")),
             ], alignment="spaceBetween")
         )
@@ -284,7 +284,7 @@ def VistaEstadisticas(page):
         ], alignment="center", spacing=10),
         ft.Row([
             crear_tarjeta_metrica("Atrasadas", str(len(datos_db["tareas_atrasadas"])), "⚠️", COLOR_ATRASADAS, "Vencidas", mostrar_dialog_atrasadas),
-            crear_tarjeta_metrica("Equipos", str(len(datos_db["equipos"])), "🏢", COLOR_EQUIPOS, "Activos", mostrar_dialog_equipos),
+            crear_tarjeta_metrica("Departamentos", str(len(datos_db["departamentos"])), "🏢", COLOR_DEPARTAMENTOS, "Activos", mostrar_dialog_departamentos_tarjeta),
         ], alignment="center", spacing=10),
     ], spacing=10)
 
@@ -319,7 +319,10 @@ def VistaEstadisticas(page):
             items_departamentos.append(crear_barra_progreso(d.get("nombre", "Dep"), conteo, total_t, COLOR_TAREAS))
 
     seccion_departamentos = ft.Container(
-        bgcolor="white", border_radius=12, border=ft.border.all(1, COLOR_BORDE), padding=15,
+        bgcolor="white", border_radius=12, border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+        ), padding=15,
         content=ft.Column([
             ft.Text("Tareas por Departamento", size=13, color="black", weight="bold"),
             *(items_departamentos if items_departamentos else [ft.Text("Sin datos de asignación", size=11, color="grey")])
@@ -327,7 +330,10 @@ def VistaEstadisticas(page):
     )
 
     seccion_ranking = ft.Container(
-        bgcolor="white", border_radius=12, border=ft.border.all(1, COLOR_BORDE), padding=15,
+        bgcolor="white", border_radius=12, border=ft.Border(
+            top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), 
+            left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)
+        ), padding=15,
         content=ft.Column([
             ft.Text("🏆 Top Usuarios del Mes", size=13, color="black", weight="bold"),
             ft.Divider(height=1, color=COLOR_BORDE),
@@ -354,7 +360,7 @@ def VistaEstadisticas(page):
         width=380, bgcolor="white", border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
+            padding=ft.Padding(left=18, right=18, top=55, bottom=20),
             content=ft.Container(height=580, content=contenido_scroll)
         )
     )

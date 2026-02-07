@@ -104,8 +104,8 @@ def VistaGestionarProyectos(page):
         cargar_datos_maestros()
         actualizar_lista_ui()
 
-    def btn_volver_click(e):
-        page.go("/area_admin")
+    async def btn_volver_click(e):
+        await page.push_route("/area_admin")
 
     def btn_buscar_click(e):
         actualizar_lista_ui()
@@ -113,8 +113,8 @@ def VistaGestionarProyectos(page):
         page.snack_bar.open = True
         page.update()
 
-    def btn_crear_proyecto_click(e):
-        page.go("/crear_proyecto")
+    async def btn_crear_proyecto_click(e):
+        await page.push_route("/crear_proyecto")
 
     # --- DIÁLOGOS DE GESTIÓN (CRUD REAL) ---
 
@@ -132,7 +132,7 @@ def VistaGestionarProyectos(page):
                 ft.Container(
                     bgcolor="#E3F2FD",
                     border_radius=12,
-                    padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                    padding=ft.Padding(left=8, right=8, top=4, bottom=4),
                     content=ft.Text(d.get("nombre", ""), size=10, color="#1565C0", weight="bold"),
                 ) for d in deptos_proyecto
             ] if deptos_proyecto else [ft.Text("Sin departamentos asignados", size=11, color="#999999", italic=True)]
@@ -157,7 +157,7 @@ def VistaGestionarProyectos(page):
                                 ft.Container(
                                     bgcolor=estado_color,
                                     border_radius=10,
-                                    padding=ft.padding.only(left=10, right=10, top=3, bottom=3),
+                                    padding=ft.Padding(left=10, right=10, top=3, bottom=3),
                                     content=ft.Text(estado, size=10, color="white", weight=ft.FontWeight.BOLD),
                                 ),
                             ]
@@ -367,7 +367,7 @@ def VistaGestionarProyectos(page):
                     ),
                     actions=[
                         ft.TextButton("Cancelar", on_click=cancelar),
-                        ft.ElevatedButton("Eliminar", on_click=confirmar_eliminar, bgcolor=COLOR_ELIMINAR, color="white"),
+                        ft.FilledButton("Eliminar", on_click=confirmar_eliminar, bgcolor=COLOR_ELIMINAR, color="white"),
                     ],
                     actions_alignment=ft.MainAxisAlignment.END,
                 )
@@ -451,12 +451,12 @@ def VistaGestionarProyectos(page):
                         input_nombre_nuevo,
                         ft.Container(height=5),
                         ft.Text("Asignar miembros", size=10, color=COLOR_LABEL, weight="bold"),
-                        ft.Container(border=ft.border.all(1, COLOR_BORDE), border_radius=5, padding=8, height=200, content=lista_emps),
+                        ft.Container(border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)), border_radius=5, padding=8, height=200, content=lista_emps),
                     ], spacing=5, tight=True),
                 ),
                 actions=[
                     ft.TextButton("Cancelar", on_click=cancelar),
-                    ft.ElevatedButton("Añadir", on_click=guardar_nuevo, bgcolor=COLOR_VERDE, color="white"),
+                    ft.FilledButton("Añadir", on_click=guardar_nuevo, bgcolor=COLOR_VERDE, color="white"),
                 ],
             )
             
@@ -537,12 +537,12 @@ def VistaGestionarProyectos(page):
                         input_nombre_edit,
                         ft.Container(height=5),
                         ft.Text("Miembros", size=10, color=COLOR_LABEL, weight="bold"),
-                        ft.Container(border=ft.border.all(1, COLOR_BORDE), border_radius=5, padding=8, height=200, content=lista_emps_edit),
+                        ft.Container(border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)), border_radius=5, padding=8, height=200, content=lista_emps_edit),
                     ], spacing=5, tight=True),
                 ),
                 actions=[
                     ft.TextButton("Cancelar", on_click=cancelar),
-                    ft.ElevatedButton("Guardar", on_click=guardar_edit, bgcolor=COLOR_LABEL, color="white"),
+                    ft.FilledButton("Guardar", on_click=guardar_edit, bgcolor=COLOR_LABEL, color="white"),
                 ],
             )
             
@@ -631,7 +631,7 @@ def VistaGestionarProyectos(page):
                     ft.Row([
                         ft.Text("Departamentos", size=12, color="black", weight="bold"),
                         ft.Container(expand=True),
-                        ft.ElevatedButton(
+                        ft.FilledButton(
                             "+ Añadir",
                             on_click=abrir_nuevo_depto_en_proyecto,
                             bgcolor=COLOR_LABEL,
@@ -641,7 +641,7 @@ def VistaGestionarProyectos(page):
                         ),
                     ]),
                     ft.Container(
-                        border=ft.border.all(1, COLOR_BORDE),
+                        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
                         border_radius=6,
                         padding=8,
                         height=140,
@@ -651,7 +651,7 @@ def VistaGestionarProyectos(page):
             ),
             actions=[
                 ft.TextButton(content=ft.Text("Cancelar", color="black"), on_click=lambda e: setattr(dialog_editar, 'open', False) or page.update()),
-                ft.ElevatedButton(content=ft.Text("Guardar Cambios", color="white", weight="bold"), bgcolor=COLOR_BTN_CREAR, on_click=guardar_cambios_click),
+                ft.FilledButton(content=ft.Text("Guardar Cambios", color="white", weight="bold"), bgcolor=COLOR_BTN_CREAR, on_click=guardar_cambios_click),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -704,7 +704,7 @@ def VistaGestionarProyectos(page):
             ),
             actions=[
                 ft.TextButton(content=ft.Text("Cancelar", color="black"), on_click=lambda e: setattr(dialog_confirmar, 'open', False) or page.update()),
-                ft.ElevatedButton(content=ft.Text("Eliminar", color="white", weight="bold"), bgcolor=COLOR_ELIMINAR, on_click=confirmar_eliminar),
+                ft.FilledButton(content=ft.Text("Eliminar", color="white", weight="bold"), bgcolor=COLOR_ELIMINAR, on_click=confirmar_eliminar),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -764,7 +764,7 @@ def VistaGestionarProyectos(page):
             bgcolor="white",
             border_radius=10,
             padding=12,
-            margin=ft.margin.only(bottom=8),
+            margin=ft.Margin(bottom=8, left=0, right=0, top=0),
             shadow=ft.BoxShadow(spread_radius=0, blur_radius=4, color=COLOR_SOMBRA_TARJETAS, offset=ft.Offset(0, 2)),
             on_click=lambda e, p=proyecto: mostrar_detalle_proyecto(p),
             ink=True,
@@ -837,16 +837,16 @@ def VistaGestionarProyectos(page):
         border_radius=5,
         height=38,
         expand=True,
-        content_padding=ft.padding.only(left=10, right=10, top=8, bottom=8),
+        content_padding=ft.Padding(left=10, right=10, top=8, bottom=8),
         on_submit=lambda e: actualizar_lista_ui()
     )
 
     btn_filtrar = ft.Container(
         content=ft.Text("Filtrar", size=11, color="black"),
         bgcolor="white",
-        border=ft.border.all(1, COLOR_BORDE),
+        border=ft.Border(top=ft.BorderSide(1, COLOR_BORDE), bottom=ft.BorderSide(1, COLOR_BORDE), left=ft.BorderSide(1, COLOR_BORDE), right=ft.BorderSide(1, COLOR_BORDE)),
         border_radius=5,
-        padding=ft.padding.symmetric(horizontal=12, vertical=8),
+        padding=ft.Padding(left=12, right=12, top=8, bottom=8),
         on_click=mostrar_dialog_filtros,
         ink=True,
     )
@@ -890,7 +890,7 @@ def VistaGestionarProyectos(page):
             offset=ft.Offset(0, 5),
         ),
         content=ft.Container(
-            padding=ft.padding.only(left=18, right=18, top=55, bottom=20),
+            padding=ft.Padding(left=18, right=18, top=55, bottom=20),
             content=ft.Column(
                 spacing=10,
                 controls=[

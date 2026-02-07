@@ -1,7 +1,7 @@
 from bson import ObjectId
 from datetime import datetime
+from servicios.db_manager import instancia_db
 from modelos.init import (
-    db, 
     EmpleadoModel, 
     DepartamentoModel, 
     ProyectoModel, 
@@ -9,6 +9,10 @@ from modelos.init import (
     RolModel
 )
 from pydantic import ValidationError
+
+# Obtener la base de datos desde db_manager (conexión del login)
+def get_db():
+    return instancia_db.obtener_instancia()
 
 
 # ========== FUNCIONES AUXILIARES ==========
@@ -33,12 +37,28 @@ def registrar_log(accion, modulo, descripcion, usuario="Sistema"):
             "fecha_completa": datetime.now(),
             "ip": "127.0.0.1"
         }
-        db.auditoria.insert_one(log)
+        get_db().auditoria.insert_one(log)
     except Exception as e:
         print("error guardando log:", e)
 
 
+
 # ========== EMPLEADOS ==========
+
+def existe_email_empleado(email):
+    """Verifica si ya existe un empleado con ese email"""
+    if not email:
+        return False
+    empleado = get_db().empleados.find_one({"email": email})
+    return empleado is not None
+
+def existe_identificador_empleado(identificador):
+    """Verifica si ya existe un empleado con ese DNI/NIE"""
+    if not identificador:
+        return False
+    empleado = get_db().empleados.find_one({"identificador": identificador})
+    return empleado is not None
+
 
 def crear_empleado(datos):
     #crea un empleado nuevo
@@ -46,14 +66,25 @@ def crear_empleado(datos):
         # Validacion con Pydantic
         empleado = EmpleadoModel(**datos)
         
+        # Validar duplicados manual
+        errores = []
+        if existe_email_empleado(datos.get("email")):
+            errores.append({"loc": ["email"], "msg": "El email ya está registrado"})
+            
+        if existe_identificador_empleado(datos.get("identificador")):
+            errores.append({"loc": ["identificador"], "msg": "El DNI/NIE ya está registrado"})
+            
+        if errores:
+            return (False, errores)
+        
         # Insertar usando el dump del modelo
-        resultado = db.empleados.insert_one(empleado.model_dump(by_alias=True, exclude=["id"]))
+        resultado = get_db().empleados.insert_one(empleado.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Usuarios", "usuario registrado: " + datos["nombre"])
         return (True, datos)
     except ValidationError as e:
-        return (False, str(e))
+        return (False, e.errors())
     except Exception as e:
         return (False, str(e))
 
@@ -63,7 +94,7 @@ def obtener_empleado(id_empleado):
     if not es_id_valido(id_empleado):
         return (False, "id no valido")
     
-    empleado = db.empleados.find_one({"_id": ObjectId(id_empleado)})
+    empleado = get_db().empleados.find_one({"_id": ObjectId(id_empleado)})
     if empleado:
         empleado["_id"] = str(empleado["_id"])
         return (True, empleado)
@@ -72,7 +103,7 @@ def obtener_empleado(id_empleado):
 
 def obtener_empleado_por_email(email):
     #busca un empleado por email
-    empleado = db.empleados.find_one({"email": email})
+    empleado = get_db().empleados.find_one({"email": email})
     if empleado:
         empleado["_id"] = str(empleado["_id"])
         return (True, empleado)
@@ -82,7 +113,7 @@ def obtener_empleado_por_email(email):
 def obtener_todos_empleados():
     #devuelve todos los empleados
     try:
-        empleados = list(db.empleados.find())
+        empleados = list(get_db().empleados.find())
         for emp in empleados:
             emp["_id"] = str(emp["_id"])
         return (True, empleados)
@@ -96,7 +127,7 @@ def actualizar_empleado(id_empleado, datos):
         return (False, "id no valido")
     
     try:
-        resultado = db.empleados.update_one(
+        resultado = get_db().empleados.update_one(
             {"_id": ObjectId(id_empleado)},
             {"$set": datos}
         )
@@ -115,13 +146,13 @@ def eliminar_empleado(id_empleado):
     
     try:
         #pillamos el nombre antes de borrar para el log
-        emp = db.empleados.find_one({"_id": ObjectId(id_empleado)})
+        emp = get_db().empleados.find_one({"_id": ObjectId(id_empleado)})
         if emp:
             nombre = emp["nombre"] + " " + emp["apellidos"]
         else:
             nombre = id_empleado
         
-        resultado = db.empleados.delete_one({"_id": ObjectId(id_empleado)})
+        resultado = get_db().empleados.delete_one({"_id": ObjectId(id_empleado)})
         if resultado.deleted_count > 0:
             registrar_log("Eliminar", "Usuarios", "usuario eliminado: " + nombre)
             return (True, "empleado eliminado")
@@ -132,21 +163,41 @@ def eliminar_empleado(id_empleado):
 
 # ========== DEPARTAMENTOS ==========
 
+# ========== DEPARTAMENTOS ==========
+
+def existe_codigo_departamento(codigo):
+    if not codigo: return False
+    return get_db().departamentos.find_one({"codigo": codigo}) is not None
+
 def crear_departamento(datos):
     #crea un departamento
+
     try:
         # Validacion con Pydantic
+        if "fecha_creacion" not in datos:
+            datos["fecha_creacion"] = datetime.now()
+            
         depto = DepartamentoModel(**datos)
         
-        resultado = db.departamentos.insert_one(depto.model_dump(by_alias=True, exclude=["id"]))
+        # Validar duplicados manual
+        errores = []
+        if existe_codigo_departamento(datos.get("codigo")):
+            errores.append({"loc": ["codigo"], "msg": "El código de departamento ya existe"})
+            
+        if errores:
+            return (False, errores)
+        
+        resultado = get_db().departamentos.insert_one(depto.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
+
         registrar_log("Crear", "Departamentos", f"departamento creado: {datos['nombre']}")
         return (True, datos)
     except ValidationError as e:
-        return (False, str(e))
+        return (False, e.errors())
     except Exception as e:
         return (False, str(e))
+
 
 
 def obtener_departamento(id_departamento):
@@ -154,7 +205,7 @@ def obtener_departamento(id_departamento):
     if not es_id_valido(id_departamento):
         return (False, "id no valido")
     
-    depto = db.departamentos.find_one({"_id": ObjectId(id_departamento)})
+    depto = get_db().departamentos.find_one({"_id": ObjectId(id_departamento)})
     if depto:
         depto["_id"] = str(depto["_id"])
         return (True, depto)
@@ -164,11 +215,13 @@ def obtener_departamento(id_departamento):
 def obtener_todos_departamentos():
     #devuelve todos los departamentos
     try:
-        deptos = list(db.departamentos.find())
+        deptos = list(get_db().departamentos.find())
+
         for d in deptos:
             d["_id"] = str(d["_id"])
         return (True, deptos)
     except Exception as e:
+
         return (False, str(e))
 
 
@@ -178,7 +231,7 @@ def actualizar_departamento(id_departamento, datos):
         return (False, "id no valido")
     
     try:
-        resultado = db.departamentos.update_one(
+        resultado = get_db().departamentos.update_one(
             {"_id": ObjectId(id_departamento)},
             {"$set": datos}
         )
@@ -196,7 +249,7 @@ def eliminar_departamento(id_departamento):
         return (False, "id no valido")
     
     try:
-        resultado = db.departamentos.delete_one({"_id": ObjectId(id_departamento)})
+        resultado = get_db().departamentos.delete_one({"_id": ObjectId(id_departamento)})
         if resultado.deleted_count > 0:
             registrar_log("Eliminar", "Departamentos", "departamento borrado")
             return (True, "departamento eliminado")
@@ -207,19 +260,33 @@ def eliminar_departamento(id_departamento):
 
 # ========== PROYECTOS ==========
 
+# ========== PROYECTOS ==========
+
+def existe_codigo_proyecto(codigo):
+    if not codigo: return False
+    return get_db().proyectos.find_one({"codigo": codigo}) is not None
+
 def crear_proyecto(datos):
     #crea un proyecto nuevo
     try:
         # Validacion con Pydantic
         proyecto = ProyectoModel(**datos)
         
-        resultado = db.proyectos.insert_one(proyecto.model_dump(by_alias=True, exclude=["id"]))
+        # Validar duplicados manual
+        errores = []
+        if existe_codigo_proyecto(datos.get("codigo")):
+            errores.append({"loc": ["codigo"], "msg": "El código de proyecto ya existe"})
+            
+        if errores:
+            return (False, errores)
+        
+        resultado = get_db().proyectos.insert_one(proyecto.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Proyectos", f"proyecto iniciado: {datos['nombre']}")
         return (True, datos)
     except ValidationError as e:
-        return (False, str(e))
+        return (False, e.errors())
     except Exception as e:
         return (False, str(e))
 
@@ -229,7 +296,7 @@ def obtener_proyecto(id_proyecto):
     if not es_id_valido(id_proyecto):
         return (False, "id no valido")
     
-    proyecto = db.proyectos.find_one({"_id": ObjectId(id_proyecto)})
+    proyecto = get_db().proyectos.find_one({"_id": ObjectId(id_proyecto)})
     if proyecto:
         proyecto["_id"] = str(proyecto["_id"])
         return (True, proyecto)
@@ -239,7 +306,7 @@ def obtener_proyecto(id_proyecto):
 def obtener_todos_proyectos():
     #devuelve todos los proyectos
     try:
-        proyectos = list(db.proyectos.find())
+        proyectos = list(get_db().proyectos.find())
         for p in proyectos:
             p["_id"] = str(p["_id"])
         return (True, proyectos)
@@ -253,7 +320,7 @@ def actualizar_proyecto(id_proyecto, datos):
         return (False, "id no valido")
     
     try:
-        resultado = db.proyectos.update_one(
+        resultado = get_db().proyectos.update_one(
             {"_id": ObjectId(id_proyecto)},
             {"$set": datos}
         )
@@ -271,7 +338,7 @@ def eliminar_proyecto(id_proyecto):
         return (False, "id no valido")
     
     try:
-        resultado = db.proyectos.delete_one({"_id": ObjectId(id_proyecto)})
+        resultado = get_db().proyectos.delete_one({"_id": ObjectId(id_proyecto)})
         if resultado.deleted_count > 0:
             registrar_log("Eliminar", "Proyectos", "proyecto borrado")
             return (True, "proyecto eliminado")
@@ -288,7 +355,7 @@ def crear_tarea(datos):
         # Validacion con Pydantic
         tarea = TareaModel(**datos)
         
-        resultado = db.tareas.insert_one(tarea.model_dump(by_alias=True, exclude=["id"]))
+        resultado = get_db().tareas.insert_one(tarea.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Tareas", "tarea creada: " + datos["titulo"])
@@ -304,7 +371,7 @@ def obtener_tarea(id_tarea):
     if not es_id_valido(id_tarea):
         return (False, "id no valido")
     
-    tarea = db.tareas.find_one({"_id": ObjectId(id_tarea)})
+    tarea = get_db().tareas.find_one({"_id": ObjectId(id_tarea)})
     if tarea:
         tarea["_id"] = str(tarea["_id"])
         return (True, tarea)
@@ -314,7 +381,7 @@ def obtener_tarea(id_tarea):
 def obtener_todas_tareas():
     #devuelve todas las tareas
     try:
-        tareas = list(db.tareas.find())
+        tareas = list(get_db().tareas.find())
         for t in tareas:
             t["_id"] = str(t["_id"])
         return (True, tareas)
@@ -325,7 +392,7 @@ def obtener_todas_tareas():
 def obtener_tareas_por_estado(estado):
     #busca tareas por su estado (pendiente, completada, etc)
     try:
-        tareas = list(db.tareas.find({"estado": estado}))
+        tareas = list(get_db().tareas.find({"estado": estado}))
         for t in tareas:
             t["_id"] = str(t["_id"])
         return (True, tareas)
@@ -344,7 +411,7 @@ def obtener_tareas_pendientes_usuario(id_usuario, nombre_usuario):
                 {"compartido_por": nombre_usuario}
             ]
         }
-        tareas = list(db.tareas.find(filtro))
+        tareas = list(get_db().tareas.find(filtro))
         for t in tareas:
             t["_id"] = str(t["_id"])
         return (True, tareas)
@@ -355,7 +422,7 @@ def obtener_tareas_pendientes_usuario(id_usuario, nombre_usuario):
 def obtener_tareas_por_usuario(id_usuario):
     #busca las tareas asignadas a un usuario
     try:
-        tareas = list(db.tareas.find({"asignados.id_usuario": id_usuario}))
+        tareas = list(get_db().tareas.find({"asignados.id_usuario": id_usuario}))
         for t in tareas:
             t["_id"] = str(t["_id"])
         return (True, tareas)
@@ -372,7 +439,7 @@ def obtener_tareas_atrasadas():
             "estado": {"$ne": "completada"},
             "fecha_limite": {"$lt": ahora}
         }
-        tareas = list(db.tareas.find(filtro))
+        tareas = list(get_db().tareas.find(filtro))
         for t in tareas:
             t["_id"] = str(t["_id"])
         return (True, tareas)
@@ -394,7 +461,7 @@ def actualizar_tarea(id_tarea, datos):
     try:
         datos["fecha_modificacion"] = datetime.now()
         
-        resultado = db.tareas.update_one(
+        resultado = get_db().tareas.update_one(
             {"_id": ObjectId(id_str)},
             {"$set": datos}
         )
@@ -424,7 +491,7 @@ def eliminar_tarea(id_tarea):
         return (False, "id no valido")
     
     try:
-        resultado = db.tareas.delete_one({"_id": ObjectId(id_tarea)})
+        resultado = get_db().tareas.delete_one({"_id": ObjectId(id_tarea)})
         if resultado.deleted_count > 0:
             registrar_log("Eliminar", "Tareas", "tarea borrada")
             return (True, "tarea eliminada")
@@ -441,7 +508,7 @@ def crear_rol(datos):
         # Validacion con Pydantic
         rol = RolModel(**datos)
         
-        resultado = db.roles.insert_one(rol.model_dump(by_alias=True, exclude=["id"]))
+        resultado = get_db().roles.insert_one(rol.model_dump(by_alias=True, exclude=["id"]))
         datos["_id"] = str(resultado.inserted_id)
         
         registrar_log("Crear", "Roles", "rol creado: " + datos["nombre"])
@@ -457,7 +524,7 @@ def obtener_rol(id_rol):
     if not es_id_valido(id_rol):
         return (False, "id no valido")
     
-    rol = db.roles.find_one({"_id": ObjectId(id_rol)})
+    rol = get_db().roles.find_one({"_id": ObjectId(id_rol)})
     if rol:
         rol["_id"] = str(rol["_id"])
         return (True, rol)
@@ -467,7 +534,7 @@ def obtener_rol(id_rol):
 def obtener_todos_roles():
     #devuelve todos los roles
     try:
-        roles = list(db.roles.find())
+        roles = list(get_db().roles.find())
         for r in roles:
             r["_id"] = str(r["_id"])
         return (True, roles)
@@ -481,7 +548,7 @@ def actualizar_rol(id_rol, datos):
         return (False, "id no valido")
     
     try:
-        resultado = db.roles.update_one(
+        resultado = get_db().roles.update_one(
             {"_id": ObjectId(id_rol)},
             {"$set": datos}
         )
@@ -499,7 +566,7 @@ def eliminar_rol(id_rol):
         return (False, "id no válido")
     
     try:
-        resultado = db.roles.delete_one({"_id": ObjectId(id_rol)})
+        resultado = get_db().roles.delete_one({"_id": ObjectId(id_rol)})
         if resultado.deleted_count > 0:
             registrar_log("Eliminar", "Roles", f"rol eliminado id: {id_rol}")
             return (True, "rol eliminado")
@@ -515,7 +582,7 @@ def validar_login(email, contrasenya):
     if not email or not contrasenya:
         return (False, "email y contraseña son obligatorios")
     
-    empleado = db.empleados.find_one({"email": email})
+    empleado = get_db().empleados.find_one({"email": email})
     
     if not empleado:
         registrar_log("Login", "Sistema", f"fallo de acceso: el email {email} no existe")
