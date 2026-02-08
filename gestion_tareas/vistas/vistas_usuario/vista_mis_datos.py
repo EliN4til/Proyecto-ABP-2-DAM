@@ -197,31 +197,16 @@ def VistaMisDatos(page):
         padding=10,
     )
 
-    #foto del perfil
-    if foto_url:
-        contenido_foto = ft.Image(src=foto_url, width=100, height=100, fit=ft.ImageFit.COVER, border_radius=10)
-    else:
-        contenido_foto = ft.Icon("person", size=50, color="#999999")
-    
-    foto_perfil = ft.Container(width=100, height=100, border_radius=10, bgcolor="#E0E0E0", content=contenido_foto)
-
     #estado
     color_estado = "#4CAF50" if estado == "ACTIVO" else "#F44336"
     estado_widget = ft.Row(spacing=5, controls=[ft.Text(estado, size=14, color="black", weight=ft.FontWeight.BOLD), ft.Container(width=12, height=12, border_radius=6, bgcolor=color_estado)])
 
-    seccion_superior = ft.Row(
-        spacing=15,
-        vertical_alignment=ft.CrossAxisAlignment.START,
+    seccion_superior = ft.Column(
+        spacing=8,
         controls=[
-            foto_perfil,
-            ft.Column(
-                spacing=8,
-                controls=[
-                    ft.Column(spacing=2, controls=[ft.Text("Nombre", size=12, color=COLOR_LABEL), ft.Text(nombre, size=14, color="black", weight="bold")]),
-                    ft.Column(spacing=2, controls=[ft.Text("Apellidos", size=12, color=COLOR_LABEL), ft.Text(apellidos, size=14, color="black", weight="bold")]),
-                    ft.Column(spacing=2, controls=[ft.Text("Estado", size=12, color=COLOR_LABEL), estado_widget]),
-                ]
-            )
+            ft.Column(spacing=2, controls=[ft.Text("Nombre", size=12, color=COLOR_LABEL), ft.Text(nombre, size=14, color="black", weight="bold")]),
+            ft.Column(spacing=2, controls=[ft.Text("Apellidos", size=12, color=COLOR_LABEL), ft.Text(apellidos, size=14, color="black", weight="bold")]),
+            ft.Column(spacing=2, controls=[ft.Text("Estado", size=12, color=COLOR_LABEL), estado_widget]),
         ]
     )
 

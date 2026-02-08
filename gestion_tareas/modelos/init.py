@@ -98,15 +98,6 @@ class TareaModel(BaseModel):
     fecha_completado: Optional[datetime] = None
     fecha_modificacion: Optional[datetime] = None
 
-class RolModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    nombre: str
-    codigo: str
-    descripcion: Optional[str] = None
-    usuarios: int = 0
-    color: Optional[str] = "#4682B4"
-    permisos: dict = {}
-
 def cargar_datos_prueba():
     empleado = EmpleadoModel(
         identificador="26603992F",

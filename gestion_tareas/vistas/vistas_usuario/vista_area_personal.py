@@ -1,5 +1,5 @@
 import flet as ft
-from gestion_tareas.servicios.sesion_service import establecer_contexto
+from gestion_tareas.servicios.sesion_service import establecer_contexto, obtener_usuario
 
 def VistaAreaPersonal(page):
     #marcamos que estamos en el area personal
@@ -55,10 +55,10 @@ def VistaAreaPersonal(page):
         await page.push_route("/mis_proyectos")
 
     tarjeta_blanca = ft.Container(
-        width=340,
+        width=360,
         bgcolor="white",
-        border_radius=20,
-        shadow=ft.BoxShadow(spread_radius=1, blur_radius=20, color=COLOR_SOMBRA),
+        border_radius=25,
+        shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color="#40000000", offset=ft.Offset(0, 5)),
         content=ft.Container(
             padding=ft.Padding(left=20, right=20, top=45, bottom=25),
             content=ft.Column(
@@ -68,17 +68,17 @@ def VistaAreaPersonal(page):
                 controls=[
                     ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=12, controls=[
                         crear_boton_menu("🪪", "Mis datos", click_mis_datos),
-                        crear_boton_menu("📋", "Tareas Pendientes", click_tareas_pendientes),
-                        crear_boton_menu("✅", "Tareas Realizadas", click_tareas_realizadas),
+                        crear_boton_menu("📋", "Tareas pendientes", click_tareas_pendientes),
+                        crear_boton_menu("✅", "Tareas realizadas", click_tareas_realizadas),
                     ]),
                     ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=12, controls=[
-                        crear_boton_menu("✏️", "Crear Nueva Tarea", click_crear_tarea),
-                        crear_boton_menu("👥", "Tareas Compartidas\nConmigo", click_tareas_compartidas),
-                        crear_boton_menu("⚠️", "Tareas Atrasadas", click_tareas_atrasadas),
+                        crear_boton_menu("✏️", "Crear nueva tarea", click_crear_tarea),
+                        crear_boton_menu("👥", "Tareas compartidas\nconmigo", click_tareas_compartidas),
+                        crear_boton_menu("⚠️", "Tareas atrasadas", click_tareas_atrasadas),
                     ]),
                     ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=12, controls=[
                         ft.Container(width=95, height=95), 
-                        crear_boton_menu("🚀", "Mis Proyectos", click_mis_proyectos),
+                        crear_boton_menu("🚀", "Mis proyectos", click_mis_proyectos),
                         ft.Container(width=95, height=95),
                     ]),
                 ]
@@ -86,13 +86,24 @@ def VistaAreaPersonal(page):
         )
     )
 
+    #verificamos si es admin para mostrar boton de volver
+    #verificamos si es admin para mostrar boton de volver
+    usuario = obtener_usuario()
+    if usuario and usuario.get("es_admin", False):
+        #reemplazamos el hueco vacio de la derecha por el boton de volver
+        tarjeta_blanca.content.content.controls[2].controls[2] = crear_boton_menu(
+            "🛠️", 
+            "Volver al\nárea de admin", 
+            lambda e: page.go("/area_admin")
+        )
+
     header_flotante = ft.Container(
         width=220, height=50, bgcolor=COLOR_HEADER_BG, border_radius=25, alignment=ft.Alignment(0, 0),
         content=ft.Text("ÁREA PERSONAL", size=18, weight=ft.FontWeight.BOLD, color="white")
     )
 
     contenido_superpuesto = ft.Container(
-        width=340, height=420,
+        width=360, height=420,
         content=ft.Stack(controls=[
             ft.Container(content=tarjeta_blanca, top=25),
             ft.Container(content=header_flotante, top=0, left=60)

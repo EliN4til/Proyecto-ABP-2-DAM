@@ -422,9 +422,19 @@ def VistaCrearProyecto(page):
         # 3. Preparar datos para MongoDB
         nombre_proyecto = input_nombre.value.strip()
         
+        if not input_codigo.value:
+            contador = len(proyectos_db) + 1
+            nuevo_codigo = f"PRY-{contador:03d}"
+            # Verificar si existe y buscar el siguiente libre
+            while any(p["codigo"] == nuevo_codigo for p in proyectos_db):
+                contador += 1
+                nuevo_codigo = f"PRY-{contador:03d}"
+        else:
+            nuevo_codigo = input_codigo.value
+
         nuevo_proyecto = {
             "nombre": nombre_proyecto,
-            "codigo": input_codigo.value if input_codigo.value else f"PRY-{datetime.now().strftime('%H%M')}",
+            "codigo": nuevo_codigo,
             "responsable": dropdown_responsable.value if dropdown_responsable.value else "Admin",
             "cliente": input_cliente.value,
             "presupuesto": presupuesto_val,

@@ -163,10 +163,20 @@ def VistaCrearDepartamento(page):
             page.update()
             return
 
+        # Calcular código autoincremental sin colisiones
+        if not input_codigo.value:
+            contador = len(departamentos_maestros) + 1
+            nuevo_codigo = f"DEP-{contador:03d}"
+            while any(d["codigo"] == nuevo_codigo for d in departamentos_maestros):
+                contador += 1
+                nuevo_codigo = f"DEP-{contador:03d}"
+        else:
+            nuevo_codigo = input_codigo.value
+
         # Preparar datos
         datos_depto = {
             "nombre": input_nombre.value,
-            "codigo": input_codigo.value if input_codigo.value else "DEPT",
+            "codigo": nuevo_codigo,
             "empresa": dropdown_empresa.value,
             "proyecto_asignado": dropdown_proyecto.value, # Guardamos la relación con el proyecto
             "responsable": dropdown_responsable.value if dropdown_responsable.value else "Admin",

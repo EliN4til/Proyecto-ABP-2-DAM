@@ -1,12 +1,12 @@
 import flet as ft
 
 #importamos todas las vistas de admin
-from gestion_tareas.vistas.vistas_admin.vista_dashboard import VistaAreaAdmin
+from gestion_tareas.vistas.vistas_admin.vista_area_admin import VistaAreaAdmin
 from gestion_tareas.vistas.vistas_admin.vista_configuracion import VistaConfiguracion
 from gestion_tareas.vistas.vistas_admin.vista_auditoria import VistaAuditoria
 from gestion_tareas.vistas.vistas_admin.vista_estadisticas import VistaEstadisticas
 from gestion_tareas.vistas.vistas_admin.vista_gestionar_trabajadores import VistaGestionarTrabajadores
-from gestion_tareas.vistas.vistas_admin.vista_gestionar_roles import VistaGestionarRoles
+
 from gestion_tareas.vistas.vistas_admin.vista_crear_trabajador import VistaCrearTrabajador
 from gestion_tareas.vistas.vistas_admin.vista_crear_departamento import VistaCrearDepartamento
 
@@ -64,7 +64,7 @@ def main(page: ft.Page):
         "/auditoria": lambda: VistaAuditoria(page),
         "/estadisticas": lambda: VistaEstadisticas(page),
         "/gestionar_trabajadores": lambda: VistaGestionarTrabajadores(page),
-        "/gestionar_roles": lambda: VistaGestionarRoles(page),
+
         "/crear_trabajador": lambda: VistaCrearTrabajador(page),
         "/crear_departamento": lambda: VistaCrearDepartamento(page),
 
