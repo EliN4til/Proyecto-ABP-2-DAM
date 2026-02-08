@@ -41,9 +41,6 @@ def VistaAreaAdmin(page):
             )
         )
 
-    async def click_mis_datos(e):
-        await page.push_route("/mis_datos")
-
     async def click_gestionar_trabajadores(e):
         await page.push_route("/gestionar_trabajadores")
 
@@ -84,25 +81,24 @@ def VistaAreaAdmin(page):
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=12,
                         controls=[
-                            crear_boton_menu("🪪", "Mis datos", click_mis_datos),
                             crear_boton_menu("👥", "Gestionar\nTrabajadores", click_gestionar_trabajadores),
                             crear_boton_menu("🏢", "Gestionar\nDepartamentos", click_gestionar_departamentos),
+                            crear_boton_menu("📁", "Gestionar\nProyectos", click_gestionar_proyectos),
                         ]
                     ),
                     ft.Row(
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=12,
                         controls=[
-                            crear_boton_menu("📁", "Gestionar\nProyectos", click_gestionar_proyectos),
                             crear_boton_menu("📈", "Ver\nEstadísticas", click_ver_estadisticas),
                             crear_boton_menu("⚙️", "Configuración", click_configuracion),
+                            crear_boton_menu("📋", "Registro de\nAuditoría", click_auditoria),
                         ]
                     ),
                     ft.Row(
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=12,
                         controls=[
-                            crear_boton_menu("📋", "Registro de\nAuditoría", click_auditoria),
                             crear_boton_menu("👤", "Ir al Área\nPersonal", click_ir_area_personal),
                             crear_boton_menu("🚪", "Cerrar\nSesión", click_logout),
                         ]

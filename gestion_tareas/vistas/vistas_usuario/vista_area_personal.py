@@ -77,9 +77,7 @@ def VistaAreaPersonal(page):
                         crear_boton_menu("⚠️", "Tareas atrasadas", click_tareas_atrasadas),
                     ]),
                     ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=12, controls=[
-                        ft.Container(width=95, height=95), 
                         crear_boton_menu("🚀", "Mis proyectos", click_mis_proyectos),
-                        ft.Container(width=95, height=95),
                     ]),
                 ]
             )
@@ -87,15 +85,14 @@ def VistaAreaPersonal(page):
     )
 
     #verificamos si es admin para mostrar boton de volver
-    #verificamos si es admin para mostrar boton de volver
     usuario = obtener_usuario()
     if usuario and usuario.get("es_admin", False):
-        #reemplazamos el hueco vacio de la derecha por el boton de volver
-        tarjeta_blanca.content.content.controls[2].controls[2] = crear_boton_menu(
+        #añadimos el boton de volver a la tercera fila
+        tarjeta_blanca.content.content.controls[2].controls.append(crear_boton_menu(
             "🛠️", 
             "Volver al\nárea de admin", 
             lambda e: page.go("/area_admin")
-        )
+        ))
 
     header_flotante = ft.Container(
         width=220, height=50, bgcolor=COLOR_HEADER_BG, border_radius=25, alignment=ft.Alignment(0, 0),

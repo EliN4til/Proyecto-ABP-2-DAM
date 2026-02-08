@@ -26,9 +26,7 @@ def VistaGestionarDepartamentos(page):
     FILTROS_ESTADO = ["Todos", "ACTIVO", "INACTIVO", "EN CREACIÓN"]
     FILTROS_ORDEN = [
         "Nombre A-Z",
-        "Nombre Z-A",
-        "Más empleados",
-        "Menos empleados",
+        "Nombre Z-A"
     ]
 
     filtro_estado_actual = ["Todos"]

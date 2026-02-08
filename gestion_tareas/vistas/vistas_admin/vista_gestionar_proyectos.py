@@ -30,9 +30,6 @@ def VistaGestionarProyectos(page):
     FILTROS_ORDEN = [
         "Nombre A-Z",
         "Nombre Z-A",
-        "Más reciente",
-        "Más antiguo",
-        "Por cliente",
     ]
 
     filtro_estado_actual = ["Todos"]
