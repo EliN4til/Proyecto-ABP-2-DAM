@@ -19,7 +19,6 @@ def VistaCrearDepartamento(page):
     empresas_extraidas = []
 
     # Opciones estáticas
-    UBICACIONES = ["Oficina Central - Madrid", "Oficina Barcelona", "Oficina Valencia", "Remoto", "Todas las sedes"]
     ESTADOS = ["ACTIVO", "INACTIVO", "EN CREACIÓN"]
 
     # --- LÓGICA DE DATOS ---
@@ -167,7 +166,7 @@ def VistaCrearDepartamento(page):
             "proyecto_asignado": dropdown_proyecto.value, # Guardamos la relación con el proyecto
             "responsable": dropdown_responsable.value if dropdown_responsable.value else "Admin",
             "descripcion": input_descripcion.value if input_descripcion.value else "",
-            "ubicacion": dropdown_ubicacion.value if dropdown_ubicacion.value else "N/A",
+            "ubicacion": input_ubicacion.value if input_ubicacion.value else "N/A",
             "email": input_email.value if input_email.value else "",
             "telefono": input_telefono.value if input_telefono.value else "",
             "presupuesto": pres_val,
@@ -275,7 +274,7 @@ def VistaCrearDepartamento(page):
     dropdown_proyecto = crear_dropdown([], "2º Selecciona Proyecto...", disabled=True, on_change=on_proyecto_change)
     
     dropdown_responsable = crear_dropdown([], "Selecciona responsable...", disabled=True)
-    dropdown_ubicacion = crear_dropdown(UBICACIONES, "Ubicación...")
+    input_ubicacion = crear_campo_texto("Ubicación del departamento")
     dropdown_estado = crear_dropdown(ESTADOS, "Estado...")
 
     # Formulario
@@ -301,7 +300,7 @@ def VistaCrearDepartamento(page):
             
             ft.Row([
                 ft.Column([crear_label("Presupuesto Anual"), input_presupuesto], spacing=3, expand=True),
-                ft.Column([crear_label("Ubicación"), dropdown_ubicacion], spacing=3, expand=True),
+                ft.Column([crear_label("Ubicación"), input_ubicacion], spacing=3, expand=True),
             ], spacing=10),
             
             ft.Column([crear_label("Estado"), dropdown_estado], spacing=3),

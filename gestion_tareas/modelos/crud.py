@@ -663,25 +663,25 @@ def ordenar_tareas(tareas, criterio_orden, campo_fecha="fecha_fin"):
     
     #ordenar de A a Z
     if criterio_orden == "Alfabético A-Z":
-        return sorted(tareas, key=lambda t: t.get("titulo", "").lower())
+        return sorted(tareas, key=lambda t: (t.get("titulo") or "").lower())
     
     #ordenar de Z a A
     elif criterio_orden == "Alfabético Z-A":
-        return sorted(tareas, key=lambda t: t.get("titulo", "").lower(), reverse=True)
+        return sorted(tareas, key=lambda t: (t.get("titulo") or "").lower(), reverse=True)
     
     #ordenar por prioridad alta primero
     elif criterio_orden == "Por prioridad alta":
         orden = {"alta": 0, "media": 1, "baja": 2}
-        return sorted(tareas, key=lambda t: orden.get(t.get("prioridad", "media").lower(), 1))
+        return sorted(tareas, key=lambda t: orden.get((t.get("prioridad") or "media").lower(), 1))
     
     #ordenar por prioridad baja primero
     elif criterio_orden == "Por prioridad baja":
         orden = {"alta": 2, "media": 1, "baja": 0}
-        return sorted(tareas, key=lambda t: orden.get(t.get("prioridad", "media").lower(), 1))
+        return sorted(tareas, key=lambda t: orden.get((t.get("prioridad") or "media").lower(), 1))
     
     #ordenar por proyecto
     elif criterio_orden == "Por proyecto":
-        return sorted(tareas, key=lambda t: t.get("proyecto", "").lower())
+        return sorted(tareas, key=lambda t: (t.get("proyecto") or "").lower())
     
     #ordenar por fecha de menor a mayor
     elif criterio_orden == "Fecha ascendente":
