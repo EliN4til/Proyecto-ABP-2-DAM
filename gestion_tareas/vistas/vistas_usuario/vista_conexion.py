@@ -101,8 +101,7 @@ def VistaConexion(page):
                 await page.push_route("/login")
             else:
                 overlay_carga.visible = False
-                page.snack_bar = ft.SnackBar(ft.Text("❌ Password incorrecta"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", "Password incorrecta", "red")
                 page.update()
 
         dialog_p = ft.AlertDialog(
@@ -156,6 +155,21 @@ def VistaConexion(page):
             content=ft.Text("No tienes ninguna conexión guardada", size=11, color="grey", italic=True),
             alignment=ft.Alignment(0, 0)
         )
+
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
 
     #creacion de campos de entrada
     def crear_input(es_pass=False):

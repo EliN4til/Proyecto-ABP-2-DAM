@@ -117,8 +117,7 @@ def VistaLogin(page):
                     await page.push_route("/area_personal")
             else:
                 overlay_carga.visible = False
-                page.snack_bar = ft.SnackBar(ft.Text("❌ Contraseña de usuario incorrecta"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Acceso Denegado", "Contraseña de usuario incorrecta", "red")
                 page.update()
 
         dialog_p = ft.AlertDialog(
@@ -173,6 +172,21 @@ def VistaLogin(page):
 
     async def btn_back_click(e):
         await page.push_route("/")
+
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
 
     # helper para crear inputs
     def crear_input(es_password=False):

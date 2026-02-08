@@ -1,5 +1,6 @@
 import flet as ft
 from datetime import datetime
+from gestion_tareas.utilidades.validaciones import validar_telefono, validar_dni, validar_email
 from gestion_tareas.modelos.crud import crear_empleado, obtener_todos_proyectos, obtener_todos_departamentos
 
 def VistaCrearTrabajador(page):
@@ -80,27 +81,44 @@ def VistaCrearTrabajador(page):
         """Acción al hacer clic en el botón volver atrás"""
         await page.push_route("/gestionar_trabajadores")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     async def btn_crear_click(e):
         """Valida y guarda el trabajador con la lógica de cascada aplicada"""
         
         if not input_nombre.value:
             input_nombre.error_text = "El nombre es obligatorio"
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El nombre es obligatorio", "red")
             page.update()
             return
             
         if not input_apellidos.value:
             input_apellidos.error_text = "Los apellidos son obligatorios"
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ Los apellidos son obligatorios", "red")
             page.update()
             return
 
         if not dropdown_empresa.value:
             dropdown_empresa.error_text = "Debes seleccionar una empresa"
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ Debes seleccionar una empresa", "red")
             page.update()
             return
 
         if not input_identificador.value:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ El DNI/NIE es obligatorio"), bgcolor="red")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El DNI/NIE es obligatorio", "red")
             page.update()
             return
 
@@ -130,6 +148,46 @@ def VistaCrearTrabajador(page):
             "es_admin": False
         }
 
+        # Validar DNI
+        if input_identificador.value:
+             es_valido_dni, msg_dni = validar_dni(input_identificador.value)
+             if not es_valido_dni:
+                 mostrar_mensaje_dialog(page, "⚠️ DNI/NIE inválido", f"❌ {msg_dni}", "red")
+                 page.update()
+                 return
+        
+        # Validar Email
+        if input_correo.value:
+             es_valido_email, msg_email = validar_email(input_correo.value)
+             if not es_valido_email:
+                 mostrar_mensaje_dialog(page, "⚠️ Email inválido", f"❌ {msg_email}", "red")
+                 page.update()
+                 return
+
+        # Validar DNI
+        if input_identificador.value:
+             es_valido_dni, msg_dni = validar_dni(input_identificador.value)
+             if not es_valido_dni:
+                 mostrar_mensaje_dialog(page, "⚠️ DNI/NIE inválido", f"❌ {msg_dni}", "red")
+                 page.update()
+                 return
+        
+        # Validar Email
+        if input_correo.value:
+             es_valido_email, msg_email = validar_email(input_correo.value)
+             if not es_valido_email:
+                 mostrar_mensaje_dialog(page, "⚠️ Email inválido", f"❌ {msg_email}", "red")
+                 page.update()
+                 return
+
+        # Validar teléfono manualmente
+        if input_telefono.value and input_telefono.value != "N/A":
+             es_valido_tel, msg_tel = validar_telefono(input_telefono.value)
+             if not es_valido_tel:
+                 mostrar_mensaje_dialog(page, "⚠️ Teléfono inválido", f"❌ {msg_tel}", "red")
+                 page.update()
+                 return
+
         # Limpiar errores previos
         input_nombre.error_text = None
         input_apellidos.error_text = None
@@ -141,8 +199,7 @@ def VistaCrearTrabajador(page):
         exito, resultado = crear_empleado(nuevo_trabajador)
 
         if exito:
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ {input_nombre.value} registrado correctamente"), bgcolor="green")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "✅ Éxito", f"{input_nombre.value} registrado correctamente", "green")
             await page.push_route("/gestionar_trabajadores")
         else:
             if isinstance(resultado, list):
@@ -156,17 +213,23 @@ def VistaCrearTrabajador(page):
                     elif campo == "identificador": input_identificador.error_text = msg
                     elif campo == "email": input_correo.error_text = msg
                     elif campo == "telefono": input_telefono.error_text = msg
-                    else:
-                        errores_texto.append(f"{campo}: {msg}")
+                    
+                    
+                    # Traducir mensajes de error comunes de Pydantic
+                    if "value is not a valid email address" in msg:
+                        msg = "El formato del correo electrónico no es válido"
+                    elif "Field required" in msg:
+                        msg = "Este campo es obligatorio"
+                    
+                    # Siempre añadimos a la lista para el diálogo
+                    errores_texto.append(f"• {campo.capitalize()}: {msg}")
                 
                 page.update()
                 
                 if errores_texto:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {', '.join(errores_texto)}"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "❌ Error de Validación", f"Se encontraron los siguientes errores:\n\n" + "\n".join(errores_texto), "red")
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error: {resultado}", "red")
         
         page.update()
 

@@ -97,11 +97,7 @@ def VistaCrearDepartamento(page):
             dropdown_responsable.options = []
             dropdown_responsable.disabled = True
             dropdown_responsable.value = None
-            page.snack_bar = ft.SnackBar(
-                ft.Text(f"⚠️ No hay empleados asignados al proyecto '{proyecto_sel}'"), 
-                bgcolor="orange"
-            )
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "⚠️ Aviso", f"No hay empleados asignados al proyecto '{proyecto_sel}'", "orange")
         
         page.update()
 
@@ -109,25 +105,37 @@ def VistaCrearDepartamento(page):
         """Vuelve a la gestión de departamentos"""
         await page.push_route("/gestionar_departamentos")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     async def btn_crear_click(e):
         """Recopila datos y guarda el departamento real en MongoDB"""
         
         # Validaciones obligatorias
         if not input_nombre.value or not dropdown_empresa.value or not dropdown_proyecto.value:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ Nombre, Cliente y Proyecto son obligatorios"), bgcolor="red")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ Nombre, Cliente y Proyecto son obligatorios", "red")
             page.update()
             return
         
         if not input_email.value:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ El email es obligatorio"), bgcolor="red")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El email es obligatorio", "red")
             page.update()
             return
 
         if not input_telefono.value:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ El teléfono es obligatorio"), bgcolor="red")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El teléfono es obligatorio", "red")
             page.update()
             return
         
@@ -135,8 +143,7 @@ def VistaCrearDepartamento(page):
         if input_email.value and input_email.value.strip():
             es_valido, mensaje = validar_email(input_email.value)
             if not es_valido:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ {mensaje}"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error de Formato", f"❌ {mensaje}", "red")
                 page.update()
                 return
         
@@ -144,8 +151,7 @@ def VistaCrearDepartamento(page):
         if input_telefono.value and input_telefono.value.strip():
             es_valido, mensaje = validar_telefono(input_telefono.value)
             if not es_valido:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ {mensaje}"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error de Formato", f"❌ {mensaje}", "red")
                 page.update()
                 return
         
@@ -153,8 +159,7 @@ def VistaCrearDepartamento(page):
         try:
             pres_val = float(input_presupuesto.value.replace(",", ".")) if input_presupuesto.value else 0.0
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ El presupuesto debe ser un número"), bgcolor="red")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "❌ Error de Formato", "El presupuesto debe ser un número", "red")
             page.update()
             return
 
@@ -186,8 +191,7 @@ def VistaCrearDepartamento(page):
         exito, resultado = crear_departamento(datos_depto)
 
         if exito:
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Departamento '{input_nombre.value}' creado"), bgcolor="green")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "✅ Éxito", f"Departamento '{input_nombre.value}' creado", "green")
             await page.push_route("/gestionar_departamentos")
         else:
             if isinstance(resultado, list):
@@ -210,12 +214,10 @@ def VistaCrearDepartamento(page):
                 page.update()
                 
                 if errores_texto:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {', '.join(errores_texto)}"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "❌ Error de Validación", f"Error: {', '.join(errores_texto)}", "red")
             else:
                 # Error general
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error: {resultado}", "red")
         
         page.update()
 

@@ -209,10 +209,24 @@ def VistaMisProyectos(page):
     async def btn_volver_click(e):
         await page.push_route("/area_personal")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     def btn_buscar_click(e):
         actualizar_lista_ui()
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "🔍 Búsqueda", f"Buscando: {input_busqueda.value}", "blue")
         page.update()
 
     #diálogo para ver las tareas específicas del proyecto

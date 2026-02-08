@@ -188,18 +188,29 @@ def VistaTareasPendientes(page):
 
         exito, resultado = completar_tarea(id_tarea)
         if exito:
-            page.snack_bar = ft.SnackBar(
-                ft.Text(f"✅ Tarea '{tarea['titulo']}' marcada como realizada"),
-                bgcolor=COLOR_COMPLETADO
-            )
+            mostrar_mensaje_dialog(page, "✅ Éxito", f"Tarea '{tarea['titulo']}' marcada como realizada", COLOR_COMPLETADO)
             # Volvemos a cargar de la BD y refrescamos la UI
             nonlocal todas_las_tareas
             todas_las_tareas = cargar_tareas_pendientes()
             actualizar_lista_tareas()
         else:
-            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al completar: {resultado}"), bgcolor=COLOR_ELIMINAR)
+            mostrar_mensaje_dialog(page, "❌ Error", f"Error al completar: {resultado}", COLOR_ELIMINAR)
         
-        page.snack_bar.open = True
+        page.update()
+
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color=None):
+        """Muestra un diálogo de alerta"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
         page.update()
 
     def get_color_prioridad(prioridad):
@@ -217,8 +228,8 @@ def VistaTareasPendientes(page):
     def btn_buscar_click(e):
         #aplicamos el filtro de búsqueda
         actualizar_lista_tareas()
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
-        page.snack_bar.open = True
+
+        mostrar_mensaje_dialog(page, "🔍 Búsqueda", f"Buscando: {input_busqueda.value}")
         page.update()
 
     async def btn_anadir_click(e):
@@ -409,10 +420,11 @@ def VistaTareasPendientes(page):
         
         def abrir_sel_departamento_edit(e):
             if not edit_proyecto_obj[0]:
-                page.snack_bar = ft.SnackBar(ft.Text("⚠️ Selecciona un proyecto primero"), bgcolor="orange")
-                page.snack_bar.open = True
-                page.update()
+
+                mostrar_mensaje_dialog(page, "⚠️ Requisito", "Selecciona un proyecto primero", "orange")
+                # page.update() se llama dentro de mostrar_mensaje_dialog
                 return
+
             filt = [d for d in departamentos_db if d.get("proyecto_asignado") == edit_proyecto_obj[0]["nombre"]]
             radio_d = ft.RadioGroup(
                 value=edit_departamento[0],
@@ -523,15 +535,13 @@ def VistaTareasPendientes(page):
         def guardar_edicion(e):
             # Validaciones
             if not input_titulo_edit.value or not input_titulo_edit.value.strip():
-                page.snack_bar = ft.SnackBar(ft.Text("❌ El título es obligatorio"), bgcolor="red")
-                page.snack_bar.open = True
-                page.update()
+                mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El título es obligatorio", "red")
+                # page.update() se llama dentro de mostrar_mensaje_dialog
                 return
             
             if not edit_proyecto_obj[0]:
-                page.snack_bar = ft.SnackBar(ft.Text("❌ Selecciona un proyecto"), bgcolor="red")
-                page.snack_bar.open = True
-                page.update()
+                mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ Selecciona un proyecto", "red")
+                # page.update() se llama dentro de mostrar_mensaje_dialog
                 return
             
             # Preparar datos actualizados
@@ -540,6 +550,11 @@ def VistaTareasPendientes(page):
                 for p in edit_personas_seleccionadas
             ]
             
+            if edit_fecha_fin_val[0] and edit_fecha_inicio_val[0] and edit_fecha_fin_val[0] < edit_fecha_inicio_val[0]:
+                mostrar_mensaje_dialog(page, "📅 Error en Fechas", "❌ La fecha de entrega no puede ser anterior a la fecha de inicio", "red")
+                # page.update() se llama dentro de mostrar_mensaje_dialog
+                return
+
             datos_actualizados = {
                 "titulo": input_titulo_edit.value.strip(),
                 "requisitos": input_requisitos_edit.value if input_requisitos_edit.value else "Sin requisitos",
@@ -560,15 +575,13 @@ def VistaTareasPendientes(page):
             dialog_editar.open = False
             
             if exito:
-                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tarea actualizada correctamente"), bgcolor=COLOR_COMPLETADO)
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "✅ Éxito", f"Tarea actualizada correctamente", COLOR_COMPLETADO)
                 # Recargar tareas
                 nonlocal todas_las_tareas
                 todas_las_tareas = cargar_tareas_pendientes()
                 actualizar_lista_tareas()
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor=COLOR_ELIMINAR)
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error: {resultado}", COLOR_ELIMINAR)
             
             page.update()
         
@@ -858,18 +871,15 @@ def VistaTareasPendientes(page):
             if id_tarea:
                 exito, resultado = eliminar_tarea(id_tarea)
                 if exito:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tarea '{tarea['titulo']}' eliminada"))
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "✅ Éxito", f"Tarea '{tarea['titulo']}' eliminada", COLOR_COMPLETADO)
                     #recargamos la lista de tareas
                     nonlocal todas_las_tareas
                     todas_las_tareas = cargar_tareas_pendientes()
                     actualizar_lista_tareas()
                 else:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al eliminar: {resultado}"))
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "❌ Error", f"Error al eliminar: {resultado}", COLOR_ELIMINAR)
             else:
-                page.snack_bar = ft.SnackBar(ft.Text("❌ Error: No se pudo identificar la tarea"))
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", "No se pudo identificar la tarea", COLOR_ELIMINAR)
             
             page.update()
 
@@ -976,8 +986,7 @@ def VistaTareasPendientes(page):
             dialog_filtros.open = False
             #actualizamos la lista con los nuevos filtros
             actualizar_lista_tareas()
-            page.snack_bar = ft.SnackBar(ft.Text("✅ Filtros aplicados"))
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "✅ Filtros", "Filtros aplicados", "blue")
             page.update()
 
         def limpiar_filtros(e):

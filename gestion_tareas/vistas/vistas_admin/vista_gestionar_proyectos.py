@@ -107,10 +107,24 @@ def VistaGestionarProyectos(page):
     async def btn_volver_click(e):
         await page.push_route("/area_admin")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     def btn_buscar_click(e):
         actualizar_lista_ui()
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "🔍 Búsqueda", f"Buscando: {input_busqueda.value}", "blue")
         page.update()
 
     async def btn_crear_proyecto_click(e):
@@ -410,8 +424,7 @@ def VistaGestionarProyectos(page):
             
             def guardar_nuevo(e):
                 if not input_nombre_nuevo.value or not input_nombre_nuevo.value.strip():
-                    page.snack_bar = ft.SnackBar(ft.Text("❌ Nombre obligatorio"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "⚠️ Campo obligatorio", "❌ El nombre es obligatorio", "red")
                     page.update()
                     return
                 
@@ -511,8 +524,7 @@ def VistaGestionarProyectos(page):
             
             def guardar_edit(e):
                 if not input_nombre_edit.value or not input_nombre_edit.value.strip():
-                    page.snack_bar = ft.SnackBar(ft.Text("❌ Nombre obligatorio"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "⚠️ Campo obligatorio", "❌ El nombre es obligatorio", "red")
                     page.update()
                     return
                 
@@ -552,8 +564,7 @@ def VistaGestionarProyectos(page):
 
         def guardar_cambios_click(e):
             if not input_nom.value or not input_cli.value:
-                page.snack_bar = ft.SnackBar(ft.Text("❌ El nombre y el cliente son obligatorios"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El nombre y el cliente son obligatorios", "red")
                 page.update()
                 return
 
@@ -561,19 +572,31 @@ def VistaGestionarProyectos(page):
             nombre_proyecto_anterior = proyecto.get("nombre")
 
             # 1. Actualizar datos del proyecto
+            # Validar Presupuesto
+            presupuesto_val = 0.0
+            if input_pres.value:
+                try:
+                    limpio = input_pres.value.replace("€", "").replace(",", ".").strip()
+                    if limpio:
+                        presupuesto_val = float(limpio)
+                except ValueError:
+                    mostrar_mensaje_dialog(page, "❌ Error de Formato", "El presupuesto debe ser un número válido", "red")
+                    page.update()
+                    return
+
+            # 1. Actualizar datos del proyecto
             datos_actualizados = {
                 "nombre": nombre_proyecto_nuevo,
                 "cliente": input_cli.value,
                 "codigo": input_cod.value,
-                "presupuesto": f"{input_pres.value} €",
+                "presupuesto": presupuesto_val,
                 "responsable": dropdown_resp.value,
                 "estado": dropdown_est.value
             }
 
             exito, msj = actualizar_proyecto(proyecto["_id"], datos_actualizados)
             if not exito:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al actualizar proyecto: {msj}"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error al actualizar proyecto: {msj}", "red")
                 page.update()
                 return
 
@@ -600,10 +623,9 @@ def VistaGestionarProyectos(page):
                             "miembros": depto.get("miembros", []),
                         })
 
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Proyecto actualizado correctamente"), bgcolor="green")
+            mostrar_mensaje_dialog(page, "✅ Éxito", "Proyecto actualizado correctamente", "green")
             dialog_editar.open = False
             refrescar_datos_completos()
-            page.snack_bar.open = True
             page.update()
 
         # Inicializar lista visual
@@ -665,13 +687,12 @@ def VistaGestionarProyectos(page):
         def confirmar_eliminar(e):
             exito, msj = eliminar_proyecto(proyecto["_id"])
             if exito:
-                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Proyecto '{proyecto.get('nombre')}' eliminado"), bgcolor="green")
+                mostrar_mensaje_dialog(page, "✅ Éxito", f"Proyecto '{proyecto.get('nombre')}' eliminado", "green")
                 dialog_confirmar.open = False
                 refrescar_datos_completos()
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al eliminar: {msj}"), bgcolor="red")
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error al eliminar: {msj}", "red")
             
-            page.snack_bar.open = True
             page.update()
 
         dialog_confirmar = ft.AlertDialog(

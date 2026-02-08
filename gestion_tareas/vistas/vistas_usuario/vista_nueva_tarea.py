@@ -130,7 +130,7 @@ def VistaNuevaTarea(page):
     page.overlay.append(date_picker_fin)
 
     # --- LÓGICA DE GUARDADO REAL ---
-    def ejecutar_creacion_tarea():
+    async def ejecutar_creacion_tarea():
         """Función que ejecuta la creación real de la tarea"""
         asignados_formateados = []
         for p in personas_seleccionadas:
@@ -156,15 +156,27 @@ def VistaNuevaTarea(page):
         }
 
         exito, resultado = crear_tarea(nueva_tarea_data)
-
         if exito:
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Tarea creada correctamente"), bgcolor="green")
-            page.snack_bar.open = True
-            page.push_route("/tareas_pendientes")
+            mostrar_mensaje_dialog(page, "✅ Éxito", f"Tarea creada correctamente", "green")
+            await page.push_route("/tareas_pendientes")
         else:
-            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="red")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "❌ Error", f"Error: {resultado}", "red")
         
+        page.update()
+
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
         page.update()
 
     def mostrar_dialog_campos_faltantes(campos_faltantes):
@@ -215,10 +227,10 @@ def VistaNuevaTarea(page):
             dialog_confirmar.open = False
             page.update()
         
-        def confirmar_creacion(e):
+        async def confirmar_creacion(e):
             dialog_confirmar.open = False
             page.update()
-            ejecutar_creacion_tarea()
+            await ejecutar_creacion_tarea()
         
         dialog_confirmar = ft.AlertDialog(
             modal=True,
@@ -267,7 +279,7 @@ def VistaNuevaTarea(page):
         dialog_confirmar.open = True
         page.update()
 
-    def btn_crear_click(e):
+    async def btn_crear_click(e):
         # 1. Validar campos obligatorios
         campos_faltantes = []
         
@@ -282,13 +294,17 @@ def VistaNuevaTarea(page):
             mostrar_dialog_campos_faltantes(campos_faltantes)
             return
         
+        if date_picker_fin.value and date_picker_inicio.value and date_picker_fin.value < date_picker_inicio.value:
+            mostrar_mensaje_dialog(page, "📅 Error en Fechas", "❌ La fecha de entrega no puede ser anterior a la fecha de inicio", "red")
+            return
+
         # 2. Si no hay fecha límite, pedir confirmación
         if not date_picker_fin.value:
             mostrar_dialog_confirmar_sin_fecha()
             return
         
         # 3. Si todo está completo, crear la tarea directamente
-        ejecutar_creacion_tarea()
+        await ejecutar_creacion_tarea()
 
     # --- FUNCIONES DE LA INTERFAZ ---
     async def btn_volver_click(e):
@@ -389,9 +405,7 @@ def VistaNuevaTarea(page):
     def crear_dialog_departamento():
         # AÑADIDO: filtrar departamentos por proyecto seleccionado
         if not proyecto_seleccionado_obj[0]:
-            page.snack_bar = ft.SnackBar(ft.Text("⚠️ Selecciona un proyecto primero"), bgcolor="orange")
-            page.snack_bar.open = True
-            page.update()
+            mostrar_mensaje_dialog(page, "⚠️ Requisito Previo", "Selecciona un proyecto primero antes de elegir un departamento", "orange")
             return None
         
         proyecto_nombre = proyecto_seleccionado_obj[0].get("nombre")

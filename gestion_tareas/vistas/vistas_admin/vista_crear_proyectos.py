@@ -77,6 +77,21 @@ def VistaCrearProyecto(page):
     async def btn_volver_click(e):
         await page.push_route("/gestionar_proyectos")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     # ============================================
     # GESTIÓN DE DEPARTAMENTOS TEMPORALES
     # ============================================
@@ -141,8 +156,8 @@ def VistaCrearProyecto(page):
             nombre = departamentos_temp[idx]["nombre"]
             departamentos_temp.pop(idx)
             actualizar_lista_deptos_visual()
-            page.snack_bar = ft.SnackBar(ft.Text(f"Departamento '{nombre}' eliminado"), bgcolor=COLOR_ROJO)
-            page.snack_bar.open = True
+            actualizar_lista_deptos_visual()
+            mostrar_mensaje_dialog(page, "🗑️ Eliminado", f"Departamento '{nombre}' eliminado", COLOR_ROJO)
             page.update()
     
     def abrir_dialog_nuevo_departamento(e):
@@ -189,16 +204,14 @@ def VistaCrearProyecto(page):
         
         def guardar_departamento(e):
             if not input_nombre_depto.value or not input_nombre_depto.value.strip():
-                page.snack_bar = ft.SnackBar(ft.Text("❌ El nombre del departamento es obligatorio"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El nombre del departamento es obligatorio", "red")
                 page.update()
                 return
             
             # Verificar que no exista ya un departamento con ese nombre
             for d in departamentos_temp:
                 if d["nombre"].lower() == input_nombre_depto.value.strip().lower():
-                    page.snack_bar = ft.SnackBar(ft.Text("❌ Ya existe un departamento con ese nombre"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "⚠️ Duplicado", "❌ Ya existe un departamento con ese nombre", "red")
                     page.update()
                     return
             
@@ -209,8 +222,7 @@ def VistaCrearProyecto(page):
             
             dialog_nuevo_depto.open = False
             actualizar_lista_deptos_visual()
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Departamento '{input_nombre_depto.value}' añadido"), bgcolor=COLOR_VERDE)
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "✅ Éxito", f"✅ Departamento '{input_nombre_depto.value}' añadido", COLOR_VERDE)
             page.update()
         
         def cancelar(e):
@@ -305,8 +317,7 @@ def VistaCrearProyecto(page):
         
         def guardar_edicion(e):
             if not input_nombre_depto_edit.value or not input_nombre_depto_edit.value.strip():
-                page.snack_bar = ft.SnackBar(ft.Text("❌ El nombre es obligatorio"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El nombre es obligatorio", "red")
                 page.update()
                 return
             
@@ -314,8 +325,7 @@ def VistaCrearProyecto(page):
             nuevo_nombre = input_nombre_depto_edit.value.strip()
             for i, d in enumerate(departamentos_temp):
                 if i != idx and d["nombre"].lower() == nuevo_nombre.lower():
-                    page.snack_bar = ft.SnackBar(ft.Text("❌ Ya existe otro departamento con ese nombre"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "⚠️ Duplicado", "❌ Ya existe otro departamento con ese nombre", "red")
                     page.update()
                     return
             
@@ -326,8 +336,7 @@ def VistaCrearProyecto(page):
             
             dialog_edit_depto.open = False
             actualizar_lista_deptos_visual()
-            page.snack_bar = ft.SnackBar(ft.Text(f"✅ Departamento actualizado"), bgcolor=COLOR_VERDE)
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "✅ Éxito", f"✅ Departamento actualizado", COLOR_VERDE)
             page.update()
         
         def cancelar(e):
@@ -383,21 +392,32 @@ def VistaCrearProyecto(page):
         
         # 1. Validaciones
         if not input_nombre.value or not input_cliente.value:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ El nombre y el cliente son obligatorios"), bgcolor="red")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ El nombre y el cliente son obligatorios", "red")
             page.update()
             return
 
         if not fecha_inicio_val[0] or not fecha_fin_val[0]:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ Debes seleccionar las fechas del proyecto"), bgcolor="red")
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ Debes seleccionar las fechas del proyecto", "red")
+            page.update()
+            return
+
+        if fecha_fin_val[0] < fecha_inicio_val[0]:
+            mostrar_mensaje_dialog(page, "📅 Error en Fechas", "❌ La fecha de fin no puede ser anterior a la fecha de inicio", "red")
             page.update()
             return
 
         # 2. Procesar Presupuesto
-        presupuesto_val = "0"
+        presupuesto_val = 0.0
         if input_presupuesto.value:
-            presupuesto_val = input_presupuesto.value.replace("€", "").strip()
+            try:
+                # Limpiar cualquier símbolo o espacio y convertir a float
+                limpio = input_presupuesto.value.replace("€", "").replace(",", ".").strip()
+                if limpio:
+                    presupuesto_val = float(limpio)
+            except ValueError:
+                 mostrar_mensaje_dialog(page, "❌ Error de Formato", "El presupuesto debe ser un número válido", "red")
+                 page.update()
+                 return
 
         # 3. Preparar datos para MongoDB
         nombre_proyecto = input_nombre.value.strip()
@@ -407,7 +427,7 @@ def VistaCrearProyecto(page):
             "codigo": input_codigo.value if input_codigo.value else f"PRY-{datetime.now().strftime('%H%M')}",
             "responsable": dropdown_responsable.value if dropdown_responsable.value else "Admin",
             "cliente": input_cliente.value,
-            "presupuesto": f"{presupuesto_val} €",
+            "presupuesto": presupuesto_val,
             "estado": dropdown_estado.value if dropdown_estado.value else "ACTIVO",
             "fecha_inicio": fecha_inicio_val[0],
             "fecha_fin": fecha_fin_val[0],
@@ -442,12 +462,10 @@ def VistaCrearProyecto(page):
                 page.update()
                 
                 if errores_texto:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {', '.join(errores_texto)}"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "❌ Error de Validación", f"❌ Error: {', '.join(errores_texto)}", "red")
                     page.update()
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error al guardar proyecto: {resultado}"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error de Sistema", f"❌ Error al guardar proyecto: {resultado}", "red")
                 page.update()
             return
 
@@ -480,8 +498,7 @@ def VistaCrearProyecto(page):
         if deptos_creados > 0:
             msg += f" con {deptos_creados} departamento{'s' if deptos_creados > 1 else ''}"
         
-        page.snack_bar = ft.SnackBar(ft.Text(msg), bgcolor="green")
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "✅ Éxito", msg, "green")
         await page.push_route("/gestionar_proyectos")
         page.update()
 

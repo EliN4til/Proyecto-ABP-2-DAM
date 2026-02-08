@@ -43,11 +43,25 @@ def VistaConfiguracion(page):
     async def btn_volver_click(e):
         await page.push_route("/area_admin")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     def btn_guardar_click(e):
         #guardamos los cambios en el archivo json
         guardar_ajustes_locales(input_empresa.value, dd_sesion.value)
-        page.snack_bar = ft.SnackBar(ft.Text("✅ Configuración actualizada"), bgcolor="green")
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "✅ Éxito", "Configuración actualizada", "green")
         page.update()
 
     def btn_restablecer_click(e):
@@ -55,8 +69,7 @@ def VistaConfiguracion(page):
         input_empresa.value = "TechSolutions S.L"
         dd_sesion.value = "1 hora"
         guardar_ajustes_locales(input_empresa.value, dd_sesion.value)
-        page.snack_bar = ft.SnackBar(ft.Text("🔄 Valores restablecidos"))
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "🔄 Restablecido", "Valores restablecidos", "blue")
         page.update()
 
     #componentes de la interfaz
