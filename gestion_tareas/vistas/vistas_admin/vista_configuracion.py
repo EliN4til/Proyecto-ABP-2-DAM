@@ -1,6 +1,5 @@
 import flet as ft
-import os
-import json
+from gestion_tareas.modelos.crud import obtener_configuracion, actualizar_configuracion
 
 def VistaConfiguracion(page):
     #configuracion de colores del tema
@@ -13,31 +12,23 @@ def VistaConfiguracion(page):
     COLOR_BTN_GUARDAR = "#4682B4"
     COLOR_PELIGRO = "#E53935"
 
-    #gestion de archivo fisico para persistencia sencilla
-    ruta_raiz = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    carpeta_util = os.path.join(ruta_raiz, "utilidades")
-    archivo_settings = os.path.join(carpeta_util, "settings.json")
+    # --- LÓGICA DE BASE DE DATOS ---
+    
+    config_db = {}
+    
+    def cargar_datos_config():
+        nonlocal config_db
+        exito, res = obtener_configuracion()
+        if exito:
+            config_db = res
+        else:
+            config_db = {"empresa": "TechSolutions S.L", "sesion": "1 hora"} # Fallback
 
-    def guardar_ajustes_locales(empresa, sesion):
-        if not os.path.exists(carpeta_util):
-            os.makedirs(carpeta_util)
-        datos = {"empresa": empresa, "sesion": sesion}
-        with open(archivo_settings, "w") as f:
-            json.dump(datos, f)
+    # Carga inicial
+    cargar_datos_config()
+    empresa_valor = config_db.get("empresa", "TechSolutions S.L")
+    sesion_valor = config_db.get("sesion", "1 hora")
 
-    def leer_ajustes_locales():
-        if os.path.exists(archivo_settings):
-            try:
-                with open(archivo_settings, "r") as f:
-                    return json.load(f)
-            except:
-                return None
-        return None
-
-    #cargamos los datos guardados o ponemos por defecto
-    config_actual = leer_ajustes_locales()
-    empresa_valor = config_actual["empresa"] if config_actual else "TechSolutions S.L"
-    sesion_valor = config_actual["sesion"] if config_actual else "1 hora"
 
     #manejadores de eventos
     async def btn_volver_click(e):
@@ -59,17 +50,31 @@ def VistaConfiguracion(page):
         page.update()
 
     def btn_guardar_click(e):
-        #guardamos los cambios en el archivo json
-        guardar_ajustes_locales(input_empresa.value, dd_sesion.value)
-        mostrar_mensaje_dialog(page, "✅ Éxito", "Configuración actualizada", "green")
+        #guardamos los cambios en la BD
+        nuevos_datos = {
+            "empresa": input_empresa.value,
+            "sesion": dd_sesion.value
+        }
+        exito, msg = actualizar_configuracion(nuevos_datos)
+        
+        if exito:
+            mostrar_mensaje_dialog(page, "✅ Éxito", "Configuración actualizada en BD", "green")
+        else:
+            mostrar_mensaje_dialog(page, "❌ Error", f"Error al guardar: {msg}", "red")
         page.update()
 
     def btn_restablecer_click(e):
         #volvemos a los valores originales
         input_empresa.value = "TechSolutions S.L"
         dd_sesion.value = "1 hora"
-        guardar_ajustes_locales(input_empresa.value, dd_sesion.value)
-        mostrar_mensaje_dialog(page, "🔄 Restablecido", "Valores restablecidos", "blue")
+        
+        nuevos_datos = {
+            "empresa": "TechSolutions S.L",
+            "sesion": "1 hora"
+        }
+        actualizar_configuracion(nuevos_datos)
+        
+        mostrar_mensaje_dialog(page, "🔄 Restablecido", "Valores restablecidos a defecto", "blue")
         page.update()
 
     #componentes de la interfaz
