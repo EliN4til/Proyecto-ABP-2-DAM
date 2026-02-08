@@ -18,9 +18,7 @@ def VistaCrearTrabajador(page):
 
     empresas_dinamicas = []
 
-    # Opciones estáticas
-    CARGOS = ["Junior Developer", "Mid Developer", "Senior Developer", "Tech Lead", "Project Manager", "Scrum Master", "UX Designer", "QA Engineer", "DevOps Engineer"]
-    UBICACIONES = ["Oficina Central - Madrid", "Oficina Barcelona", "Oficina Valencia", "Remoto"]
+
     ESTADOS = ["ACTIVO", "INACTIVO", "PENDIENTE"]
 
     # --- LÓGICA DE CARGA Y EXTRACCIÓN DINÁMICA ---
@@ -85,9 +83,18 @@ def VistaCrearTrabajador(page):
     async def btn_crear_click(e):
         """Valida y guarda el trabajador con la lógica de cascada aplicada"""
         
-        if not input_nombre.value or not input_apellidos.value or not dropdown_empresa.value:
-            page.snack_bar = ft.SnackBar(ft.Text("❌ Nombre, Apellidos y Empresa son obligatorios"), bgcolor="red")
-            page.snack_bar.open = True
+        if not input_nombre.value:
+            input_nombre.error_text = "El nombre es obligatorio"
+            page.update()
+            return
+            
+        if not input_apellidos.value:
+            input_apellidos.error_text = "Los apellidos son obligatorios"
+            page.update()
+            return
+
+        if not dropdown_empresa.value:
+            dropdown_empresa.error_text = "Debes seleccionar una empresa"
             page.update()
             return
 
@@ -115,10 +122,10 @@ def VistaCrearTrabajador(page):
             "equipo": input_equipo.value if input_equipo.value else "Sin equipo",
             "proyecto": dropdown_proyecto.value if dropdown_proyecto.value else "Sin proyecto",
             "departamento": depto_info,
-            "cargo": dropdown_cargo.value if dropdown_cargo.value else "Empleado",
+            "cargo": input_cargo.value if input_cargo.value else "Empleado",
             "id_empleado": input_id_empleado.value if input_id_empleado.value else f"EMP-{datetime.now().strftime('%H%M%S')}",
             "telefono": input_telefono.value if input_telefono.value else "N/A",
-            "ubicacion": dropdown_ubicacion.value if dropdown_ubicacion.value else "Oficina Central",
+            "ubicacion": input_ubicacion.value if input_ubicacion.value else "Oficina Central",
             "fecha_incorporacion": datetime.now(),
             "es_admin": False
         }
@@ -217,8 +224,8 @@ def VistaCrearTrabajador(page):
     dropdown_departamento = crear_dropdown([], "3º Departamento (Selecciona empresa)", disabled=True)
     input_equipo = crear_campo_texto("Nombre del equipo")
     
-    dropdown_cargo = crear_dropdown(CARGOS, "Selecciona cargo...")
-    dropdown_ubicacion = crear_dropdown(UBICACIONES, "Ubicación física...")
+    input_cargo = crear_campo_texto("Cargo (ej. Junior Developer)")
+    input_ubicacion = crear_campo_texto("Ubicación física (ej. Remoto)")
     dropdown_estado = crear_dropdown(ESTADOS, "Estado inicial...")
 
     # Contenedor del formulario con Scroll
@@ -242,7 +249,7 @@ def VistaCrearTrabajador(page):
 
             ft.Row([
                 ft.Column([crear_label("Equipo"), input_equipo], spacing=3, expand=True),
-                ft.Column([crear_label("Cargo"), dropdown_cargo], spacing=3, expand=True),
+                ft.Column([crear_label("Cargo"), input_cargo], spacing=3, expand=True),
             ], spacing=10),
 
             ft.Row([
@@ -251,7 +258,7 @@ def VistaCrearTrabajador(page):
             ], spacing=10),
 
             ft.Row([
-                ft.Column([crear_label("Ubicación"), dropdown_ubicacion], spacing=3, expand=True),
+                ft.Column([crear_label("Ubicación"), input_ubicacion], spacing=3, expand=True),
                 ft.Column([crear_label("Estado"), dropdown_estado], spacing=3, expand=True),
             ], spacing=10),
             

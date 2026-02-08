@@ -28,7 +28,8 @@ def VistaTareasPendientes(page):
 
     #opciones de filtro
     FILTROS_TAGS = ["Todos", "Desarrollo", "Bug Fix", "Testing", "Diseño", "Documentación", "DevOps", "Base de Datos", "API", "Frontend", "Backend"]
-    FILTROS_PROYECTO = ["Todos", "App Móvil v2.0", "Portal Web Cliente", "API REST Services", "Dashboard Analytics", "Sistema de Pagos", "CRM Interno", "Migración Cloud"]
+    # Los filtros de proyecto se llenarán dinámicamente
+    FILTROS_PROYECTO = ["Todos"]
     FILTROS_PRIORIDAD = ["Todas", "Alta", "Media", "Baja"]
     FILTROS_ORDEN = [
         "Más reciente primero", 
@@ -61,6 +62,19 @@ def VistaTareasPendientes(page):
         if ex_e: empleados_db = le
         ex_d, ld = obtener_todos_departamentos()
         if ex_d: departamentos_db = ld
+        
+        # Actualizamos el filtro de proyectos con los datos reales de la BD
+        nonlocal FILTROS_PROYECTO
+        # Primero obtenemos los nombres
+        lista_nombres = []
+        for p in proyectos_db:
+            lista_nombres.append(p["nombre"])
+        
+        # Los ordenamos alfabéticamente
+        lista_nombres.sort()
+        
+        # Y creamos la lista final con "Todos" al principio
+        FILTROS_PROYECTO = ["Todos"] + lista_nombres
 
     cargar_datos_maestros()
 
@@ -910,31 +924,55 @@ def VistaTareasPendientes(page):
 
     #dialog filtros
     def mostrar_dialog_filtros(e):
+        # Creamos las opciones para el orden
+        opciones_orden = []
+        for orden in FILTROS_ORDEN:
+            radio = ft.Radio(value=orden, label=orden, label_style=ft.TextStyle(size=11, color="black"))
+            opciones_orden.append(radio)
+
         radio_orden = ft.RadioGroup(
             value=filtro_orden_actual[0],
-            content=ft.Column(
-                controls=[
-                    ft.Radio(value=orden, label=orden, label_style=ft.TextStyle(size=11, color="black")) 
-                    for orden in FILTROS_ORDEN
-                ],
-                spacing=2,
-            ),
+            content=ft.Column(controls=opciones_orden, spacing=2)
         )
+
+        # Creamos las opciones para la prioridad
+        opciones_prioridad = []
+        for prio in FILTROS_PRIORIDAD:
+            radio = ft.Radio(value=prio, label=prio, label_style=ft.TextStyle(size=11, color="black"))
+            opciones_prioridad.append(radio)
 
         radio_prioridad = ft.RadioGroup(
             value=filtro_prioridad_actual[0],
-            content=ft.Column(
-                controls=[
-                    ft.Radio(value=prio, label=prio, label_style=ft.TextStyle(size=11, color="black")) 
-                    for prio in FILTROS_PRIORIDAD
-                ],
-                spacing=2,
-            ),
+            content=ft.Column(controls=opciones_prioridad, spacing=2)
+        )
+
+        # Creamos las opciones de proyectos (vienen de la BD)
+        opciones_proyectos = []
+        for proy in FILTROS_PROYECTO:
+            radio = ft.Radio(value=proy, label=proy, label_style=ft.TextStyle(size=11, color="black"))
+            opciones_proyectos.append(radio)
+
+        radio_proyectos = ft.RadioGroup(
+            value=filtro_proyecto_actual[0],
+            content=ft.Column(controls=opciones_proyectos, spacing=2)
+        )
+
+        # Creamos las opciones de tags
+        opciones_tags = []
+        for tag in FILTROS_TAGS:
+            radio = ft.Radio(value=tag, label=tag, label_style=ft.TextStyle(size=11, color="black"))
+            opciones_tags.append(radio)
+
+        radio_tags = ft.RadioGroup(
+            value=filtro_tag_actual[0],
+            content=ft.Column(controls=opciones_tags, spacing=2)
         )
 
         def aplicar_filtros(e):
             filtro_orden_actual[0] = radio_orden.value
             filtro_prioridad_actual[0] = radio_prioridad.value
+            filtro_proyecto_actual[0] = radio_proyectos.value
+            filtro_tag_actual[0] = radio_tags.value
             dialog_filtros.open = False
             #actualizamos la lista con los nuevos filtros
             actualizar_lista_tareas()
@@ -945,8 +983,12 @@ def VistaTareasPendientes(page):
         def limpiar_filtros(e):
             radio_orden.value = "Más reciente primero"
             radio_prioridad.value = "Todas"
+            radio_proyectos.value = "Todos"
+            radio_tags.value = "Todos"
             filtro_orden_actual[0] = "Más reciente primero"
             filtro_prioridad_actual[0] = "Todas"
+            filtro_proyecto_actual[0] = "Todos"
+            filtro_tag_actual[0] = "Todos"
             page.update()
 
         dialog_filtros = ft.AlertDialog(
@@ -966,6 +1008,12 @@ def VistaTareasPendientes(page):
                         ft.Divider(height=1, color=COLOR_BORDE),
                         ft.Text("Filtrar por prioridad:", size=12, color=COLOR_LABEL, weight=ft.FontWeight.BOLD),
                         radio_prioridad,
+                        ft.Divider(height=1, color=COLOR_BORDE),
+                        ft.Text("Filtrar por Proyecto:", size=12, color=COLOR_LABEL, weight=ft.FontWeight.BOLD),
+                        radio_proyectos,
+                        ft.Divider(height=1, color=COLOR_BORDE),
+                        ft.Text("Filtrar por Tag:", size=12, color=COLOR_LABEL, weight=ft.FontWeight.BOLD),
+                        radio_tags,
                     ]
                 ),
             ),
