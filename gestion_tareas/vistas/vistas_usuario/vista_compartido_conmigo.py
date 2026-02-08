@@ -138,10 +138,24 @@ def VistaCompartidoConmigo(page):
     async def btn_volver_click(e):
         await page.push_route("/area_personal")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     def btn_buscar_click(e):
         actualizar_lista_tareas()
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "🔍 Búsqueda", f"Buscando: {input_busqueda.value}", "blue")
         page.update()
 
     #dialog detalle tarea
@@ -299,8 +313,7 @@ def VistaCompartidoConmigo(page):
             filtro_prioridad_actual[0] = radio_prioridad.value
             dialog_filtros.open = False
             actualizar_lista_tareas()
-            page.snack_bar = ft.SnackBar(ft.Text("Filtros aplicados"))
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "✅ Filtros", "Filtros aplicados", "blue")
             page.update()
 
         def limpiar_filtros(e):
@@ -395,8 +408,7 @@ def VistaCompartidoConmigo(page):
             filtro_tag_actual[0] = radio_tags.value
             dialog_tags.open = False
             actualizar_lista_tareas()
-            page.snack_bar = ft.SnackBar(ft.Text(f"Tag: {filtro_tag_actual[0]}"))
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "✅ Tag Seleccionado", f"Tag: {filtro_tag_actual[0]}", "blue")
             page.update()
 
         def volver_filtros(e):
@@ -456,8 +468,7 @@ def VistaCompartidoConmigo(page):
             filtro_proyecto_actual[0] = radio_proyecto.value
             dialog_proyecto.open = False
             actualizar_lista_tareas()
-            page.snack_bar = ft.SnackBar(ft.Text(f"Proyecto: {filtro_proyecto_actual[0]}"))
-            page.snack_bar.open = True
+            mostrar_mensaje_dialog(page, "✅ Proyecto Seleccionado", f"Proyecto: {filtro_proyecto_actual[0]}", "blue")
             page.update()
 
         def volver_filtros(e):

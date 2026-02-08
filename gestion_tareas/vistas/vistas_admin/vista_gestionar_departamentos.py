@@ -92,11 +92,25 @@ def VistaGestionarDepartamentos(page):
         """Acción al hacer clic en el botón volver atrás - CORREGIDO A ADMIN"""
         await page.push_route("/area_admin")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     def btn_buscar_click(e):
         """Acción al hacer clic en el botón buscar"""
         actualizar_lista_ui()
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "🔍 Búsqueda", f"Buscando: {input_busqueda.value}", "blue")
         page.update()
 
     async def btn_crear_departamento_click(e):
@@ -180,8 +194,7 @@ def VistaGestionarDepartamentos(page):
 
         def guardar_cambios_click(e):
             if not input_nom.value:
-                page.snack_bar = ft.SnackBar(ft.Text("❌ El nombre es obligatorio"), bgcolor="red")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "⚠️ Campo obligatorio", "❌ El nombre es obligatorio", "red")
                 page.update()
                 return
             
@@ -189,8 +202,7 @@ def VistaGestionarDepartamentos(page):
             if input_email.value and input_email.value.strip():
                 es_valido, mensaje = validar_email(input_email.value)
                 if not es_valido:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ {mensaje}"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "❌ Error de Formato", f"❌ {mensaje}", "red")
                     page.update()
                     return
             
@@ -198,15 +210,18 @@ def VistaGestionarDepartamentos(page):
             if input_tel.value and input_tel.value.strip():
                 es_valido, mensaje = validar_telefono(input_tel.value)
                 if not es_valido:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"❌ {mensaje}"), bgcolor="red")
-                    page.snack_bar.open = True
+                    mostrar_mensaje_dialog(page, "❌ Error de Formato", f"❌ {mensaje}", "red")
                     page.update()
                     return
 
             try:
-                p_val = float(input_pres.value.replace(",", "."))
-            except:
-                p_val = 0.0
+                # Si está vacío, ponemos 0.0, pero si tiene texto, intentamos convertir
+                texto_pres = input_pres.value.strip() if input_pres.value else "0"
+                p_val = float(texto_pres.replace(",", "."))
+            except ValueError:
+                mostrar_mensaje_dialog(page, "❌ Error de Formato", "El presupuesto debe ser un número válido", "red")
+                page.update()
+                return
 
             datos_actualizados = {
                 "nombre": input_nom.value,
@@ -223,13 +238,12 @@ def VistaGestionarDepartamentos(page):
 
             exito, msj = actualizar_departamento(depto["_id"], datos_actualizados)
             if exito:
-                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Departamento actualizado"), bgcolor="green")
+                mostrar_mensaje_dialog(page, "✅ Éxito", "Departamento actualizado", "green")
                 dialog_editar.open = False
                 refrescar_pantalla_completa()
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error: {msj}", "red")
             
-            page.snack_bar.open = True
             page.update()
 
         dialog_editar = ft.AlertDialog(
@@ -266,12 +280,11 @@ def VistaGestionarDepartamentos(page):
         def confirmar_eliminar(e):
             exito, msj = eliminar_departamento(depto["_id"])
             if exito:
-                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Departamento eliminado"), bgcolor="green")
+                mostrar_mensaje_dialog(page, "✅ Éxito", "Departamento eliminado", "green")
                 dialog_confirmar.open = False
                 refrescar_pantalla_completa()
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
-            page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error: {msj}", "red")
             page.update()
 
         dialog_confirmar = ft.AlertDialog(

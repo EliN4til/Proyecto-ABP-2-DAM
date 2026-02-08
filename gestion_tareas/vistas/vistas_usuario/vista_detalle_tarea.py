@@ -49,14 +49,27 @@ def VistaDetalleTarea(page):
     async def btn_volver_click(e):
         await page.push_route("/area_personal")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     def btn_editar_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text(f"Editando tarea: {tarea['titulo']}"))
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "✏️ Editar", f"Editando tarea: {tarea['titulo']}", "blue")
         page.update()
 
     def btn_completar_click(e):
-        page.snack_bar = ft.SnackBar(ft.Text("¡Tarea completada con éxito!"))
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "✅ Éxito", "¡Tarea completada con éxito!", "green")
         page.update()
 
     #header tarea (emoji + titulo)

@@ -73,7 +73,7 @@ class ProyectoModel(BaseModel):
     codigo: str
     responsable: str
     cliente: str
-    presupuesto: str
+    presupuesto: Optional[float] = None
     estado: Literal["ACTIVO", "PAUSADO", "INACTIVO"] = "ACTIVO"
     fecha_inicio: datetime
     fecha_fin: Optional[datetime] = None

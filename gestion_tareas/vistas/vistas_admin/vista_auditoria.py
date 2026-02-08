@@ -151,7 +151,6 @@ def VistaAuditoria(page):
                         ft.Column([ft.Text("Usuario", size=11, color=COLOR_LABEL), ft.Text(registro["usuario"], size=12, color="black")], spacing=2),
                         ft.Column([ft.Text("Fecha y hora", size=11, color=COLOR_LABEL), ft.Text(f"{registro['fecha']} {registro['hora']}", size=12, color="black")], horizontal_alignment="end"),
                     ], alignment="spaceBetween"),
-                    ft.Column([ft.Text("Dirección IP", size=11, color=COLOR_LABEL), ft.Text(registro["ip"], size=12, color="black")], spacing=2),
                 ], spacing=12, tight=True)
             ),
             actions=[ft.TextButton("Cerrar", on_click=lambda e: cerrar_dialog(dialog_detalle))],
@@ -256,7 +255,7 @@ def VistaAuditoria(page):
             content=ft.Column([
                 ft.Row([input_busqueda, btn_filtrar, btn_buscar], spacing=8),
                 contador_registros,
-                ft.Container(height=450, content=lista_registros),
+                ft.Container(height=420, content=lista_registros),
             ], spacing=10)
         )
     )
@@ -281,7 +280,7 @@ def VistaAuditoria(page):
             ft.Container(expand=True, alignment=ft.Alignment(0, 0), content=ft.Stack([
                 ft.Container(content=tarjeta_blanca, top=30),
                 ft.Container(content=header_flotante, top=0, left=90)
-            ], width=380, height=620)),
+            ], width=380, height=660)),
             btn_volver
         ])
     )

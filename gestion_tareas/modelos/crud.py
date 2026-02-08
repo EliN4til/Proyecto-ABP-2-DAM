@@ -10,6 +10,8 @@ from modelos.init import (
 )
 from pydantic import ValidationError
 
+from servicios.sesion_service import obtener_nombre_usuario
+
 # Obtener la base de datos desde db_manager (conexión del login)
 def get_db():
     return instancia_db.obtener_instancia()
@@ -26,16 +28,22 @@ def es_id_valido(id_str):
         return False
 
 
-def registrar_log(accion, modulo, descripcion, usuario="Sistema"):
+def registrar_log(accion, modulo, descripcion, usuario=None):
     #guarda un log de lo que se hace en la app
     try:
+        # Si no se especifica usuario, intentamos obtener el de la sesión
+        if usuario is None:
+            usuario = obtener_nombre_usuario()
+            # Si devuelve "Usuario" (por defecto cuando no hay nada), lo cambiamos a Sistema si es una acción interna
+            if usuario == "Usuario":
+                usuario = "Sistema"
+
         log = {
             "accion": accion,
             "modulo": modulo,
             "descripcion": descripcion,
             "usuario": usuario,
             "fecha_completa": datetime.now(),
-            "ip": "127.0.0.1"
         }
         get_db().auditoria.insert_one(log)
     except Exception as e:
@@ -642,7 +650,8 @@ def filtrar_tareas(tareas, filtros, texto_busqueda=""):
         #filtro por tag
         filtro_tag = filtros.get("tag", "Todos")
         if filtro_tag != "Todos":
-            if tarea.get("tag") != filtro_tag:
+            # Comprobamos si el tag está en la lista de tags
+            if filtro_tag not in tarea.get("tags", []):
                 incluir = False
         
         #filtro por proyecto

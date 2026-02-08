@@ -1,5 +1,6 @@
 import flet as ft
 from modelos.crud import obtener_todos_empleados, eliminar_empleado, actualizar_empleado, obtener_todos_proyectos, obtener_todos_departamentos
+from utilidades.validaciones import validar_telefono, validar_dni, validar_email
 
 def VistaGestionarTrabajadores(page):
     
@@ -109,11 +110,25 @@ def VistaGestionarTrabajadores(page):
         """Vuelve al Dashboard de Admin"""
         await page.push_route("/area_admin")
 
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
+
     def btn_buscar_click(e):
         """Acción al hacer clic en el botón buscar"""
         actualizar_lista_ui()
-        page.snack_bar = ft.SnackBar(ft.Text(f"Buscando: {input_busqueda.value}"))
-        page.snack_bar.open = True
+        mostrar_mensaje_dialog(page, "🔍 Búsqueda", f"Buscando: {input_busqueda.value}", "blue")
         page.update()
 
     async def btn_crear_trabajador_click(e):
@@ -283,6 +298,30 @@ def VistaGestionarTrabajadores(page):
             page.update()
 
         def guardar_cambios(e):
+            # Validar DNI
+            if input_dni.value:
+                es_valido_dni, msg_dni = validar_dni(input_dni.value)
+                if not es_valido_dni:
+                    mostrar_mensaje_dialog(page, "⚠️ DNI/NIE inválido", f"❌ {msg_dni}", "red")
+                    page.update()
+                    return
+
+            # Validar Email
+            if input_email.value:
+                es_valido_email, msg_email = validar_email(input_email.value)
+                if not es_valido_email:
+                    mostrar_mensaje_dialog(page, "⚠️ Email inválido", f"❌ {msg_email}", "red")
+                    page.update()
+                    return
+
+            # Validar teléfono
+            if input_tel.value:
+                es_valido, msg = validar_telefono(input_tel.value)
+                if not es_valido:
+                    mostrar_mensaje_dialog(page, "⚠️ Teléfono inválido", f"❌ {msg}", "red")
+                    page.update()
+                    return
+
             datos_nuevos = {
                 "nombre": input_nom.value,
                 "apellidos": input_ape.value,
@@ -298,12 +337,11 @@ def VistaGestionarTrabajadores(page):
             }
             exito, msj = actualizar_empleado(t["_id"], datos_nuevos)
             if exito:
-                page.snack_bar = ft.SnackBar(ft.Text("✅ Actualizado"), bgcolor="green")
+                mostrar_mensaje_dialog(page, "✅ Éxito", "Actualizado", "green")
                 dialog_editar.open = False
                 refrescar_todo()
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
-            page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error: {msj}", "red")
             page.update()
 
         dialog_editar = ft.AlertDialog(
@@ -337,12 +375,11 @@ def VistaGestionarTrabajadores(page):
         def confirmar_eliminar(e):
             exito, msj = eliminar_empleado(trabajador["_id"])
             if exito:
-                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Trabajador eliminado"), bgcolor="green")
+                mostrar_mensaje_dialog(page, "✅ Éxito", "Trabajador eliminado", "green")
                 dialog_confirmar.open = False
                 refrescar_todo()
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {msj}"), bgcolor="red")
-            page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error: {msj}", "red")
             page.update()
 
         dialog_confirmar = ft.AlertDialog(

@@ -106,14 +106,12 @@ def VistaMisDatos(page):
 
         def ejecutar_cambio(e):
             if not input_actual.value or not input_nueva.value:
-                page.snack_bar = ft.SnackBar(ft.Text("❌ Todos los campos son obligatorios"), bgcolor="#D32F2F")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "⚠️ Campos obligatorios", "❌ Todos los campos son obligatorios", "red")
                 page.update()
                 return
             
             if input_nueva.value != input_confirmar.value:
-                page.snack_bar = ft.SnackBar(ft.Text("❌ Las contraseñas nuevas no coinciden"), bgcolor="#D32F2F")
-                page.snack_bar.open = True
+                mostrar_mensaje_dialog(page, "❌ Error", "❌ Las contraseñas nuevas no coinciden", "red")
                 page.update()
                 return
 
@@ -121,11 +119,10 @@ def VistaMisDatos(page):
 
             if exito:
                 dialog_pass.open = False
-                page.snack_bar = ft.SnackBar(ft.Text("✅ Contraseña actualizada correctamente"), bgcolor="#4CAF50")
+                mostrar_mensaje_dialog(page, "✅ Éxito", "Contraseña actualizada correctamente", "green")
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {resultado}"), bgcolor="#D32F2F")
+                mostrar_mensaje_dialog(page, "❌ Error", f"Error: {resultado}", "red")
             
-            page.snack_bar.open = True
             page.update()
 
         dialog_pass = ft.AlertDialog(
@@ -177,6 +174,21 @@ def VistaMisDatos(page):
             await page.push_route("/area_admin")
         else:
             await page.push_route("/area_personal")
+
+    def mostrar_mensaje_dialog(page, titulo, mensaje, color):
+        """Muestra un diálogo de alerta visible compatible con versiones antiguas"""
+        dlg = ft.AlertDialog(
+            title=ft.Text(titulo, color="black", weight="bold"),
+            content=ft.Text(mensaje, color="black", size=14),
+            bgcolor="white",
+            actions=[
+                ft.TextButton("Entendido", on_click=lambda e: setattr(dlg, "open", False) or page.update())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg)
+        dlg.open = True
+        page.update()
 
     btn_volver = ft.Container(
         content=ft.Text("←", size=24, color="white", weight=ft.FontWeight.BOLD),
