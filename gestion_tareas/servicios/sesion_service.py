@@ -14,22 +14,34 @@ def obtener_usuario():
 
 
 def obtener_nombre_usuario():
-    #devuelve el nombre del usuario activo o "Usuario" como dato por defecto si no hay una sesion iniciada
-    if _usuario_activo and "nombre" in _usuario_activo:
-        return _usuario_activo["nombre"]
-    return "Usuario"
+    # devuelve el nombre del usuario activo o "Usuario" como dato por defecto
+    usuario = obtener_usuario()
+    
+    if usuario is not None:
+        if "nombre" in usuario:
+            return usuario["nombre"]
+        else:
+            return "Usuario"
+    else:
+        return "Usuario"
 
 
 def obtener_id_usuario():
-    #devuelve el id del usuario o None si no hay sesion
-    if _usuario_activo and "_id" in _usuario_activo:
-        return _usuario_activo["_id"]
-    return None
+    # devuelve el id del usuario o None si no hay sesion
+    usuario = obtener_usuario()
+    
+    if usuario is not None:
+        if "_id" in usuario:
+            return usuario["_id"]
+        else:
+            return None
+    else:
+        return None
 
 
 def hay_sesion():
     #comprueba si hay un usuario con sesión activa
-    return _usuario_activo is not None
+    return obtener_usuario() is not None
 
 
 def cerrar_sesion():
