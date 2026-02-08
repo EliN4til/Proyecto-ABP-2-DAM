@@ -1,5 +1,5 @@
 import flet as ft
-from modelos.crud import obtener_todos_roles, crear_rol, actualizar_rol, eliminar_rol
+from gestion_tareas.modelos.crud import obtener_todos_roles, crear_rol, actualizar_rol, eliminar_rol
 
 def VistaGestionarRoles(page):
     

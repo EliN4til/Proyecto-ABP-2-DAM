@@ -1,7 +1,7 @@
 import flet as ft
 from datetime import datetime
-from modelos.crud import crear_tarea, obtener_todos_proyectos, obtener_todos_empleados, obtener_todos_departamentos
-from servicios.sesion_service import obtener_usuario
+from gestion_tareas.modelos.crud import crear_tarea, obtener_todos_proyectos, obtener_todos_empleados, obtener_todos_departamentos
+from gestion_tareas.servicios.sesion_service import obtener_usuario
 
 def VistaNuevaTarea(page):
     

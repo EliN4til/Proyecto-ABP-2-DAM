@@ -1,7 +1,7 @@
 from bson import ObjectId
 from datetime import datetime
-from servicios.db_manager import instancia_db
-from modelos.init import (
+from gestion_tareas.servicios.db_manager import instancia_db
+from gestion_tareas.modelos.init import (
     EmpleadoModel, 
     DepartamentoModel, 
     ProyectoModel, 

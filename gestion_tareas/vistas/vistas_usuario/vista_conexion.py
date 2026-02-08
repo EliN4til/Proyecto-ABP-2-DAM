@@ -1,5 +1,5 @@
 import flet as ft
-from servicios.db_manager import realizar_conexion
+from gestion_tareas.servicios.db_manager import realizar_conexion
 import os
 import json
 

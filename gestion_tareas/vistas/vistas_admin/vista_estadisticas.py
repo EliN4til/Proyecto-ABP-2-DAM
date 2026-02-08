@@ -1,6 +1,6 @@
 import flet as ft
 from datetime import datetime
-from modelos.crud import obtener_todas_tareas, obtener_todos_empleados, obtener_todos_departamentos
+from gestion_tareas.modelos.crud import obtener_todas_tareas, obtener_todos_empleados, obtener_todos_departamentos
 
 def VistaEstadisticas(page):
     # configuracion de colores del tema

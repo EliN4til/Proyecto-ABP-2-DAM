@@ -1,6 +1,6 @@
 import flet as ft
 from datetime import datetime
-from modelos.crud import crear_empleado, obtener_todos_proyectos, obtener_todos_departamentos
+from gestion_tareas.modelos.crud import crear_empleado, obtener_todos_proyectos, obtener_todos_departamentos
 
 def VistaCrearTrabajador(page):
     

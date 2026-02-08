@@ -1,6 +1,6 @@
 import flet as ft
-from modelos.crud import validar_login
-from servicios.sesion_service import guardar_usuario
+from gestion_tareas.modelos.crud import validar_login
+from gestion_tareas.servicios.sesion_service import guardar_usuario
 import os
 import json
 import time

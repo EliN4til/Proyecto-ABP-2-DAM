@@ -1,6 +1,6 @@
 import flet as ft
-from servicios.sesion_service import obtener_usuario, obtener_contexto
-from modelos.crud import cambiar_contrasenya
+from gestion_tareas.servicios.sesion_service import obtener_usuario, obtener_contexto
+from gestion_tareas.modelos.crud import cambiar_contrasenya
 
 def VistaMisDatos(page):
     

@@ -1,5 +1,5 @@
 import flet as ft
-from servicios.sesion_service import establecer_contexto
+from gestion_tareas.servicios.sesion_service import establecer_contexto
 
 def VistaAreaAdmin(page):
     #marcamos que estamos en el area de admin

@@ -1,4 +1,4 @@
-from servicios.mongo_service import ServiceMongo
+from gestion_tareas.servicios.mongo_service import ServiceMongo
 
 instancia_db = ServiceMongo()
 

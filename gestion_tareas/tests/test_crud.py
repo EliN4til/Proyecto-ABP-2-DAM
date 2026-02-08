@@ -7,7 +7,7 @@ import os
 # Añadir el directorio del proyecto al path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from modelos.crud import (
+from gestion_tareas.modelos.crud import (
     crear_tarea, 
     obtener_todas_tareas, 
     crear_empleado, 

@@ -1,32 +1,32 @@
 import flet as ft
 
 #importamos todas las vistas de admin
-from vistas.vistas_admin.vista_dashboard import VistaAreaAdmin
-from vistas.vistas_admin.vista_configuracion import VistaConfiguracion
-from vistas.vistas_admin.vista_auditoria import VistaAuditoria
-from vistas.vistas_admin.vista_estadisticas import VistaEstadisticas
-from vistas.vistas_admin.vista_gestionar_trabajadores import VistaGestionarTrabajadores
-from vistas.vistas_admin.vista_gestionar_roles import VistaGestionarRoles
-from vistas.vistas_admin.vista_crear_trabajador import VistaCrearTrabajador
-from vistas.vistas_admin.vista_crear_departamento import VistaCrearDepartamento
+from gestion_tareas.vistas.vistas_admin.vista_dashboard import VistaAreaAdmin
+from gestion_tareas.vistas.vistas_admin.vista_configuracion import VistaConfiguracion
+from gestion_tareas.vistas.vistas_admin.vista_auditoria import VistaAuditoria
+from gestion_tareas.vistas.vistas_admin.vista_estadisticas import VistaEstadisticas
+from gestion_tareas.vistas.vistas_admin.vista_gestionar_trabajadores import VistaGestionarTrabajadores
+from gestion_tareas.vistas.vistas_admin.vista_gestionar_roles import VistaGestionarRoles
+from gestion_tareas.vistas.vistas_admin.vista_crear_trabajador import VistaCrearTrabajador
+from gestion_tareas.vistas.vistas_admin.vista_crear_departamento import VistaCrearDepartamento
 
-from vistas.vistas_admin.vista_crear_proyectos import VistaCrearProyecto
-from vistas.vistas_admin.vista_gestionar_proyectos import VistaGestionarProyectos
-from vistas.vistas_admin.vista_gestionar_departamentos import VistaGestionarDepartamentos
+from gestion_tareas.vistas.vistas_admin.vista_crear_proyectos import VistaCrearProyecto
+from gestion_tareas.vistas.vistas_admin.vista_gestionar_proyectos import VistaGestionarProyectos
+from gestion_tareas.vistas.vistas_admin.vista_gestionar_departamentos import VistaGestionarDepartamentos
 
 #importamos todas las vistas de usuario
-from vistas.vistas_usuario.vista_login import VistaLogin
-from vistas.vistas_usuario.vista_conexion import VistaConexion
-from vistas.vistas_usuario.vista_area_personal import VistaAreaPersonal
-from vistas.vistas_usuario.vista_mis_datos import VistaMisDatos
-from vistas.vistas_usuario.vista_tareas_pendientes import VistaTareasPendientes
-from vistas.vistas_usuario.vista_tareas_realizadas import VistaTareasRealizadas
-from vistas.vistas_usuario.vista_tareas_atrasadas import VistaTareasAtrasadas
-from vistas.vistas_usuario.vista_nueva_tarea import VistaNuevaTarea
-from vistas.vistas_usuario.vista_compartido_conmigo import VistaCompartidoConmigo
-from vistas.vistas_usuario.vista_detalle_tarea import VistaDetalleTarea
-from vistas.vistas_usuario.vista_mis_proyectos import VistaMisProyectos
-from vistas.vistas_usuario.vista_error_404 import VistaError404
+from gestion_tareas.vistas.vistas_usuario.vista_login import VistaLogin
+from gestion_tareas.vistas.vistas_usuario.vista_conexion import VistaConexion
+from gestion_tareas.vistas.vistas_usuario.vista_area_personal import VistaAreaPersonal
+from gestion_tareas.vistas.vistas_usuario.vista_mis_datos import VistaMisDatos
+from gestion_tareas.vistas.vistas_usuario.vista_tareas_pendientes import VistaTareasPendientes
+from gestion_tareas.vistas.vistas_usuario.vista_tareas_realizadas import VistaTareasRealizadas
+from gestion_tareas.vistas.vistas_usuario.vista_tareas_atrasadas import VistaTareasAtrasadas
+from gestion_tareas.vistas.vistas_usuario.vista_nueva_tarea import VistaNuevaTarea
+from gestion_tareas.vistas.vistas_usuario.vista_compartido_conmigo import VistaCompartidoConmigo
+from gestion_tareas.vistas.vistas_usuario.vista_detalle_tarea import VistaDetalleTarea
+from gestion_tareas.vistas.vistas_usuario.vista_mis_proyectos import VistaMisProyectos
+from gestion_tareas.vistas.vistas_usuario.vista_error_404 import VistaError404
 
 
 def main(page: ft.Page):
@@ -101,6 +101,10 @@ def main(page: ft.Page):
     page.add(vista)
 
 
+
+def start_app():
+    ft.app(target=main, assets_dir="assets")
+
 #ejecutamos la app
 if __name__ == "__main__":
-    ft.app(target=main, assets_dir="assets")
+    start_app()

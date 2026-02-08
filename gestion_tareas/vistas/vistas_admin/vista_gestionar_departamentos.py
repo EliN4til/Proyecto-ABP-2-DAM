@@ -1,6 +1,6 @@
 import flet as ft
-from modelos.crud import obtener_todos_departamentos, eliminar_departamento, actualizar_departamento, obtener_todos_proyectos
-from utilidades.validaciones import validar_email, validar_telefono, validar_dni
+from gestion_tareas.modelos.crud import obtener_todos_departamentos, eliminar_departamento, actualizar_departamento, obtener_todos_proyectos
+from gestion_tareas.utilidades.validaciones import validar_email, validar_telefono, validar_dni
 
 def VistaGestionarDepartamentos(page):
     

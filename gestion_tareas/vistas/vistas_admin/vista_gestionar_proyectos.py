@@ -1,5 +1,5 @@
 import flet as ft
-from modelos.crud import obtener_todos_proyectos, eliminar_proyecto, actualizar_proyecto, obtener_todos_empleados, obtener_todos_departamentos, crear_departamento, actualizar_departamento, eliminar_departamento
+from gestion_tareas.modelos.crud import obtener_todos_proyectos, eliminar_proyecto, actualizar_proyecto, obtener_todos_empleados, obtener_todos_departamentos, crear_departamento, actualizar_departamento, eliminar_departamento
 from datetime import datetime
 
 def VistaGestionarProyectos(page):

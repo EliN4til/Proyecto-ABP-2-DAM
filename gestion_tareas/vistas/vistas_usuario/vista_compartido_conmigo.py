@@ -1,6 +1,6 @@
 import flet as ft
-from modelos.crud import obtener_tareas_por_usuario, obtener_todos_proyectos, filtrar_y_ordenar
-from servicios.sesion_service import obtener_id_usuario
+from gestion_tareas.modelos.crud import obtener_tareas_por_usuario, obtener_todos_proyectos, filtrar_y_ordenar
+from gestion_tareas.servicios.sesion_service import obtener_id_usuario
 from datetime import datetime
 
 def VistaCompartidoConmigo(page):
