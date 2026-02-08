@@ -622,6 +622,41 @@ def cambiar_contrasenya(id_empleado, contrasenya_actual, contrasenya_nueva):
     return (exito_upd, msg)
 
 
+
+# ========== CONFIGURACIÓN ==========
+
+def obtener_configuracion():
+    # devuelve la configuración actual, si no existe la crea
+    try:
+        config = get_db().configuracion.find_one()
+        if not config:
+            # Crear configuración por defecto
+            nueva_config = ConfiguracionModel()
+            resultado = get_db().configuracion.insert_one(nueva_config.model_dump(by_alias=True, exclude=["id"]))
+            nueva_config.id = str(resultado.inserted_id)
+            return (True, nueva_config.model_dump(by_alias=True))
+        
+        config["_id"] = str(config["_id"])
+        return (True, config)
+    except Exception as e:
+        return (False, str(e))
+
+def actualizar_configuracion(nuevos_datos):
+    # actualiza la configuración
+    try:
+        # Actualizamos el único documento que debería haber
+        resultado = get_db().configuracion.update_one(
+            {}, # Filtro vacío para pillar el primero (y único)
+            {"$set": nuevos_datos},
+            upsert=True # Si no existe lo crea (por seguridad)
+        )
+        
+        registrar_log("Configuración", "Sistema", "configuración global actualizada")
+        return (True, "Configuración actualizada")
+    except Exception as e:
+        return (False, str(e))
+
+
 # ========== FILTRAR Y ORDENAR TAREAS ==========
 
 def filtrar_tareas(tareas, filtros, texto_busqueda=""):

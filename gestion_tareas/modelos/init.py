@@ -107,6 +107,11 @@ class RolModel(BaseModel):
     color: Optional[str] = "#4682B4"
     permisos: dict = {}
 
+class ConfiguracionModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    empresa: str = "TechSolutions S.L"
+    sesion: str = "1 hora"
+
 def cargar_datos_prueba():
     empleado = EmpleadoModel(
         identificador="26603992F",
