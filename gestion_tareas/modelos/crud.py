@@ -10,7 +10,7 @@ from gestion_tareas.modelos.init import (
 )
 from pydantic import ValidationError
 
-from servicios.sesion_service import obtener_nombre_usuario
+from gestion_tareas.servicios.sesion_service import obtener_nombre_usuario
 
 # Obtener la base de datos desde db_manager (conexión del login)
 def get_db():
