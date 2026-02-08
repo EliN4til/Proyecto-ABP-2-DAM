@@ -1,6 +1,7 @@
 import flet as ft
 from gestion_tareas.modelos.crud import obtener_todos_empleados, eliminar_empleado, actualizar_empleado, obtener_todos_proyectos, obtener_todos_departamentos
 from gestion_tareas.utilidades.validaciones import validar_telefono, validar_dni, validar_email
+from gestion_tareas.servicios.sesion_service import obtener_id_usuario
 
 def VistaGestionarTrabajadores(page):
     
@@ -135,9 +136,7 @@ def VistaGestionarTrabajadores(page):
         """Navega a la vista de creación"""
         await page.push_route("/crear_trabajador")
 
-    async def btn_gestionar_roles_click(e):
-        """Navega a la vista de roles"""
-        await page.push_route("/gestionar_roles")
+
 
     # --- DIÁLOGOS DE GESTIÓN (DETALLE / EDITAR / ELIMINAR) ---
 
@@ -372,6 +371,39 @@ def VistaGestionarTrabajadores(page):
         page.update()
 
     def mostrar_confirmar_eliminar(trabajador):
+        # 1. Verificar si es el mismo usuario logueado
+        id_actual = obtener_id_usuario()
+        if id_actual and str(trabajador.get("_id")) == str(id_actual):
+            mostrar_mensaje_dialog(page, "⛔ Acción Denegada", "No puedes eliminar tu propia cuenta de administrador.", "red")
+            return
+
+        # 2. Verificar proyectos asignados
+        proyectos_asignados = trabajador.get("proyecto") or []
+        if isinstance(proyectos_asignados, str):
+            proyectos_asignados = [proyectos_asignados]
+        
+        mensaje_aviso = "¿Estás seguro de eliminar a este trabajador?"
+        contenido_extra = ft.Container() # Contenedor vacío por defecto
+
+        if proyectos_asignados and len(proyectos_asignados) > 0 and proyectos_asignados[0] != "Sin proyecto":
+            mensaje_aviso = "⚠️ ATENCIÓN: Este trabajador tiene proyectos asignados."
+            
+            lista_proyectos = ft.Column(spacing=2)
+            for p in proyectos_asignados:
+                lista_proyectos.controls.append(ft.Text(f"• {p}", size=12, color="#D32F2F", weight="bold"))
+            
+            contenido_extra = ft.Container(
+                bgcolor="#FFEBEE",
+                border_radius=8,
+                padding=10,
+                content=ft.Column([
+                    ft.Text("Proyectos activos:", size=11, weight="bold", color="#D32F2F"),
+                    lista_proyectos,
+                    ft.Container(height=5),
+                    ft.Text("Si lo eliminas, estos proyectos se quedarán sin este recurso.", size=11, color="black", italic=True)
+                ], spacing=2)
+            )
+
         def confirmar_eliminar(e):
             exito, msj = eliminar_empleado(trabajador["_id"])
             if exito:
@@ -387,15 +419,16 @@ def VistaGestionarTrabajadores(page):
             bgcolor="white",
             title=ft.Text("Eliminar trabajador", size=16, weight=ft.FontWeight.BOLD, color="black"),
             content=ft.Container(
-                width=280,
+                width=300, # Un poco más ancho para los proyectos
                 bgcolor="white",
                 content=ft.Column(
                     spacing=10,
                     tight=True,
                     controls=[
-                        ft.Text("¿Estás seguro de eliminar a este trabajador?", size=12, color="black"),
+                        ft.Text(mensaje_aviso, size=12, color="black"),
+                        contenido_extra,
                         ft.Container(
-                            bgcolor="#FFF3F3",
+                            bgcolor="#F5F5F5",
                             border_radius=8,
                             padding=10,
                             content=ft.Column(
@@ -406,12 +439,13 @@ def VistaGestionarTrabajadores(page):
                                 ],
                             ),
                         ),
+                        ft.Text("¿Confirmar eliminación definitiva?", size=12, weight="bold", color="black"),
                     ]
                 ),
             ),
             actions=[
                 ft.TextButton(content=ft.Text("Cancelar", color="black"), on_click=lambda e: cerrar_dialog(dialog_confirmar)),
-                ft.FilledButton(content=ft.Text("Eliminar", color="white"), bgcolor=COLOR_ELIMINAR, on_click=confirmar_eliminar),
+                ft.FilledButton(content=ft.Text("Sí, Eliminar", color="white"), bgcolor=COLOR_ELIMINAR, on_click=confirmar_eliminar),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -509,11 +543,7 @@ def VistaGestionarTrabajadores(page):
         content=ft.Text("Crear Trabajador", color="white", weight=ft.FontWeight.BOLD, size=12),
     )
 
-    btn_roles = ft.Container(
-        width=140, height=40, bgcolor="#6A5ACD", border_radius=20, alignment=ft.Alignment(0, 0), ink=True,
-        on_click=btn_gestionar_roles_click,
-        content=ft.Text("Gestionar Roles", color="white", weight=ft.FontWeight.BOLD, size=12),
-    )
+
 
     tarjeta_blanca = ft.Container(
         width=380, bgcolor="white", border_radius=25,
@@ -525,7 +555,7 @@ def VistaGestionarTrabajadores(page):
                 ft.Row([input_busqueda, btn_buscar], spacing=8),
                 contador_trabajadores,
                 ft.Container(height=360, content=lista_trabajadores),
-                ft.Row([btn_crear, btn_roles], alignment="center", spacing=10),
+                ft.Row([btn_crear], alignment="center", spacing=10),
             ], spacing=10)
         )
     )

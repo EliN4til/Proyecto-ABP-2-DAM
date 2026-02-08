@@ -69,7 +69,7 @@ def VistaAreaAdmin(page):
         await page.push_route("/login")
 
     tarjeta_blanca = ft.Container(
-        width=340,
+        width=360,
         bgcolor="white",
         border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color="#40000000", offset=ft.Offset(0, 5)),
@@ -122,7 +122,7 @@ def VistaAreaAdmin(page):
     )
 
     contenido_superpuesto = ft.Container(
-        width=340,
+        width=360,
         height=420,
         content=ft.Stack(
             controls=[

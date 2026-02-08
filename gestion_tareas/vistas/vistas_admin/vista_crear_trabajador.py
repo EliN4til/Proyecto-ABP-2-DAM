@@ -1,7 +1,7 @@
 import flet as ft
 from datetime import datetime
 from gestion_tareas.utilidades.validaciones import validar_telefono, validar_dni, validar_email
-from gestion_tareas.modelos.crud import crear_empleado, obtener_todos_proyectos, obtener_todos_departamentos
+from gestion_tareas.modelos.crud import crear_empleado, obtener_todos_proyectos, obtener_todos_departamentos, obtener_todos_empleados
 
 def VistaCrearTrabajador(page):
     
@@ -16,6 +16,9 @@ def VistaCrearTrabajador(page):
     # Listas maestras (datos brutos de la BD)
     proyectos_maestros = []
     departamentos_maestros = []
+    
+    # Variable para el autoincremental
+    total_empleados = 0
 
     empresas_dinamicas = []
 
@@ -26,7 +29,7 @@ def VistaCrearTrabajador(page):
 
     def cargar_datos_maestros():
         """Carga datos de la BD y extrae nombres de empresas únicas"""
-        nonlocal proyectos_maestros, departamentos_maestros, empresas_dinamicas
+        nonlocal proyectos_maestros, departamentos_maestros, empresas_dinamicas, total_empleados
         
         # 1. Obtener datos de las colecciones
         exito_p, proys = obtener_todos_proyectos()
@@ -34,6 +37,11 @@ def VistaCrearTrabajador(page):
         
         exito_d, deptos = obtener_todos_departamentos()
         if exito_d: departamentos_maestros = deptos
+
+        # 1.1 Obtener total de empleados para código autoincremental
+        exito_e, todos_empleados = obtener_todos_empleados()
+        if exito_e:
+            total_empleados = len(todos_empleados)
 
         # 2. Extraer empresas únicas (de Departamentos y Proyectos)
         set_empresas = set()
@@ -129,6 +137,28 @@ def VistaCrearTrabajador(page):
                 depto_info["ubicacion"] = d.get("ubicacion", "N/A")
                 break
 
+        # Calcular código autoincremental sin colisiones para empleado
+        if not input_id_empleado.value:
+            contador = total_empleados + 1
+            nuevo_id_emp = f"EMP-{contador:03d}"
+            # Nota: 'todos_empleados' variable local traída en cargar_datos_maestros,
+            # para verificar colisiones necesitaríamos la lista completa actualizada.
+            
+            # Vamos a usar la lista 'todos_empleados' que cargamos al principio
+            # Aseguramos que esté disponible.
+            if 'todos_empleados' in locals():
+                 while any(e["id_empleado"] == nuevo_id_emp for e in todos_empleados):
+                    contador += 1
+                    nuevo_id_emp = f"EMP-{contador:03d}"
+            else:
+                 # Si no está disponible por ámbito, hacemos una llamada rápida (aunque ya debería estar)
+                 _, lista_temp = obtener_todos_empleados()
+                 while any(e.get("id_empleado") == nuevo_id_emp for e in lista_temp):
+                    contador += 1
+                    nuevo_id_emp = f"EMP-{contador:03d}"
+        else:
+            nuevo_id_emp = input_id_empleado.value
+
         nuevo_trabajador = {
             "identificador": input_identificador.value,
             "nombre": input_nombre.value,
@@ -141,7 +171,7 @@ def VistaCrearTrabajador(page):
             "proyecto": dropdown_proyecto.value if dropdown_proyecto.value else "Sin proyecto",
             "departamento": depto_info,
             "cargo": input_cargo.value if input_cargo.value else "Empleado",
-            "id_empleado": input_id_empleado.value if input_id_empleado.value else f"EMP-{datetime.now().strftime('%H%M%S')}",
+            "id_empleado": nuevo_id_emp,
             "telefono": input_telefono.value if input_telefono.value else "N/A",
             "ubicacion": input_ubicacion.value if input_ubicacion.value else "Oficina Central",
             "fecha_incorporacion": datetime.now(),

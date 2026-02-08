@@ -1,5 +1,6 @@
 import flet as ft
 from gestion_tareas.modelos.crud import obtener_tareas_atrasadas, completar_tarea, filtrar_y_ordenar
+from gestion_tareas.servicios.sesion_service import obtener_id_usuario, obtener_nombre_usuario
 from datetime import datetime
 
 def VistaTareasAtrasadas(page):
@@ -42,7 +43,13 @@ def VistaTareasAtrasadas(page):
 
     def cargar_tareas_atrasadas():
         """Obtiene las tareas atrasadas de la base de datos"""
-        exito, resultado = obtener_tareas_atrasadas()
+        id_usuario = obtener_id_usuario()
+        nombre_usuario = obtener_nombre_usuario()
+
+        if not id_usuario:
+             return []
+
+        exito, resultado = obtener_tareas_atrasadas(id_usuario, nombre_usuario)
         if exito:
             tareas = []
             for t in resultado:

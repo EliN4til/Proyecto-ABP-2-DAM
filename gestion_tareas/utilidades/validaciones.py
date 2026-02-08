@@ -131,4 +131,3 @@ def validar_dni(dni: str) -> Tuple[bool, str]:
         return (True, "")
     else:
         return (False, f"La letra del DNI no es correcta (debería ser {letra_esperada})")
-

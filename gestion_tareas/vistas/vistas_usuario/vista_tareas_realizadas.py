@@ -1,5 +1,6 @@
 import flet as ft
-from gestion_tareas.modelos.crud import obtener_tareas_por_estado, filtrar_y_ordenar
+from gestion_tareas.modelos.crud import obtener_tareas_completadas_usuario, filtrar_y_ordenar
+from gestion_tareas.servicios.sesion_service import obtener_id_usuario, obtener_nombre_usuario
 
 def VistaTareasRealizadas(page):
     
@@ -37,7 +38,13 @@ def VistaTareasRealizadas(page):
     #cargamos las tareas completadas de la BD
     def cargar_tareas_completadas():
         """Obtiene las tareas completadas de la base de datos"""
-        exito, resultado = obtener_tareas_por_estado("completada")
+        id_usuario = obtener_id_usuario()
+        nombre_usuario = obtener_nombre_usuario()
+        
+        if not id_usuario:
+            return []
+
+        exito, resultado = obtener_tareas_completadas_usuario(id_usuario, nombre_usuario)
         if exito:
             tareas = []
             for t in resultado:

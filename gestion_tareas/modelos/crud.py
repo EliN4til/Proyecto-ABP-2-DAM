@@ -5,8 +5,7 @@ from gestion_tareas.modelos.init import (
     EmpleadoModel, 
     DepartamentoModel, 
     ProyectoModel, 
-    TareaModel, 
-    RolModel
+    TareaModel
 )
 from pydantic import ValidationError
 
@@ -438,14 +437,36 @@ def obtener_tareas_por_usuario(id_usuario):
         return (False, str(e))
 
 
-def obtener_tareas_atrasadas():
+def obtener_tareas_atrasadas(id_usuario, nombre_usuario):
     #busca las tareas que estan atrasadas
     try:
         ahora = datetime.now()
         #buscamos tareas no completadas con fecha limite pasada
         filtro = {
             "estado": {"$ne": "completada"},
-            "fecha_limite": {"$lt": ahora}
+            "fecha_limite": {"$lt": ahora},
+            "$or": [
+                {"asignados.id_usuario": id_usuario},
+                {"compartido_por": nombre_usuario}
+            ]
+        }
+        tareas = list(get_db().tareas.find(filtro))
+        for t in tareas:
+            t["_id"] = str(t["_id"])
+        return (True, tareas)
+    except Exception as e:
+        return (False, str(e))
+
+
+def obtener_tareas_completadas_usuario(id_usuario, nombre_usuario):
+    #busca las tareas completadas del usuario (asignadas o creadas por el)
+    try:
+        filtro = {
+            "estado": "completada",
+            "$or": [
+                {"asignados.id_usuario": id_usuario},
+                {"compartido_por": nombre_usuario}
+            ]
         }
         tareas = list(get_db().tareas.find(filtro))
         for t in tareas:
@@ -504,81 +525,6 @@ def eliminar_tarea(id_tarea):
             registrar_log("Eliminar", "Tareas", "tarea borrada")
             return (True, "tarea eliminada")
         return (False, "no se encontro la tarea")
-    except Exception as e:
-        return (False, str(e))
-
-
-# ========== ROLES ==========
-
-def crear_rol(datos):
-    #crea un rol nuevo
-    try:
-        # Validacion con Pydantic
-        rol = RolModel(**datos)
-        
-        resultado = get_db().roles.insert_one(rol.model_dump(by_alias=True, exclude=["id"]))
-        datos["_id"] = str(resultado.inserted_id)
-        
-        registrar_log("Crear", "Roles", "rol creado: " + datos["nombre"])
-        return (True, datos)
-    except ValidationError as e:
-        return (False, str(e))
-    except Exception as e:
-        return (False, str(e))
-
-
-def obtener_rol(id_rol):
-    #busca un rol por id
-    if not es_id_valido(id_rol):
-        return (False, "id no valido")
-    
-    rol = get_db().roles.find_one({"_id": ObjectId(id_rol)})
-    if rol:
-        rol["_id"] = str(rol["_id"])
-        return (True, rol)
-    return (False, "rol no encontrado")
-
-
-def obtener_todos_roles():
-    #devuelve todos los roles
-    try:
-        roles = list(get_db().roles.find())
-        for r in roles:
-            r["_id"] = str(r["_id"])
-        return (True, roles)
-    except Exception as e:
-        return (False, str(e))
-
-
-def actualizar_rol(id_rol, datos):
-    #actualiza un rol
-    if not es_id_valido(id_rol):
-        return (False, "id no valido")
-    
-    try:
-        resultado = get_db().roles.update_one(
-            {"_id": ObjectId(id_rol)},
-            {"$set": datos}
-        )
-        if resultado.matched_count > 0:
-            registrar_log("Editar", "Roles", f"rol actualizado id: {id_rol}")
-            return (True, "rol actualizado")
-        return (False, "no se encontro el rol")
-    except Exception as e:
-        return (False, str(e))
-
-
-def eliminar_rol(id_rol):
-    #borra un rol
-    if not es_id_valido(id_rol):
-        return (False, "id no válido")
-    
-    try:
-        resultado = get_db().roles.delete_one({"_id": ObjectId(id_rol)})
-        if resultado.deleted_count > 0:
-            registrar_log("Eliminar", "Roles", f"rol eliminado id: {id_rol}")
-            return (True, "rol eliminado")
-        return (False, "no se encontro el rol")
     except Exception as e:
         return (False, str(e))
 

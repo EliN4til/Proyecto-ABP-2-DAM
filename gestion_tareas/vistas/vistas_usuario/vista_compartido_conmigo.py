@@ -1,6 +1,6 @@
 import flet as ft
 from gestion_tareas.modelos.crud import obtener_tareas_por_usuario, obtener_todos_proyectos, filtrar_y_ordenar
-from gestion_tareas.servicios.sesion_service import obtener_id_usuario
+from gestion_tareas.servicios.sesion_service import obtener_id_usuario, obtener_nombre_usuario
 from datetime import datetime
 
 def VistaCompartidoConmigo(page):
@@ -58,6 +58,9 @@ def VistaCompartidoConmigo(page):
         exito_p, proys = obtener_todos_proyectos()
         if exito_p:
             filtros_proyecto_dinamicos = ["Todos"] + [p["nombre"] for p in proys]
+        
+        # Obtener nombre actual para filtrar las que yo mismo he creado
+        nombre_actual = obtener_nombre_usuario()
 
         # 2. Cargamos tareas donde el usuario está asignado
         exito, resultado = obtener_tareas_por_usuario(id_usuario)
@@ -66,6 +69,11 @@ def VistaCompartidoConmigo(page):
             ahora = datetime.now()
             
             for t in resultado:
+                # Si la tarea la compartí yo (la creé yo), no debería salir en "Compartido Conmigo"
+                # "Compartido Conmigo" implica que OTRO me la compartió.
+                if t.get("compartido_por") == nombre_actual:
+                    continue
+
                 # Calculamos si está atrasada
                 atrasada = False
                 fecha_str = "Sin fecha"
