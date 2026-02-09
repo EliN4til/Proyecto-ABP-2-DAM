@@ -70,7 +70,7 @@ def VistaCrearDepartamento(page):
         page.update()
     
     def on_proyecto_change(e):
-        """Al seleccionar proyecto, filtramos los empleados asignados a ese proyecto"""
+        """Al seleccionar proyecto, habilitamos el selector de responsable con todos los empleados"""
         proyecto_sel = dropdown_proyecto.value
         
         if not proyecto_sel:
@@ -80,16 +80,12 @@ def VistaCrearDepartamento(page):
             page.update()
             return
         
-        # Filtramos empleados que estén asignados a este proyecto
-        empleados_filtrados = [
-            emp for emp in empleados_db 
-            if emp.get("proyecto") == proyecto_sel
-        ]
-        
-        if empleados_filtrados:
+        # Mostramos todos los empleados disponibles para seleccionar como responsable
+        # No filtramos por proyecto porque seria un ciclo cerrado
+        if empleados_db:
             dropdown_responsable.options = [
                 ft.dropdownm2.Option(f"{emp['nombre']} {emp['apellidos']}") 
-                for emp in empleados_filtrados
+                for emp in empleados_db
             ]
             dropdown_responsable.disabled = False
             dropdown_responsable.value = None
@@ -97,9 +93,10 @@ def VistaCrearDepartamento(page):
             dropdown_responsable.options = []
             dropdown_responsable.disabled = True
             dropdown_responsable.value = None
-            mostrar_mensaje_dialog(page, "⚠️ Aviso", f"No hay empleados asignados al proyecto '{proyecto_sel}'", "orange")
+            mostrar_mensaje_dialog(page, "⚠️ Aviso", "No hay empleados registrados en el sistema", "orange")
         
         page.update()
+
 
     async def btn_volver_click(e):
         """Vuelve a la gestión de departamentos"""
@@ -338,12 +335,12 @@ def VistaCrearDepartamento(page):
         border_radius=25,
         shadow=ft.BoxShadow(spread_radius=0, blur_radius=15, color=COLOR_SOMBRA, offset=ft.Offset(0, 5)),
         content=ft.Container(
-            padding=ft.Padding(left=20, right=20, top=55, bottom=25),
+            padding=ft.Padding(left=20, right=20, top=55, bottom=35),
             content=ft.Column(
                 spacing=15,
                 tight=True,
                 controls=[
-                    ft.Container(height=520, content=formulario),
+                    ft.Container(height=500, content=formulario),
                     ft.Row([btn_crear], alignment=ft.MainAxisAlignment.CENTER),
                 ]
             )
@@ -363,7 +360,7 @@ def VistaCrearDepartamento(page):
     # Layout
     contenido_superpuesto = ft.Container(
         width=380,
-        height=680,
+        height=710,
         content=ft.Stack([
             ft.Container(content=tarjeta_blanca, top=30),
             ft.Container(content=header_flotante, top=0, left=60)

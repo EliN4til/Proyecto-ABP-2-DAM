@@ -138,19 +138,10 @@ def VistaMisProyectos(page):
                 departamentos_usuario = mis_departamentos_por_proyecto.get(nombre_proyecto, [])
                 
                 # Si no está en ningún departamento pero es responsable o tiene tareas
+                # Si no está en ningún departamento pero es responsable o tiene tareas
                 if not departamentos_usuario:
-                    if es_responsable:
-                        departamentos_usuario = ["Responsable"]
-                    else:
-                        departamentos_usuario = ["Colaborador"]
+                     departamentos_usuario = []
 
-                # Determinar rol
-                if es_responsable:
-                    rol = "Responsable"
-                elif esta_en_departamento:
-                    rol = "Miembro"
-                else:
-                    rol = "Colaborador"
 
                 # Crear objeto para la interfaz
                 proyectos_del_usuario.append({
@@ -158,7 +149,6 @@ def VistaMisProyectos(page):
                     "nombre": nombre_proyecto,
                     "descripcion": p.get("cliente", "Proyecto corporativo"),
                     "mis_departamentos": departamentos_usuario,
-                    "rol": rol,
                     "estado": p.get("estado", "ACTIVO"),
                     "tareas_pendientes": pendientes_count,
                     "equipo": [nombre_responsable] if nombre_responsable else ["Admin"],
@@ -370,22 +360,7 @@ def VistaMisProyectos(page):
                         ft.Text(proyecto["descripcion"], size=12, color="black"),
                         ft.Divider(height=1, color=COLOR_BORDE),
                         
-                        #seccion mi rol y departamentos
-                        ft.Text("Mi participación:", size=11, color=COLOR_LABEL, weight="bold"),
-                        ft.Row(
-                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                            controls=[
-                                ft.Column(spacing=2, controls=[
-                                    ft.Text("Rol", size=10, color="#666666"),
-                                    ft.Text(proyecto["rol"], size=11, color="black", weight="bold"),
-                                ]),
-                                ft.Column(spacing=2, controls=[
-                                    ft.Text("Mis Departamentos", size=10, color="#666666"),
-                                    mis_deptos_chips,
-                                ]),
-                            ]
-                        ),
-                        ft.Divider(height=1, color=COLOR_BORDE),
+
                         
                         # Tareas pendientes
                         ft.Row(
@@ -494,9 +469,9 @@ def VistaMisProyectos(page):
                                 spacing=0, expand=True,
                                 controls=[
                                     ft.Text(proyecto["nombre"], size=13, weight="bold", color="black"),
-                                    ft.Text(proyecto["rol"], size=10, color="#666666"),
                                 ]
                             ),
+
                             ft.Container(width=10, height=10, border_radius=5, bgcolor=estado_color)
                         ]
                     ),
@@ -504,7 +479,7 @@ def VistaMisProyectos(page):
                     ft.Column([
                         ft.Text("Mis departamentos:" if len(proyecto["mis_departamentos"]) > 1 else "Mi departamento:", size=9, color=COLOR_LABEL, weight="bold"), 
                         chips_deptos
-                    ], spacing=4),
+                    ], spacing=4) if proyecto["mis_departamentos"] else ft.Container(),
                     ft.Row(
                         alignment="end",
                         controls=[

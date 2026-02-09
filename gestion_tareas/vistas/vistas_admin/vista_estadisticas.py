@@ -353,7 +353,7 @@ def VistaEstadisticas(page):
     # contenedor principal con scroll
     contenido_scroll = ft.Column(
         spacing=15, scroll="auto",
-        controls=[seccion_metricas, seccion_departamentos, seccion_ranking, seccion_resumen]
+        controls=[seccion_metricas, seccion_ranking, seccion_resumen]
     )
 
     tarjeta_blanca = ft.Container(
@@ -381,7 +381,8 @@ def VistaEstadisticas(page):
         content=ft.Stack([
             ft.Container(expand=True, alignment=ft.Alignment(0, 0), content=ft.Stack([
                 ft.Container(content=tarjeta_blanca, top=30),
-                ft.Container(content=header_flotante, top=0, left=80)
+                # Header centrado dinámicamente
+                ft.Container(content=header_flotante, top=0, alignment=ft.Alignment(0, -1), width=380)
             ], width=380, height=700)),
             ft.Container(content=btn_volver, top=10, left=10)
         ])

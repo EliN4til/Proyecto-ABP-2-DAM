@@ -11,12 +11,10 @@ from pydantic import ValidationError
 
 from gestion_tareas.servicios.sesion_service import obtener_nombre_usuario
 
-# Obtener la base de datos desde db_manager (conexión del login)
+# pillar la base de datos del db_manager (la conexion que se hizo al hacer login)
 def get_db():
     return instancia_db.obtener_instancia()
 
-
-# ========== FUNCIONES AUXILIARES ==========
 
 def es_id_valido(id_str):
     #comprueba si el id es valido para mongodb
@@ -50,17 +48,17 @@ def registrar_log(accion, modulo, descripcion, usuario=None):
 
 
 
-# ========== EMPLEADOS ==========
+# --- empleados ---
 
 def existe_email_empleado(email):
-    """Verifica si ya existe un empleado con ese email"""
+    # mira si ya hay un empleado con ese email
     if not email:
         return False
     empleado = get_db().empleados.find_one({"email": email})
     return empleado is not None
 
 def existe_identificador_empleado(identificador):
-    """Verifica si ya existe un empleado con ese DNI/NIE"""
+    # mira si ya hay un empleado con ese dni/nie
     if not identificador:
         return False
     empleado = get_db().empleados.find_one({"identificador": identificador})
@@ -168,9 +166,7 @@ def eliminar_empleado(id_empleado):
         return (False, str(e))
 
 
-# ========== DEPARTAMENTOS ==========
-
-# ========== DEPARTAMENTOS ==========
+# --- departamentos ---
 
 def existe_codigo_departamento(codigo):
     if not codigo: return False
@@ -264,10 +260,7 @@ def eliminar_departamento(id_departamento):
     except Exception as e:
         return (False, str(e))
 
-
-# ========== PROYECTOS ==========
-
-# ========== PROYECTOS ==========
+# --- proyectos ---
 
 def existe_codigo_proyecto(codigo):
     if not codigo: return False
@@ -354,7 +347,7 @@ def eliminar_proyecto(id_proyecto):
         return (False, str(e))
 
 
-# ========== TAREAS ==========
+# --- tareas ---
 
 def crear_tarea(datos):
     #crea una tarea nueva
@@ -529,7 +522,7 @@ def eliminar_tarea(id_tarea):
         return (False, str(e))
 
 
-# ========== LOGIN ==========
+# --- login ---
 
 def validar_login(email, contrasenya):
     #comprueba si el email y la contraseña son correctos
@@ -568,8 +561,7 @@ def cambiar_contrasenya(id_empleado, contrasenya_actual, contrasenya_nueva):
     return (exito_upd, msg)
 
 
-
-# ========== CONFIGURACIÓN ==========
+# --- configuracion ---
 
 def obtener_configuracion():
     # devuelve la configuración actual, si no existe la crea
@@ -603,7 +595,7 @@ def actualizar_configuracion(nuevos_datos):
         return (False, str(e))
 
 
-# ========== FILTRAR Y ORDENAR TAREAS ==========
+# --- filtrar y ordenar tareas ---
 
 def filtrar_tareas(tareas, filtros, texto_busqueda=""):
     #filtra las tareas segun los criterios que le pasemos

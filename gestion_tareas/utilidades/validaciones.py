@@ -1,23 +1,19 @@
-"""
-Módulo de validaciones para formularios
-Contiene funciones para validar emails, teléfonos y DNIs españoles
-"""
-
-from typing import Tuple, Optional
+# Aqui van las funciones para validar los campos de los formularios
+# (emails, telefonos, dnis, etc)
 
 
-def validar_email(email: str) -> Tuple[bool, str]:
-    """
-    Valida que un email tenga un formato correcto de forma simple
+
+def validar_email(email, obligatorio=False):
+    # comprueba si un email tiene el formato correcto
+    # si obligatorio=True, no permite que el campo este vacio
+    # devuelve (True/False, mensaje de error)
     
-    Args:
-        email: El email a validar
-        
-    Returns:
-        Tupla (es_valido, mensaje_error)
-    """
     if not email or not email.strip():
-        return (True, "")  # Email vacío es válido (campo opcional)
+        if obligatorio:
+            return (False, "El email es obligatorio")
+        else:
+            return (True, "")  # si no es obligatorio, vacio esta bien
+
     
     email_limpio = email.strip()
     
@@ -55,19 +51,12 @@ def validar_email(email: str) -> Tuple[bool, str]:
     return (True, "")
 
 
-def validar_telefono(telefono: str) -> Tuple[bool, str]:
-    """
-    Valida que un teléfono español tenga un formato correcto
-    Acepta formatos: +34 XXX XXX XXX, +34 XXXXXXXXX, 6XXXXXXXX, 9XXXXXXXX, etc.
+def validar_telefono(telefono):
+    # comprueba si un telefono tiene formato valido
+    # devuelve (True/False, mensaje de error)
     
-    Args:
-        telefono: El número de teléfono a validar
-        
-    Returns:
-        Tupla (es_valido, mensaje_error)
-    """
     if not telefono or not telefono.strip():
-        return (True, "")  # Teléfono vacío es válido (campo opcional)
+        return (True, "")  # si esta vacio no pasa nada
     
     tel_limpio = telefono.strip().replace(" ", "").replace("-", "")
     
@@ -86,19 +75,13 @@ def validar_telefono(telefono: str) -> Tuple[bool, str]:
     return (True, "")
 
 
-def validar_dni(dni: str) -> Tuple[bool, str]:
-    """
-    Valida que un DNI español tenga un formato correcto
-    Verifica tanto el formato (8 dígitos + letra) como la letra de control
+def validar_dni(dni):
+    # comprueba si un dni tiene formato valido y la letra es correcta
+    # devuelve (True/False, mensaje de error)
     
-    Args:
-        dni: El DNI a validar
-        
-    Returns:
-        Tupla (es_valido, mensaje_error)
-    """
     if not dni or not dni.strip():
-        return (True, "")  # DNI vacío es válido (campo opcional)
+        return (False, "El DNI es obligatorio")  # el dni no puede estar vacio
+
     
     dni_limpio = dni.strip().upper().replace(" ", "").replace("-", "")
     
